@@ -32,7 +32,7 @@ from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from config.default import Default
 from config.omni_models import OMNI_MODELS, get_omni_model_config
-from models.omni import generate_omni_video
+from models.omni import find_missing_required_media, generate_omni_video
 from models.requests import APIReferenceImage, OmniVideoGenerationRequest
 from state.omni_state import PageState
 from state.state import AppState
@@ -423,12 +423,29 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         ):
             me.progress_spinner()
     else:
+        missing_media = find_missing_required_media(
+            state.omni_mode,
+            has_image=bool(state.reference_image_gcs),
+            has_video=bool(state.reference_video_gcs),
+            reference_count=len(json.loads(state.r2v_references_json)),
+        )
         me.button(
             "Generate Video",
             type="raised",
             on_click=on_click_generate,
+            disabled=bool(missing_media),
             style=me.Style(width="100%", height="48px"),
         )
+        if missing_media:
+            me.text(
+                missing_media,
+                type="body-2",
+                style=me.Style(
+                    color=me.theme_var("error"),
+                    margin=me.Margin(top=8),
+                    text_align="center",
+                ),
+            )
 
 
 # ==============================================================================
@@ -847,6 +864,23 @@ def on_click_generate(_e: me.ClickEvent) -> Generator[None]:
     state.result_gcs_uri = ""
     state.result_display_url = ""
     yield
+
+    # Re-check required media on the server. PageState round-trips through the
+    # browser, so a button enabled at render time may no longer be valid by
+    # click time; this guard is the authority, the disabled button is UX
+    # (issue #1929).
+    missing_media = find_missing_required_media(
+        state.omni_mode,
+        has_image=bool(state.reference_image_gcs),
+        has_video=bool(state.reference_video_gcs),
+        reference_count=len(json.loads(state.r2v_references_json)),
+    )
+    if missing_media:
+        state.error_message = missing_media
+        state.show_error_dialog = True
+        state.is_loading = False
+        yield
+        return
 
     # Map references list
     r2v_refs = json.loads(state.r2v_references_json)

@@ -22,7 +22,7 @@ import uuid
 from google import genai
 
 from common.analytics import get_logger, track_model_call
-from common.error_handling import GenerationError
+from common.error_handling import ErrorCategory, GenerationError
 from common.storage import download_from_gcs, store_to_gcs
 from config.default import Default
 from config.omni_models import get_omni_model_config
@@ -32,6 +32,66 @@ config = Default()
 logger = get_logger(__name__)
 
 _clients = {}
+
+
+class MissingMediaError(GenerationError):
+    """Raised when a request omits media that its Omni mode requires.
+
+    This is raised *before* any model call is attempted, so a missing-input
+    request is never recorded as a failed model_call and never reaches the
+    billable Interactions API (issue #1929).
+    """
+
+    def __init__(self, message: str) -> None:
+        """Initialize with an INVALID_ARGUMENT category (a client input error)."""
+        super().__init__(message, category=ErrorCategory.INVALID_ARGUMENT)
+
+
+def find_missing_required_media(
+    omni_mode: str,
+    *,
+    has_image: bool,
+    has_video: bool,
+    reference_count: int,
+) -> str | None:
+    """Return a message describing missing required media for a mode, else None.
+
+    This is a pure function (no I/O, no state) so it can back both the model
+    boundary check and the UI button guard from a single source of truth.
+
+    Per-mode required media (based on the Omni UI contract):
+      - ``t2v``:   no media required.
+      - ``i2v``:   a reference image is required.
+      - ``ref2v``: at least one reference image is required.
+      - ``edit``:  a base video to edit is required (image is optional).
+    """
+    if omni_mode == "i2v" and not has_image:
+        return "Image-to-Video requires a reference image."
+    if omni_mode == "ref2v" and reference_count < 1:
+        return "Reference-to-Video requires at least one reference image."
+    if omni_mode == "edit" and not has_video:
+        return "Video editing requires a base video to edit."
+    return None
+
+
+def _validate_required_media(request: OmniVideoGenerationRequest) -> None:
+    """Fail fast if the request omits media its mode requires.
+
+    Multi-turn refinement operates on an existing interaction (it does not
+    append single-turn reference media), so the per-mode media requirements do
+    not apply when ``previous_interaction_id`` is set.
+    """
+    if request.previous_interaction_id:
+        return
+
+    missing = find_missing_required_media(
+        request.omni_mode,
+        has_image=bool(request.reference_image_gcs),
+        has_video=bool(request.reference_video_gcs),
+        reference_count=len(request.r2v_references or []),
+    )
+    if missing:
+        raise MissingMediaError(missing)
 
 
 def get_omni_client(location: str) -> genai.Client:
@@ -64,6 +124,11 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
         raise GenerationError(
             f"Unsupported Gemini Omni model: {request.model_version_id}",
         )
+
+    # Validate required media *before* opening the model-call span, so a
+    # missing-input request is never recorded as a failed model_call and never
+    # reaches the billable Interactions API (issue #1929).
+    _validate_required_media(request)
 
     billing_units = {
         "video_seconds_generated": request.duration_seconds,

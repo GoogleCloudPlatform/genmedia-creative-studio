@@ -22,10 +22,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from models.omni import (
+    MissingMediaError,
     _build_input_parts,
     _extract_video_payload,
     _modify_prompt_for_omni,
+    find_missing_required_media,
     generate_omni_video,
 )
 from models.requests import APIReferenceImage, OmniVideoGenerationRequest
@@ -273,7 +277,8 @@ def test_modify_prompt_for_omni_with_trailing_comma() -> None:
 @patch("pages.omni.me.state")
 @patch("common.storage.generate_upload_signed_url")
 def test_on_request_signed_url_video(
-    mock_sign: MagicMock, mock_state: MagicMock,
+    mock_sign: MagicMock,
+    mock_state: MagicMock,
 ) -> None:
     """Test generating signed URL event handler."""
     from pages.omni import on_request_signed_url_video
@@ -448,3 +453,239 @@ def test_on_model_change_keeps_supported_resolution(mock_state: MagicMock) -> No
 
     assert mock_page_state.omni_model == "gemini-omni-1.1-flash-preview"
     assert mock_page_state.resolution == "1080p"
+
+
+# ==============================================================================
+# Required-media validation (issue #1929)
+# ==============================================================================
+
+
+def _omni_request(mode: str, **overrides: object) -> OmniVideoGenerationRequest:
+    """Build a minimal OmniVideoGenerationRequest for a given mode."""
+    kwargs = {
+        "prompt": "A neon sign glowing on a brick wall",
+        "duration_seconds": 10,
+        "aspect_ratio": "16:9",
+        "resolution": "720p",
+        "omni_mode": mode,
+        "model_version_id": "gemini-omni-1.1-flash-preview",
+    }
+    kwargs.update(overrides)
+    return OmniVideoGenerationRequest(**kwargs)
+
+
+def test_find_missing_required_media_t2v_never_requires_media() -> None:
+    """Text-to-Video needs no media, so nothing is ever reported missing."""
+    assert (
+        find_missing_required_media(
+            "t2v",
+            has_image=False,
+            has_video=False,
+            reference_count=0,
+        )
+        is None
+    )
+
+
+def test_find_missing_required_media_i2v() -> None:
+    """Image-to-Video requires an image; missing when absent, satisfied when present."""
+    assert (
+        find_missing_required_media(
+            "i2v",
+            has_image=False,
+            has_video=False,
+            reference_count=0,
+        )
+        is not None
+    )
+    assert (
+        find_missing_required_media(
+            "i2v",
+            has_image=True,
+            has_video=False,
+            reference_count=0,
+        )
+        is None
+    )
+
+
+def test_find_missing_required_media_ref2v() -> None:
+    """Reference-to-Video requires at least one reference image."""
+    assert (
+        find_missing_required_media(
+            "ref2v",
+            has_image=False,
+            has_video=False,
+            reference_count=0,
+        )
+        is not None
+    )
+    assert (
+        find_missing_required_media(
+            "ref2v",
+            has_image=False,
+            has_video=False,
+            reference_count=1,
+        )
+        is None
+    )
+
+
+def test_find_missing_required_media_edit_requires_base_video() -> None:
+    """Edit requires a base video; an image alone is not a valid edit."""
+    # Nothing attached -> missing.
+    assert (
+        find_missing_required_media(
+            "edit",
+            has_image=False,
+            has_video=False,
+            reference_count=0,
+        )
+        is not None
+    )
+    # Image only (no base video) -> still missing (image-only edit is not valid).
+    assert (
+        find_missing_required_media(
+            "edit",
+            has_image=True,
+            has_video=False,
+            reference_count=0,
+        )
+        is not None
+    )
+    # Base video present -> satisfied.
+    assert (
+        find_missing_required_media(
+            "edit",
+            has_image=False,
+            has_video=True,
+            reference_count=0,
+        )
+        is None
+    )
+
+
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_i2v_missing_image_no_model_call(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+) -> None:
+    """i2v without an image raises before the model-call span (no false failure)."""
+    req = _omni_request("i2v")
+
+    with pytest.raises(MissingMediaError):
+        generate_omni_video(req)
+
+    # The raise happens before track_model_call is entered, so no model_call
+    # (success or failure) is ever logged, and no client is created/called.
+    mock_track.assert_not_called()
+    mock_get_client.assert_not_called()
+
+
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_ref2v_missing_refs_no_model_call(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+) -> None:
+    """ref2v without references raises before the model-call span."""
+    req = _omni_request("ref2v")
+
+    with pytest.raises(MissingMediaError):
+        generate_omni_video(req)
+
+    mock_track.assert_not_called()
+    mock_get_client.assert_not_called()
+
+
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_edit_no_media_is_not_billed(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+) -> None:
+    """Edit with neither video nor image must not reach the billable API.
+
+    Regression guard for the #1929 billing hole: before the fix this request
+    fell through to ``client.interactions.create`` with a prompt-only input.
+    """
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    req = _omni_request("edit")
+
+    with pytest.raises(MissingMediaError):
+        generate_omni_video(req)
+
+    # No billable interaction created, and no model_call span opened.
+    mock_client.interactions.create.assert_not_called()
+    mock_track.assert_not_called()
+
+
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_edit_image_only_is_not_billed(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+) -> None:
+    """Edit with an image but no base video is rejected before any billed call."""
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    req = _omni_request(
+        "edit",
+        reference_image_gcs="gs://bucket/ref.png",
+        reference_image_mime_type="image/png",
+    )
+
+    with pytest.raises(MissingMediaError):
+        generate_omni_video(req)
+
+    mock_client.interactions.create.assert_not_called()
+    mock_track.assert_not_called()
+
+
+@patch("models.omni._save_video_to_gcs")
+@patch("models.omni.get_omni_client")
+def test_generate_omni_video_multiturn_skips_media_check(
+    mock_get_client: MagicMock,
+    mock_save: MagicMock,
+) -> None:
+    """Multi-turn refinement skips the per-mode media requirement.
+
+    Multi-turn operates on an existing interaction, so the check does not apply
+    even when no media is attached to the follow-up turn.
+    """
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    mock_content = MagicMock()
+    mock_content.type = "video"
+    mock_content.data = "encoded_video_data"
+    mock_step = MagicMock()
+    mock_step.type = "model_output"
+    mock_step.content = [mock_content]
+    mock_interaction = MagicMock()
+    mock_interaction.id = "int-next"
+    mock_interaction.steps = [mock_step]
+    mock_client.interactions.create.return_value = mock_interaction
+    mock_save.return_value = "gs://bucket/videos/output.mp4"
+
+    req = _omni_request(
+        "edit",
+        previous_interaction_id="int-prev",
+        chat_history_json=json.dumps(
+            [
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": "Start"}],
+                },
+            ],
+        ),
+    )
+
+    gcs_uri, interaction_id = generate_omni_video(req)
+    assert gcs_uri == "gs://bucket/videos/output.mp4"
+    assert interaction_id == "int-next"
+    mock_client.interactions.create.assert_called_once()

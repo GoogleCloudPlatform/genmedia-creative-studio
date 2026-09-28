@@ -78,9 +78,15 @@ lending it borrowed authority. **A cross-reference makes a stale assertion look 
 the block and leaving 268 would have made 268 *strictly worse than before the fix*.
 
 When the sweep was run property-wide — in `de4d6145`, the **after** state — **the enumeration
-returned six sites where the correction that prompted it had named one.** The correction that
-prompted it is `f5691c30`, the sweep's parent: a single-hunk edit to a single clause, whose own
-message records that *"Nothing else in the architect's v3 text is touched"*. As of ref `de4d6145` the
+returned six sites where the correction that prompted it had named one.** Part of that sentence is
+pinned and part of it is not, and they must not be read as one claim. **Pinned:** `f5691c30` is the
+sweep's parent, a single-hunk edit to a single clause, whose own message records that
+*"Nothing else in the architect's v3 text is touched"*. **Inferred:** that this parent is the
+correction that *prompted* the sweep. That connector is read off stack adjacency — a linear stack,
+no intervening commit, a short interval, every commit on the stack a review response — and the
+public record neither confirms nor denies it. It is marked rather than dropped because it is
+load-bearing: strike the causality and the sentence reports six sites where the *preceding*
+correction named one, which is two adjacent commits and no argument. As of ref `de4d6145` the
 property is asserted directly at lines 124–126 and 299 — the same two sites, renumbered and now
 tiered — and is leaned on as a premise for other claims at lines 79, 147–148, 157–158 and 212–213.
 All four of those cross-references were written or rewritten by the sweep commit itself as it tied
@@ -297,20 +303,28 @@ A principle with no procedure gets agreed with and not followed. Before writing 
 or *Reasons, not answers*: those rest on review-conversation provenance and on pattern instances
 from the same programme, with no citable refs, and they are offered as illustration, not as support.
 The same goes for the three-site before state described under *The document as its own specimen*,
-which is reproduced there but pinned at no ref. Two further passages are load-bearing and rest on
-the same kind of provenance: the acceptance check under *The second-order finding* — the two greps
-are pinned and checkable, but the check they reconstruct is on no record — and the recommendation
-under *The authority-reach corollary* to leave the two mechanism lines as sub-facts inheriting by
-proximity, which is on no record either, though the sites and the disclaimers it concerns are
-pinned. The pinned refs, the quoted Terraform, and the greps are checkable and are the whole of the
-checkable spine; the two passages just named are load-bearing and outside it. The
+which is reproduced there but pinned at no ref. This page's checkable spine is its pinned refs, its
+quoted Terraform and its greps: a claim is on the spine when you can name the ref, the quotation or
+the command that settles it and then go and settle it. Anything here that no ref, quotation or
+command settles is outside the spine — a test you can apply to any sentence on the page without
+consulting a list, by asking what you would run or look up to check it. The passages named just
+above are outside it and are offered as illustration only. Others are outside it **and
+load-bearing**. Those include the acceptance check under *The second-order finding* — the greps are
+pinned and checkable, but the check they reconstruct is on no record; the recommendation under *The
+authority-reach corollary* to leave the two mechanism lines as sub-facts inheriting by proximity,
+which is on no record either, though the sites and the disclaimers it concerns are pinned; and the
+causal connector under *Why site 268 is the proof* — that the sweep's parent is the correction that
+*prompted* the sweep — which is read off stack adjacency and which the record neither confirms nor
+denies. Those are examples under the rule, not a tally: a further load-bearing claim later found
+outside the spine leaves this paragraph **incomplete rather than false**, and the page's own
+principle says to add it here rather than repair only the instance you were shown. The
 enumerate-before-correcting behaviour was observed on an internal security-hardening workstream,
 where a request to correct a single site came back instead as an enumeration of every site that
 asserted the property, with a disposition recorded against each, and the rule was extracted from
 that practice rather than the practice derived from the rule. Nothing above depends on it: the
-argument stands on the pinned refs, the quoted Terraform and the greps — outside the two
-load-bearing passages named above — and this note is here only to record that the principle was not
-invented at a desk.
+argument stands on the pinned refs, the quoted Terraform and the greps — on the spine, except where
+an off-spine claim is flagged as load-bearing in the way just described — and this note is here only
+to record that the principle was not invented at a desk.
 
 ## How this connects
 

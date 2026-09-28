@@ -150,7 +150,8 @@ locals {
   # Vuln #4 S1 (audience) + S3 (gate-on) identity contract — GKE Ingress/
   # BackendConfig topology. All THREE env vars are gated on the SAME Stage-2
   # condition as the audience (var.iap_backend_service_id != null), so they land
-  # together, atomically, in one Deployment rollout with the S2 image:
+  # together, atomically, in one Deployment rollout with the S2 image (the
+  # identity-verifying image carrying the Vuln #4 verifier):
   #   - APP_ENV: a NON-local value so the app derives AUTH_MODE='iap' (the app's
   #     local set is {"", dev, development, local, test}, common/identity.py). We
   #     reuse the GKE root's deployed environment label (var.environment, default

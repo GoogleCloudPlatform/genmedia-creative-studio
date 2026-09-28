@@ -68,10 +68,10 @@ locals {
   # and via secretKeyRef (by name), never expanded into config here.
   secret_env_keys = nonsensitive(toset(keys(var.secret_env)))
 
-  # Vuln #4 (the content-hashed immutable-ConfigMap mechanism) — versioned/immutable
-  # ConfigMap name. The name embeds a content hash of the env data map so that ANY
-  # change to env_vars yields a NEW ConfigMap NAME (never an in-place mutation of a
-  # fixed name). A new name flows into the Deployment pod template
+  # Vuln #4 (the fail-safe GKE rollout mechanism) — versioned/immutable ConfigMap
+  # name. The name embeds a content hash of the env data map so that ANY change to
+  # env_vars yields a NEW ConfigMap NAME (never an in-place mutation of a fixed
+  # name). A new name flows into the Deployment pod template
   # (env_from.config_map_ref.name below), which rolls a NEW ReplicaSet — so the env
   # change and the (out-of-band) image roll are carried by a single pod-template
   # update. Both ConfigMaps are REASONED to coexist while the roll is in flight
@@ -111,13 +111,12 @@ resource "google_service_account_iam_member" "workload_identity" {
 
 # --- Config & secrets (parity with Cloud Run; secret path dormant by default) -
 
-# Vuln #4 (the content-hashed immutable-ConfigMap mechanism):
-# versioned/immutable ConfigMap. The NAME is content-hashed
-# (local.env_config_map_name) and the object is `immutable = true`, so it can
-# NEVER be mutated in place — an env change produces a brand-new ConfigMap under
-# a new name instead. The new ConfigMap exists BEFORE the pod template switches
-# to it (ordering basis stated below), so the Deployment can always resolve its
-# config_map_ref during the roll.
+# Vuln #4 (the fail-safe GKE rollout mechanism): versioned/immutable ConfigMap.
+# The NAME is content-hashed (local.env_config_map_name) and the object is
+# `immutable = true`, so it can NEVER be mutated in place — an env change
+# produces a brand-new ConfigMap under a new name instead. The new ConfigMap
+# exists BEFORE the pod template switches to it (ordering basis stated below),
+# so the Deployment can always resolve its config_map_ref during the roll.
 #
 # Content-hashed immutable name: a changed env set produces a new ConfigMap.
 # Creation ordering is enforced by a real resource reference (Deployment
@@ -204,21 +203,21 @@ resource "kubernetes_deployment_v1" "workload" {
   spec {
     replicas = var.replicas_min
 
-    # Vuln #4 (the content-hashed immutable-ConfigMap mechanism): explicit
-    # RollingUpdate with maxUnavailable=0/maxSurge=1 (the strategy VALUES are
-    # configured fact); under those values Kubernetes is documented to keep the OLD
-    # ReplicaSet serving until the new pods are Ready (documented semantics, not
-    # measured in our cluster -- see the stall-path note in the env ConfigMap
-    # comment). maxUnavailable=0 means no old pod is torn down before a new pod
-    # passes its readiness probe; maxSurge=1 brings up one new pod at a time. When
-    # a new pod CrashLoops on the app's startup FATAL (e.g. iap-mode with an unset
-    # audience, or a local-mode-on-managed-platform backstop), if it never becomes
-    # Ready, the rollout STALLS and the old ReplicaSet keeps serving = fail-safe
-    # DOWN -- this fail-safe-down CONSEQUENCE rests on documented Kubernetes
-    # semantics (maxUnavailable=0) and is NOT measured in our cluster; to be
-    # observed at first apply, same tier as the wait (see the env ConfigMap
-    # comment). NOT Recreate (which would tear down the old pods first and open an
-    # outage / bad-state window).
+    # Vuln #4 (the fail-safe GKE rollout mechanism): explicit RollingUpdate with
+    # maxUnavailable=0/maxSurge=1 (the strategy VALUES are configured fact); under
+    # those values Kubernetes is documented to keep the OLD ReplicaSet serving
+    # until the new pods are Ready (documented semantics, not measured in our
+    # cluster -- see the stall-path note in the env ConfigMap comment).
+    # maxUnavailable=0 means no old pod is torn down before a new pod passes its
+    # readiness probe; maxSurge=1 brings up one new pod at a time. When a new pod
+    # CrashLoops on the app's startup FATAL (e.g. iap-mode with an unset audience,
+    # or a local-mode-on-managed-platform backstop), if it never becomes Ready, the
+    # rollout STALLS and the old ReplicaSet keeps serving = fail-safe DOWN -- this
+    # fail-safe-down CONSEQUENCE rests on documented Kubernetes semantics
+    # (maxUnavailable=0) and is NOT measured in our cluster; to be observed at
+    # first apply, same tier as the wait (see the env ConfigMap comment). NOT
+    # Recreate (which would tear down the old pods first and open an outage /
+    # bad-state window).
     strategy {
       type = "RollingUpdate"
       rolling_update {

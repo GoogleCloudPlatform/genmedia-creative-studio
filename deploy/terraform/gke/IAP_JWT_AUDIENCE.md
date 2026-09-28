@@ -5,6 +5,11 @@ contract — `APP_ENV`, `REQUIRE_AUTHENTICATED_USER`, and `IAP_JWT_AUDIENCE` —
 app-layer IAP-JWT verification, and how it avoids the app's **FATAL-on-unset** boot
 path on a real deploy.
 
+**S1/S2/S3** are the three elements that must co-deploy **atomically** — never an old
+image with the gate on — namely **S1** the per-env IAP JWT audience, **S2** the
+identity-verifying application image (the one carrying the Vuln #4 verifier), and
+**S3** the fail-closed auth gate.
+
 **This root is self-contained:** every knob the two-stage runbook below references
 (`iap_backend_service_id`, and the `APP_ENV`/`REQUIRE_AUTHENTICATED_USER` values it
 gates) exists in this GKE root, so the Stage-2 atomic co-deploy is executable end to

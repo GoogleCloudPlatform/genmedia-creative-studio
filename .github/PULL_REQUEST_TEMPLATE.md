@@ -12,13 +12,13 @@ Why is it necessary?
 
 ## Checklist
 
-- [ ] **Contribution Guidelines:** I have read the [Contribution Guidelines](../CONTRIBUTING).
+- [ ] **Contribution Guidelines:** I have read the [Contribution Guidelines](../CONTRIBUTING.md).
 - [ ] **CLA:** I have signed the [CLA](https://cla.developers.google.com).
 - [ ] **Authorship:** I am listed as the author (if applicable).
-- [ ] **Conventional Commits:** My PR title and commit messages follow the [Conventional Commits](https://www.conventialcommits.org) spec.
-- [ ] **Code Format:** I have run `nox -s format` to format the code.
-- [ ] **Spelling:** I have fixed any spelling errors, and added false positives to .github/actions/spelling/allow.txt if necessary.
+- [ ] **Conventional Commits:** My PR title and commit messages follow the [Conventional Commits](https://www.conventionalcommits.org) spec.
+- [ ] **Code Format:** I have run `uv run ruff format .` to format the code (configured in `pyproject.toml`).
+- [ ] **Spelling:** I have fixed any spelling errors.
 - [ ] **Sync:** My Fork is synced with the upstream.
 - [ ] **Documentation:** I have updated relevant documentation (if applicable) in the [docs folder](../docs).
-- [ ] **Template:** I have followed the `aaie_notebook_template.ipynb` if submitting a new jupyter notebook.
+- [ ] **Notebooks:** If submitting a new Jupyter notebook, I have matched the structure and header conventions of the existing notebooks in the [experiments folder](../experiments).
 - [ ] **Experiments:** My code is in the [experiments folder](../experiments) and is tested and working.

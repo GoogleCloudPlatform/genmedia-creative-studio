@@ -1,6 +1,6 @@
 # deploy/terraform/gke/environments/nonprod.tfvars — non-production (staging)
-# configuration for the GKE deploy root. NON-PROD FIRST: apply and validate this
-# environment before prod.
+# configuration for the GKE deploy root. NON-PROD FIRST (the P9c sequence): apply
+# and validate this environment before prod.
 #
 # This is the GKE-specific env overlay. It is SEPARATE from the Cloud Run root's
 # ../../environments/*.tfvars because the GKE root has a different compute/ingress

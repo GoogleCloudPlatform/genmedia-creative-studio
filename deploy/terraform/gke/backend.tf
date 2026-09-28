@@ -32,7 +32,7 @@
 # Select the state per environment by overriding the prefix at init and pairing it
 # with a per-env variable file (non-prod first):
 #
-#   # non-prod (staging) — apply this FIRST, before prod
+#   # non-prod (staging) — apply this FIRST, before prod (the P9c sequence)
 #   terraform init -reconfigure -backend-config="bucket=..." \
 #       -backend-config="prefix=creative-studio/staging/gke"
 #   terraform apply -var-file=environments/nonprod.tfvars

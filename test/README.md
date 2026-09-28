@@ -15,7 +15,7 @@ pytest
 To run a specific test file, simply pass the path to the file as an argument to the `pytest` command:
 
 ```bash
-pytest test/test_portraits.py
+pytest test/test_identity.py
 ```
 
 This is useful for focusing on a specific area of the application during development and debugging.

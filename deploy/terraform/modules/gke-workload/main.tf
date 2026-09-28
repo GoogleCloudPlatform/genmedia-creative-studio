@@ -129,10 +129,12 @@ resource "google_service_account_iam_member" "workload_identity" {
 # rollout completion is REASONED (Terraform create_before_destroy
 # deposed-destroy sequenced after dependents update, which under
 # wait_for_rollout completes only when healthy) but NOT empirically measured --
-# to be observed at the first real-cluster apply (see runbook prove-it). The
-# retired CM is NOT retained as a rollback target -- post-success kubectl
-# rollout undo will fail (CreateContainerConfigError); roll back by re-applying
-# the previous config inputs (see runbook), not by rollout undo.
+# to be observed at the first ORDINARY terraform-driven env-change apply (NOT
+# this Phase-5 co-deploy, which bypasses the TF destroy path via
+# state-rm/import + manual GC). See runbook prove-it. The retired CM is NOT
+# retained as a rollback target -- post-success kubectl rollout undo will fail
+# (CreateContainerConfigError); roll back by re-applying the previous config
+# inputs (see runbook), not by rollout undo.
 resource "kubernetes_config_map_v1" "env" {
   metadata {
     name      = local.env_config_map_name

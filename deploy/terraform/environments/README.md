@@ -12,7 +12,7 @@ inert unless you pass one explicitly with `-var-file`. The existing hand-written
 ## Model: separate GCP project per environment
 
 Environment isolation is achieved by **using a separate GCP project per
-environment** (the design default — see `design.md` §3.6.1). This works because:
+environment** (the design default). This works because:
 
 - `project_id` is already an input variable, so each environment simply targets
   a different project.
@@ -90,6 +90,6 @@ keeps "which environment am I about to touch" visible on every command.
 - For the full end-to-end deploy story (Cloud Build image build via `build.sh`,
   DNS A record for the LB, IAP user grants), see `deploy.md`. This directory only
   adds the per-environment variable selection on top of that existing flow.
-- A future layered state split / GKE fan-out (design.md §3.5, §3.6.2, Phase 8+)
+- A future layered state split / GKE fan-out (Phase 8+)
   would extend the prefix to `creative-studio/<env>/<layer>`; today there is a
   single root, so the prefix is `creative-studio/<env>`.

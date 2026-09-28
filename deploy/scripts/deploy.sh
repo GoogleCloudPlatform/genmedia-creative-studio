@@ -26,8 +26,8 @@
 # single idempotent auto-remediation of the Artifact Registry repository
 # (pre-check #16). Provisioning is Terraform's job. It never reads or writes
 # secret values and it does not manage the container-image contract beyond
-# invoking the existing build. See §4.4 of the infra-modernization design and the
-# "What this script does NOT do" section of deploy.md.
+# invoking the existing build. See the "What this script does NOT do" section of
+# deploy.md.
 # ---------------------------------------------------------------------------
 
 set -euo pipefail
@@ -432,11 +432,11 @@ print("has" if perm in d.get("permissions", []) else "absent")
 }
 
 # --------------------------------------------------------------------------- #
-# PRE-CHECKS — implement the DECIDED §4.2 table (all 22). Classification is
+# PRE-CHECKS — implement the DECIDED pre-check table (all 22). Classification is
 # authoritative and must not be re-litigated here.
 # --------------------------------------------------------------------------- #
 
-# #1 gcloud present, authenticated, project resolvable (HARD-BLOCK, §5.1)
+# #1 gcloud present, authenticated, project resolvable (HARD-BLOCK)
 precheck_1_gcloud() {
   if ! command -v gcloud >/dev/null 2>&1; then
     block "#1" "gcloud CLI present" "gcloud not found on PATH"
@@ -456,7 +456,7 @@ precheck_1_gcloud() {
   pass "#1" "gcloud ready" "account=${active} project=${PROJECT} region=${REGION}"
 }
 
-# #2 Required APIs enabled (HARD-BLOCK, §4.1) + #2a single-source drift (WARN)
+# #2 Required APIs enabled (HARD-BLOCK) + #2a single-source drift (WARN)
 precheck_2_apis() {
   local required
   if ! required="$(read_required_apis)"; then
@@ -477,7 +477,7 @@ precheck_2_apis() {
     skip "#2a" "API single-source" "Terraform variables.tf not found; skipping drift comparison"
   fi
 
-  # Conditional additions (§4.2 #2): +secretmanager if secrets used.
+  # Conditional additions (#2): +secretmanager if secrets used.
   if [[ -n "${SECRET_ENV:-}" ]]; then
     required="${required}"$'\n'"secretmanager.googleapis.com"
   fi
@@ -509,7 +509,7 @@ precheck_2_apis() {
   fi
 }
 
-# #3 Hard-required env vars resolvable (HARD-BLOCK, §4.3)
+# #3 Hard-required env vars resolvable (HARD-BLOCK)
 precheck_3_env() {
   local missing=""
   [[ -z "${PROJECT}" ]] && missing="${missing} PROJECT_ID"
@@ -522,7 +522,7 @@ precheck_3_env() {
   fi
 }
 
-# #4 Runtime SA exists (HARD-BLOCK, §4.2)
+# #4 Runtime SA exists (HARD-BLOCK)
 precheck_4_runtime_sa() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then
     skip "#4" "runtime SA exists" "unauthenticated — would describe ${SERVICE_ACCOUNT_EMAIL}"; return
@@ -535,7 +535,7 @@ precheck_4_runtime_sa() {
   fi
 }
 
-# #5 Runtime SA has serviceAccountTokenCreator on itself (HARD-BLOCK, §4.2)
+# #5 Runtime SA has serviceAccountTokenCreator on itself (HARD-BLOCK)
 precheck_5_self_token_creator() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then
     skip "#5" "SA token-creator on self" "unauthenticated — would inspect SA IAM policy"; return
@@ -551,7 +551,7 @@ precheck_5_self_token_creator() {
   fi
 }
 
-# #6 Runtime SA has datastore.user (HARD-BLOCK, §4.2)
+# #6 Runtime SA has datastore.user (HARD-BLOCK)
 precheck_6_datastore() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#6" "runtime SA datastore.user" "unauthenticated"; return; fi
   if has_project_role "${SERVICE_ACCOUNT_EMAIL}" "roles/datastore.user"; then
@@ -561,7 +561,7 @@ precheck_6_datastore() {
   fi
 }
 
-# #7 Runtime SA has aiplatform.user (HARD-BLOCK, §4.2)
+# #7 Runtime SA has aiplatform.user (HARD-BLOCK)
 precheck_7_aiplatform() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#7" "runtime SA aiplatform.user" "unauthenticated"; return; fi
   if has_project_role "${SERVICE_ACCOUNT_EMAIL}" "roles/aiplatform.user"; then
@@ -571,7 +571,7 @@ precheck_7_aiplatform() {
   fi
 }
 
-# #8 Runtime SA has bucket object roles (HARD-BLOCK, §4.2/§4.4)
+# #8 Runtime SA has bucket object roles (HARD-BLOCK)
 precheck_8_bucket_roles() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#8" "runtime SA bucket roles" "unauthenticated"; return; fi
   # `gcloud storage buckets get-iam-policy` does not accept --filter, so flatten
@@ -591,7 +591,7 @@ precheck_8_bucket_roles() {
   fi
 }
 
-# #9 Runtime SA has cloudtasks.enqueuer (WARN, §4.2/§4.4)
+# #9 Runtime SA has cloudtasks.enqueuer (WARN)
 precheck_9_tasks_enqueuer() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#9" "runtime SA cloudtasks.enqueuer" "unauthenticated"; return; fi
   if has_project_role "${SERVICE_ACCOUNT_EMAIL}" "roles/cloudtasks.enqueuer"; then
@@ -601,7 +601,7 @@ precheck_9_tasks_enqueuer() {
   fi
 }
 
-# #10 Build SA exists + roles (HARD-BLOCK when building, §4.2)
+# #10 Build SA exists + roles (HARD-BLOCK when building)
 precheck_10_build_sa() {
   if [[ "${DO_BUILD}" -eq 0 ]]; then
     skip "#10" "build SA" "N/A — --no-build (deploying a pre-built image out-of-band)"; return
@@ -651,7 +651,7 @@ _report_10a_missing() {
 }
 
 # #10a Invoking principal can submit Cloud Build builds (HARD-BLOCK when building
-# in deploy mode / WARN in check-only, §4.2). Distinct from #10: #10 validates the
+# in deploy mode / WARN in check-only). Distinct from #10: #10 validates the
 # *build service account's* roles, whereas this verifies the *active principal*
 # running deploy.sh can actually SUBMIT a build. A caller lacking
 # cloudbuild.builds.create passes #10 but `gcloud builds submit` still returns
@@ -724,7 +724,7 @@ precheck_10a_caller_build() {
   _report_10a_missing "${member}" "${grant}"
 }
 
-# #11 Firestore Native DB exists (HARD-BLOCK, §4.4)
+# #11 Firestore Native DB exists (HARD-BLOCK)
 precheck_11_firestore_db() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#11" "Firestore DB exists" "unauthenticated"; return; fi
   if gcloud firestore databases describe --database="${FIRESTORE_DB}" \
@@ -735,7 +735,7 @@ precheck_11_firestore_db() {
   fi
 }
 
-# #12 Firestore composite genmedia indexes present (WARN, §4.4/§3.7)
+# #12 Firestore composite genmedia indexes present (WARN)
 precheck_12_indexes() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#12" "Firestore composite indexes" "unauthenticated"; return; fi
   local count
@@ -749,7 +749,7 @@ precheck_12_indexes() {
   fi
 }
 
-# #13 GCS assets bucket exists (HARD-BLOCK, §4.4)
+# #13 GCS assets bucket exists (HARD-BLOCK)
 precheck_13_bucket() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#13" "assets bucket exists" "unauthenticated"; return; fi
   if gcloud storage buckets describe "gs://${GCS_ASSETS_BUCKET}" >/dev/null 2>&1; then
@@ -759,7 +759,7 @@ precheck_13_bucket() {
   fi
 }
 
-# #14 Assets bucket PAP=enforced + uniform BLA (WARN, §1.6)
+# #14 Assets bucket PAP=enforced + uniform BLA (WARN)
 precheck_14_bucket_posture() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#14" "assets bucket posture" "unauthenticated"; return; fi
   local desc pap ubla
@@ -774,7 +774,7 @@ precheck_14_bucket_posture() {
   fi
 }
 
-# #15 Cloud Tasks queue exists (WARN, §4.4)
+# #15 Cloud Tasks queue exists (WARN)
 precheck_15_tasks_queue() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#15" "tasks queue exists" "unauthenticated"; return; fi
   if gcloud tasks queues describe "${TASKS_QUEUE}" --location="${REGION}" \
@@ -785,7 +785,7 @@ precheck_15_tasks_queue() {
   fi
 }
 
-# #16 Artifact Registry repo (AUTO-REMEDIATE, §5.1)
+# #16 Artifact Registry repo (AUTO-REMEDIATE)
 precheck_16_ar_repo() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#16" "Artifact Registry repo" "unauthenticated"; return; fi
   if gcloud artifacts repositories describe "${AR_REPO}" --location="${REGION}" \
@@ -807,7 +807,7 @@ precheck_16_ar_repo() {
   fi
 }
 
-# #17 AR image exists for target tag (WARN when building / HARD-BLOCK deploy-only, §1.8)
+# #17 AR image exists for target tag (WARN when building / HARD-BLOCK deploy-only)
 precheck_17_image() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#17" "target image exists" "unauthenticated"; return; fi
   local img_base="${REGION}-docker.pkg.dev/${PROJECT}/${IMAGE_PATH}"
@@ -897,7 +897,7 @@ precheck_19_secrets() {
   fi
 }
 
-# #20 Vertex AI service agent present (WARN, §4.2)
+# #20 Vertex AI service agent present (WARN)
 precheck_20_vertex_agent() {
   if [[ "${GCLOUD_OK}" -eq 0 ]]; then skip "#20" "Vertex AI service agent" "unauthenticated"; return; fi
   if _role_present "roles/aiplatform.serviceAgent" gcloud projects get-iam-policy "${PROJECT}"; then
@@ -907,12 +907,12 @@ precheck_20_vertex_agent() {
   fi
 }
 
-# #21 Quota headroom (WARN — cannot be reliably pre-checked, §1.4)
+# #21 Quota headroom (WARN — cannot be reliably pre-checked)
 precheck_21_quota() {
   warn "#21" "quota headroom" "not reliably pre-checkable (cpu=2000m,mem=4Gi) — a real shortfall surfaces at deploy"
 }
 
-# #22 REQUIRE_AUTHENTICATED_USER resolves enforced for a prod target (WARN, §4.3)
+# #22 REQUIRE_AUTHENTICATED_USER resolves enforced for a prod target (WARN)
 precheck_22_auth_resolution() {
   local app_env="${APP_ENV:-}" enforced target_is_prod="no" configured="${REQUIRE_AUTHENTICATED_USER:-}"
   if [[ -n "${configured}" ]]; then
@@ -1021,7 +1021,7 @@ do_deploy() {
 }
 
 # --------------------------------------------------------------------------- #
-# POST-CHECKS (§4.3). Non-zero exit on any failure.
+# POST-CHECKS. Non-zero exit on any failure.
 # --------------------------------------------------------------------------- #
 POST_FAIL=0
 

@@ -12,8 +12,8 @@
 # NOTE (coupling): wiring Terraform to read this file directly (so both consume a
 # single source) is intentionally deferred to a Terraform phase where a
 # `terraform plan` zero-diff gate can prove the change is behaviour-neutral. Until
-# then, this file plus the drift check are the enforced single source. See §5.3 of
-# the infra-modernization design and deploy.md ("Required-API single source").
+# then, this file plus the drift check are the enforced single source. See
+# deploy.md ("Required-API single source").
 #
 # Format: one API service name per line. Blank lines and lines starting with '#'
 # are ignored. Conditional APIs are NOT listed here and are added by the script

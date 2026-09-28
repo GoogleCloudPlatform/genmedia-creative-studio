@@ -12,9 +12,9 @@ The [Experimental folder](./experiments/) contains a variety of stand-alone appl
 
 Here's a glimpse of what you'll find:
 
-**Genmedia Creative Studio v.Next:** The [the next generation](./experiments/veo-app/) of the creative studio application.
+**Genmedia Creative Studio v.Next:** The next generation of the creative studio application now lives at the root of this repository.
 
-[![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/1ff8ccdc-48b1-4c8b-8851-925104fdd41a)](./experiments/veo-app/)
+![GenMedia Creative Studio v.next](https://github.com/user-attachments/assets/1ff8ccdc-48b1-4c8b-8851-925104fdd41a)
 
 **Combined Workflows**
 *   **Countdown Workflow:** An automated two-stage pipeline to create branded countdown videos.

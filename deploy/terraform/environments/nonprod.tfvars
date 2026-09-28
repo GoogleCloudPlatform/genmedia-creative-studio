@@ -4,7 +4,7 @@
 # by the staging stand-up (staging-standup-report.md), which applied cleanly
 # against a SEPARATE non-prod project with the SAME hardcoded resource names
 # as prod — 47 added, 0 changed, 0 destroyed. It demonstrates the separate-
-# project model (design.md §3.6.1): because non-prod is a different project,
+# project model: because non-prod is a different project,
 # every project-scoped name and both project-derived GCS bucket names are unique
 # per project, so nothing collides with prod. No name needs an env suffix.
 #

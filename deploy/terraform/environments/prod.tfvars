@@ -6,7 +6,7 @@
 # This file captures that same effective configuration explicitly so it can be
 # selected with `-var-file=environments/prod.tfvars`.
 #
-# Multi-environment model (design.md §3.6.1): DEFAULT = separate GCP project per
+# Multi-environment model: DEFAULT = separate GCP project per
 # environment. `project_id` is already a variable, so prod and non-prod live in
 # different projects; every project-scoped resource name (Cloud Run service,
 # Firestore DB, Artifact Registry repo, service accounts) and both GCS buckets

@@ -24,10 +24,15 @@ import os
 
 ANONYMOUS_USER_EMAIL = "anonymous@google.com"
 
-# NOTE: MIRRORED by the deploy/terraform LOW-3 serving-environment guard, which
-# hard-codes the same local-env set to decide when to refuse serving a mock
-# identity. The two lists must stay in sync — a value added here must be added to
-# the Terraform guard too (the TF side carries the reciprocal note).
+# MIRRORED by local.local_app_envs in deploy/terraform/gke/main.tf, the HCL list
+# the fail-closed APP_ENV plan-time precondition (terraform_data.gke_app_env_guard)
+# reads via contains() to decide whether a GKE Stage-2 apply may PROCEED -- a
+# plan-time apply gate, NOT the serving-time refusal (that is
+# validate_serving_environment in common/verified_identity.py). The two sets are a
+# fail-open-relevant pair with no automated detector: do NOT edit LOCAL_APP_ENVS
+# alone; mirror any add, removal, or rename to local.local_app_envs. An env this app
+# treats as local but missing there can pass the apply gate and derive
+# AUTH_MODE='local' (mock identity) on a managed platform.
 LOCAL_APP_ENVS = {"", "dev", "development", "local", "test"}
 TRUE_VALUES = {"1", "true", "yes", "on"}
 

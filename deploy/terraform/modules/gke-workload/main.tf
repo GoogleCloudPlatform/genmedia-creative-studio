@@ -153,17 +153,30 @@ resource "google_service_account_iam_member" "workload_identity" {
 # path via state-rm/import + manual GC). Rollback: the retired ConfigMap is not
 # retained as a rollback target (the module has no keep-previous logic, by
 # design); roll back by re-applying the previous config inputs (regenerates the
-# byte-identical previous ConfigMap) and kubectl set image to the previous
-# digest -- one pod-template change, same fail-safe invariants (never
-# old-image+gate-on); NOT kubectl rollout undo -- in this Terraform-owns-config
-# model rollout undo is out-of-band drift the next reconcile reverts, so it is
-# not a durable recovery even if it appears to work. (Post-success rollout undo
-# is moreover expected to fail outright -- the retired CM the prior ReplicaSet
-# references is gone; likely symptom CreateContainerConfigError -- expected, not
-# measured, cluster-bound like the wait above.) The stall-path property that old
-# pods keep serving rests on documented Kubernetes semantics (envFrom resolved
-# at pod start plus maxUnavailable=0) but is likewise not measured in our
-# cluster, to be observed at first apply.
+# byte-identical previous ConfigMap) and, separately, moving the image with
+# kubectl to the previous digest -- TWO rolls, not one, and their order is
+# load-bearing. The governing rule is the same fail-safe invariant that governs
+# the forward co-deploy -- "never an old image with the gate on" -- discharged
+# differently in each direction. FORWARD it is discharged by ATOMICITY: config
+# is Terraform-owned but the image is out-of-band under ignore_changes, and the
+# deploy pipeline carries both into a SINGLE Deployment rollout, so the three
+# elements land together and no ordering is required or possible. ROLLBACK
+# through Terraform has no single carrier for both -- Terraform owns the config
+# but ignore_changes bars it from moving the image -- so config and image move
+# in separate rolls, and the invariant is discharged by ORDER instead: clear the
+# gate (re-apply the previous config) FIRST, then move the image. Image-first
+# would stand up the old image with the gate still on -- the forbidden state --
+# so the two rolls must not be reversed and must not be read as the forward
+# atomic co-deploy run backwards. NOT kubectl rollout undo -- in this
+# Terraform-owns-config model rollout undo is out-of-band drift the next
+# reconcile reverts, so it is not a durable recovery even if it appears to work.
+# (Post-success rollout undo is moreover expected to fail outright -- the
+# retired CM the prior ReplicaSet references is gone; likely symptom
+# CreateContainerConfigError -- expected, not measured, cluster-bound like the
+# wait above.) The stall-path property that old pods keep serving rests on
+# documented Kubernetes semantics (envFrom resolved at pod start plus
+# maxUnavailable=0) but is likewise not measured in our cluster, to be observed
+# at first apply.
 resource "kubernetes_config_map_v1" "env" {
   metadata {
     name      = local.env_config_map_name

@@ -8,13 +8,14 @@ path on a real deploy.
 **This root is self-contained:** every knob the two-stage runbook below references
 (`iap_backend_service_id`, and the `APP_ENV`/`REQUIRE_AUTHENTICATED_USER` values it
 gates) exists in this GKE root, so the Stage-2 atomic co-deploy is executable end to
-end from here — no separate PR is required to complete it. (This mirrors the
-per-env S1+S3 wiring the Cloud Run root received in PR #1925 for native Cloud Run.)
+end from here — no separate PR is required to complete it. (PR #1925 tracks the
+equivalent per-env wiring for the Cloud Run root; it is a separate PR and is not
+required to complete this self-contained GKE root.)
 
 (S1/S2/S3 are the three co-deployed **ELEMENTS** — S1 the IAP JWT audience, S2 the
 identity-verifying image, S3 the fail-closed gate — distinct from the numbered
-rollout **STAGES** below. They must land atomically: never an old image with the
-gate on.)
+rollout **STAGES** below. They must land atomically:
+never an old image with the gate on.)
 
 ## The audience value
 

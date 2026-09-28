@@ -177,8 +177,15 @@ locals {
   # live boot — iap mode is only entered with a resolved non-empty aud in the same
   # revision. See the two-stage sequence + fail-safe table in gke/IAP_JWT_AUDIENCE.md.
   #
-  # Kept as a named local so the LOW-3 plan guard below and the intent here share
-  # one source of truth for the app's local set.
+  # Kept as a named local so the fail-closed APP_ENV plan guard below and the
+  # intent here share one source of truth for the app's local set. MIRRORED by
+  # LOCAL_APP_ENVS in common/identity.py -- a fail-open-relevant pair with no
+  # automated detector: do NOT edit local.local_app_envs alone; mirror any add,
+  # removal, or rename to LOCAL_APP_ENVS in common/identity.py. This is the
+  # plan-time FRONT of two independent layers; behind it the serving-time backstop
+  # (validate_serving_environment in common/verified_identity.py) refuses a local
+  # APP_ENV only on a platform that sets a marker (crash-loop, not a served mock
+  # identity), so where no marker is set this gate is the only layer that refuses.
   local_app_envs = ["", "dev", "development", "local", "test"]
   stage2_identity_env_vars = var.iap_backend_service_id != null ? {
     APP_ENV                    = var.environment

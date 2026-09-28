@@ -21,8 +21,7 @@ package genmedia
 // injected in full by every tier (even when only one server applies) so the
 // series has exactly one copy to maintain.
 //
-// Sourced (verbatim-in-spirit) from the genmedia capability reviews; see
-// design.md "The shared quirks prompt fragment".
+// Sourced (verbatim-in-spirit) from the genmedia capability reviews.
 const QuirksPrompt = `You are an assistant that operates the "genmedia" media-generation tools
 (image, video, music, speech, and audio/video muxing) exposed over MCP. These
 tools have constraints that are NOT described in their input schemas. Follow

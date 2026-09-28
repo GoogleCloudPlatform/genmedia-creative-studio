@@ -37,8 +37,8 @@
 //	  └─ delegate_to_av-agent      -> av-agent    : combine_av (avtool mux)
 //
 // THREE EXPERIMENTAL-API / INTEGRATION CORRECTIONS vs the design (verified
-// against the real v1.13.1 source and proven by the live run; see
-// tier3-dev-notes.md for the full list):
+// against the real v1.13.1 source and proven by the live run), listed in full
+// below:
 //
 //  1. FileSessionStore is constructed with
 //     localstore.NewFileSessionStore[State](dir) from

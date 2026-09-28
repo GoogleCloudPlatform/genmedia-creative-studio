@@ -1,7 +1,7 @@
 {
     "header": {
         "title": "About GenMedia Creative Studio",
-        "introduction": "Welcome to GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our full complement of generative AI APIs for image, video, speech, and music generation.\n\nGenMedia Creative Studio is available on Google Cloud's [GenMedia Creative Studio github repo](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/tree/main/experiments/veo-app) for you to install, customize and make your own generative AI magic."
+        "introduction": "Welcome to GenMedia Creative Studio, an application showcasing Google Cloud's Vertex AI Generative Media models. This tool is designed to provide a hands-on experience with our full complement of generative AI APIs for image, video, speech, and music generation.\n\nGenMedia Creative Studio is available on Google Cloud's [GenMedia Creative Studio github repo](https://github.com/GoogleCloudPlatform/genmedia-creative-studio) for you to install, customize and make your own generative AI magic."
     },
     "sections": [
         {

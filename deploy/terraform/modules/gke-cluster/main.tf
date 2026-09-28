@@ -20,8 +20,8 @@
 # resource (the cluster) and provisions no data-bearing state.
 #
 # Autopilot manages nodes, so there is intentionally NO google_container_node_pool
-# here (design.md's Standard-path node-pool language is overridden by the locked
-# Autopilot decision). deletion_protection is on the CLUSTER only (default false so
+# here: the Autopilot decision is locked, and it overrides the Standard-path
+# node-pool model. deletion_protection is on the CLUSTER only (default false so
 # a non-prod cluster can be torn down cleanly) and is never applied to any data
 # resource. The cluster depends on container.googleapis.com being enabled; the
 # root wires that ordering by passing the project-services `apis_ready` handle

@@ -59,9 +59,7 @@ whether a branch's content is on `main`. The ahead/behind numbers are noise here
 
 ## Worked example: the 111-branch cleanup
 
-A one-time audit inventoried the upstream repository's branches. (Source:
-`branch-cleanup/branch-audit.md`, `branch-cleanup/nopr-uniqueness-review.md`,
-`branch-cleanup/otelconfigure-vto-critique-explained.md`.)
+A one-time audit inventoried the upstream repository's branches.
 
 - **111 branches total** (110 candidates, excluding `main`).
 - **88 of them sat behind a MERGED PR** — their content was already on `main`, so they were safe to

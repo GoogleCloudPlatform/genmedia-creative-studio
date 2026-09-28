@@ -47,8 +47,7 @@ merge; a Nit is cleaned up but never holds a good change hostage.
 
 **PR #1728** — *`fix(run-veo-run): support multi-client Vertex locations and GA Veo models`* —
 was authored by the repository owner. Because the author never reviews their own change, it went
-to an independent reviewer. It took three rounds. (Source: `prs/1728-review.md`,
-`prs/1728-review-3.md`.)
+to an independent reviewer. It took three rounds.
 
 ### Round 1 — REQUEST-CHANGES
 

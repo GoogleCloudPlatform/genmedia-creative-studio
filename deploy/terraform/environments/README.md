@@ -62,8 +62,8 @@ Where `<env>` is `prod` or `nonprod` (staging). Examples:
 | non-prod | `../environments/nonprod.tfvars` | `creative-studio/staging` | `gs://<NONPROD_TF_STATE_BUCKET>` |
 
 The `creative-studio/prod` prefix matches the value committed in `backend.tf`;
-`creative-studio/staging` matches the proven staging stand-up
-(`staging-standup-report.md`).
+`creative-studio/staging` matches the proven staging stand-up (the worked,
+validated non-prod configuration in `nonprod.tfvars`).
 
 ## The isolated-state boundary (why `-reconfigure`)
 

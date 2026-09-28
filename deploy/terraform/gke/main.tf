@@ -32,14 +32,15 @@
 #   4. Creates a fresh Autopilot regional cluster (gke-cluster) and the workload
 #      Deployment/Service/Ingress/BackendConfig/HPA (gke-workload).
 #
-# PROVIDER BOOTSTRAP ORDERING (real-world nuance):
+# PROVIDER BOOTSTRAP ORDERING (real-world nuance — the P9c sequence):
 # the kubernetes/kubectl providers are configured from gke-cluster outputs
 # (endpoint + CA) plus a google_client_config token. On a from-scratch apply those
 # outputs are unknown until the cluster exists, which is the classic
 # provider-config-depends-on-resource bootstrap problem. This is resolved with a
-# TWO-STAGE apply: apply the cluster (and APIs) first with -target, then a full
-# apply once the provider inputs are known. A single `terraform validate` is
-# fully offline (no cluster needed); only the real apply needs the two stages.
+# TWO-STAGE apply (the P9c sequence): apply the cluster (and APIs) first with
+# -target, then a full apply once the provider inputs are known. A single
+# `terraform validate` is fully offline (no cluster needed); only the real apply
+# needs the two stages.
 # ---------------------------------------------------------------------------
 
 terraform {
@@ -91,8 +92,8 @@ provider "google-beta" {
 # Cluster-scoped provider auth for the kubernetes/kubectl providers, sourced from
 # the gke-cluster outputs + a short-lived google_client_config token. On a
 # from-scratch apply these are unknown until the cluster exists, which is why the
-# cluster must be applied first with -target (see the two-stage apply note in the
-# header comment above).
+# cluster must be applied first with -target (see the two-stage P9c apply
+# sequence in the header comment above).
 data "google_client_config" "default" {}
 
 provider "kubernetes" {

@@ -50,8 +50,7 @@ naming the conflicting requirement — a real, reproducible signal, not a guess.
 ## Two real catches
 
 Both of the following came from the same review pass. **Both had green CI.** Both would have
-shipped broken if CI and the bot description had been trusted. (Source:
-`chore-pr-assessments/wave3-validation-result.md`.)
+shipped broken if CI and the bot description had been trusted.
 
 ### Catch #1 — deepdiff 8.6.2 → 9.1.0 (PR #1714) — HELD
 

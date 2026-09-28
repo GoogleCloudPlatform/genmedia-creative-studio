@@ -1,7 +1,7 @@
 # environments/nonprod.tfvars — non-production (staging) configuration (Phase 5).
 #
 # This is a WORKED, PROVEN example: this exact var set was validated end-to-end
-# by the staging stand-up (staging-standup-report.md), which applied cleanly
+# by the staging stand-up, which applied cleanly
 # against a SEPARATE non-prod project with the SAME hardcoded resource names
 # as prod — 47 added, 0 changed, 0 destroyed. It demonstrates the separate-
 # project model: because non-prod is a different project,

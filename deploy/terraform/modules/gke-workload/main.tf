@@ -112,7 +112,7 @@ resource "google_service_account_iam_member" "workload_identity" {
 # --- Config & secrets (parity with Cloud Run; secret path dormant by default) -
 
 # Vuln #4 (the content-hashed immutable-ConfigMap mechanism):
-# versioned/immutable ConfigMap. The NAME is content- hashed
+# versioned/immutable ConfigMap. The NAME is content-hashed
 # (local.env_config_map_name) and the object is `immutable = true`, so it can
 # NEVER be mutated in place — an env change produces a brand-new ConfigMap under
 # a new name instead. The new ConfigMap exists BEFORE the pod template switches

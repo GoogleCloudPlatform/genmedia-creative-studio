@@ -252,6 +252,8 @@ resource "kubernetes_deployment_v1" "workload" {
     }
   }
 
+  wait_for_rollout = true # gates removal of the retired hashed ConfigMap (see env ConfigMap comment)
+
   # Preserve the out-of-band image/deploy contract: the image is rolled by the
   # deploy pipeline, so Terraform ignores in-place changes to it (parity with the
   # Cloud Run service's ignore_changes on the image field).

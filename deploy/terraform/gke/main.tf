@@ -329,7 +329,7 @@ resource "terraform_data" "gke_app_env_guard" {
   lifecycle {
     precondition {
       condition     = !contains(local.local_app_envs, local.stage2_identity_env_vars.APP_ENV)
-      error_message = "Vuln #4 LOW-3 misconfig: GKE Stage-2 co-deploy resolved APP_ENV='${try(local.stage2_identity_env_vars.APP_ENV, "")}', which is in the app's LOCAL set {\"\", dev, development, local, test} and would derive AUTH_MODE='local' (mock identity, fail-open) on a managed platform. Set var.environment to a non-local value (e.g. \"prod\") so AUTH_MODE derives to 'iap'."
+      error_message = "Vuln #4 fail-closed APP_ENV guard: this GKE Stage-2 co-deploy resolved APP_ENV='${try(local.stage2_identity_env_vars.APP_ENV, "")}', which is in the app's LOCAL set {\"\", dev, development, local, test}. The app would then derive AUTH_MODE='local' and use a MOCK identity. On GKE the serving-time backstop (validate_serving_environment in common/verified_identity.py) would see the platform marker and refuse to serve, so the rollout crash-loops rather than serving that mock identity -- but that backstop only refuses where a marker is set, and this gate does not depend on one. Refusing the apply now makes the misconfiguration visible before the rollout instead of as a broken deploy. Fix, either: set var.environment to a non-local value (e.g. \"prod\") to proceed with Stage 2; or set var.iap_backend_service_id = null to return to Stage 1, where none of APP_ENV / REQUIRE_AUTHENTICATED_USER / IAP_JWT_AUDIENCE is rendered, iap mode is unreachable, and this guard is inert."
     }
   }
 }

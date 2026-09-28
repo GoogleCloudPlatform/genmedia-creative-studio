@@ -73,10 +73,15 @@ locals {
   # ConfigMap NAME (never an in-place mutation of a fixed name). A new name flows
   # into the Deployment pod template (env_from.config_map_ref.name below), which
   # rolls a NEW ReplicaSet — so the env change and the (out-of-band) image roll are
-  # carried by a single pod-template update and old-RS pods keep referencing the
-  # OLD immutable ConfigMap on any restart. The hash input is deterministic
-  # (jsonencode sorts map keys; no timestamps/random), so a re-render of the same
-  # env produces the same name => a `terraform apply` reconcile is a no-op.
+  # carried by a single pod-template update. While the roll is in flight both
+  # ConfigMaps coexist (`create_before_destroy`; `wait_for_rollout` gates removal),
+  # so an old-RS pod that RESTARTS can still resolve the OLD immutable ConfigMap
+  # (`envFrom` resolves at pod start, so a restart re-reads it). That holds only
+  # while the retired CM still exists — it is NOT retained as a rollback target
+  # once removed; see the note on kubernetes_config_map_v1.env below. The hash
+  # input is deterministic (jsonencode sorts map keys; no timestamps/random), so
+  # a re-render of the same env produces the same name => a `terraform apply`
+  # reconcile is a no-op.
   env_config_map_name = "${var.name}-env-${substr(sha256(jsonencode(var.env_vars)), 0, 10)}"
 }
 

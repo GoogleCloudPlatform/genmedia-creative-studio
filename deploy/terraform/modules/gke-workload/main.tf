@@ -68,19 +68,21 @@ locals {
   # and via secretKeyRef (by name), never expanded into config here.
   secret_env_keys = nonsensitive(toset(keys(var.secret_env)))
 
-  # Vuln #4 (mechanism (b)) — versioned/immutable ConfigMap name. The name embeds a
-  # content hash of the env data map so that ANY change to env_vars yields a NEW
-  # ConfigMap NAME (never an in-place mutation of a fixed name). A new name flows
-  # into the Deployment pod template (env_from.config_map_ref.name below), which
-  # rolls a NEW ReplicaSet — so the env change and the (out-of-band) image roll are
-  # carried by a single pod-template update. Both ConfigMaps are REASONED to coexist
-  # while the roll is in flight (`create_before_destroy`; the destroy EDGE is
-  # statically measured, but destroy-after-rollout-COMPLETION is the composite
-  # through the unmeasured wait — reasoned, NOT measured), so an old-RS pod that
-  # RESTARTS would still resolve the OLD immutable ConfigMap (`envFrom` resolves at
-  # pod start, so a restart re-reads it). Stall-path safety does NOT rest on that:
-  # already-running old pods are unaffected by removal of the retired CM. The retired
-  # CM is NOT retained as a rollback target; see the note on
+  # Vuln #4 (the content-hashed immutable-ConfigMap mechanism) — versioned/immutable
+  # ConfigMap name. The name embeds a content hash of the env data map so that ANY
+  # change to env_vars yields a NEW ConfigMap NAME (never an in-place mutation of a
+  # fixed name). A new name flows into the Deployment pod template
+  # (env_from.config_map_ref.name below), which rolls a NEW ReplicaSet — so the env
+  # change and the (out-of-band) image roll are carried by a single pod-template
+  # update. Both ConfigMaps are REASONED to coexist while the roll is in flight
+  # (`create_before_destroy`; the destroy EDGE is statically measured, but
+  # destroy-after-rollout-COMPLETION is the composite through the unmeasured wait —
+  # reasoned, NOT measured), so an old-RS pod that RESTARTS would still resolve the
+  # OLD immutable ConfigMap (`envFrom` resolves at pod start, so a restart re-reads
+  # it). Stall-path safety does NOT rest on that: already-running old pods are
+  # unaffected by removal of the retired CM (documented Kubernetes semantics, not
+  # measured in our cluster -- see the bound on kubernetes_config_map_v1.env below).
+  # The retired CM is NOT retained as a rollback target; see the note on
   # kubernetes_config_map_v1.env below. The hash input is deterministic (jsonencode
   # sorts map keys; no timestamps/random), so a re-render of the same env produces
   # the same name => a `terraform apply` reconcile is a no-op.
@@ -109,12 +111,13 @@ resource "google_service_account_iam_member" "workload_identity" {
 
 # --- Config & secrets (parity with Cloud Run; secret path dormant by default) -
 
-# Vuln #4 (mechanism (b)): versioned/immutable ConfigMap. The NAME is content-
-# hashed (local.env_config_map_name) and the object is `immutable = true`, so it
-# can NEVER be mutated in place — an env change produces a brand-new ConfigMap
-# under a new name instead. The new ConfigMap exists BEFORE the pod template
-# switches to it (ordering basis stated below), so the Deployment can always
-# resolve its config_map_ref during the roll.
+# Vuln #4 (the content-hashed immutable-ConfigMap mechanism):
+# versioned/immutable ConfigMap. The NAME is content- hashed
+# (local.env_config_map_name) and the object is `immutable = true`, so it can
+# NEVER be mutated in place — an env change produces a brand-new ConfigMap under
+# a new name instead. The new ConfigMap exists BEFORE the pod template switches
+# to it (ordering basis stated below), so the Deployment can always resolve its
+# config_map_ref during the roll.
 #
 # Content-hashed immutable name: a changed env set produces a new ConfigMap.
 # Creation ordering is enforced by a real resource reference (Deployment
@@ -130,35 +133,38 @@ resource "google_service_account_iam_member" "workload_identity" {
 # maxUnavailable=0/maxSurge=1 roll does not recreate old-RS pods. Ordering of
 # the retired-CM destroy relative to the Deployment update: the apply graph
 # sequences the deposed-CM destroy after the Deployment update, and this EDGE is
-# statically measured on two independent harnesses (a real-module graph and a
-# provider-schema-generated skeleton). The two COMPOSE rather than agree: one
-# rules the HPA hop out as the carrier, the other (a two-by-two control matrix)
-# identifies the ConfigMap->Deployment dependency as the actual carrier and
-# finds it redundantly held (config reference plus depends_on). A bare 'a direct
-# edge appears' is NOT diagnostic of why -- both controls can produce that shape
-# from different causes. Bound: what is measured is the graph edge (a
-# reachability rendering; the path runs through the HPA, which Terraform
-# transitively reduces), NOT the executor's runtime order. The inference from
-# edge to strict execution order relies on Terraform's walker honouring
-# reachability -- a single link that is reasoned and merely held twice by both
-# methods, not independently confirmed; this comment does not claim the
-# execution-order inference is measured. Separately, that the destroy lands
-# after the roll is healthy (not merely after the update step is scheduled) is
-# wait_for_rollout runtime behavior, still to be observed at the first ordinary
-# terraform-driven env-change apply (NOT this Phase-5 co-deploy, which bypasses
-# the TF destroy path via state-rm/import + manual GC). See runbook prove-it.
-# Rollback: the retired ConfigMap is not retained as a rollback target (the
-# module has no keep-previous logic, by design); roll back by re-applying the
-# previous config inputs (see runbook), NOT kubectl rollout undo -- in this
-# Terraform-owns-config model rollout undo is out-of-band drift the next
-# reconcile reverts, so it is not a durable recovery even if it appears to work.
-# (Post-success rollout undo is moreover expected to fail outright -- the
-# retired CM the prior ReplicaSet references is gone; likely symptom
-# CreateContainerConfigError -- expected, not measured, cluster-bound like the
-# wait above.) The stall-path property that old pods keep serving rests on
-# documented Kubernetes semantics (envFrom resolved at pod start plus
-# maxUnavailable=0) but is likewise not measured in our cluster, to be observed
-# at first apply.
+# statically measured on two harnesses over the SAME REAL MODULE, differing in
+# how prior state was produced (hand-authored vs provider-schema-generated
+# attribute skeletons) -- independent in execution and in control design, not in
+# the module under test. The two COMPOSE rather than agree: one rules the HPA
+# hop out as the carrier, the other (a two-by-two control matrix) identifies the
+# ConfigMap->Deployment dependency as the actual carrier and finds it
+# redundantly held (config reference plus depends_on). A bare 'a direct edge
+# appears' is NOT diagnostic of why -- both controls can produce that shape from
+# different causes. Bound: what is measured is the graph edge (a reachability
+# rendering; the path runs through the HPA, which Terraform transitively
+# reduces), NOT the executor's runtime order. The inference from edge to strict
+# execution order relies on Terraform's walker honouring reachability -- a
+# single link that is reasoned and merely held twice by both methods, not
+# independently confirmed; this comment does not claim the execution-order
+# inference is measured. Separately, that the destroy lands after the roll is
+# healthy (not merely after the update step is scheduled) is wait_for_rollout
+# runtime behavior, still to be observed at the first ordinary terraform-driven
+# env-change apply (NOT this Phase-5 co-deploy, which bypasses the TF destroy
+# path via state-rm/import + manual GC). Rollback: the retired ConfigMap is not
+# retained as a rollback target (the module has no keep-previous logic, by
+# design); roll back by re-applying the previous config inputs (regenerates the
+# byte-identical previous ConfigMap) and kubectl set image to the previous
+# digest -- one pod-template change, same fail-safe invariants (never
+# old-image+gate-on); NOT kubectl rollout undo -- in this Terraform-owns-config
+# model rollout undo is out-of-band drift the next reconcile reverts, so it is
+# not a durable recovery even if it appears to work. (Post-success rollout undo
+# is moreover expected to fail outright -- the retired CM the prior ReplicaSet
+# references is gone; likely symptom CreateContainerConfigError -- expected, not
+# measured, cluster-bound like the wait above.) The stall-path property that old
+# pods keep serving rests on documented Kubernetes semantics (envFrom resolved
+# at pod start plus maxUnavailable=0) but is likewise not measured in our
+# cluster, to be observed at first apply.
 resource "kubernetes_config_map_v1" "env" {
   metadata {
     name      = local.env_config_map_name
@@ -198,21 +204,21 @@ resource "kubernetes_deployment_v1" "workload" {
   spec {
     replicas = var.replicas_min
 
-    # Vuln #4 (mechanism (b)): explicit RollingUpdate with
-    # maxUnavailable=0/maxSurge=1 (the strategy VALUES are configured fact); under
-    # those values Kubernetes is documented to keep the OLD ReplicaSet serving
-    # until the new pods are Ready (documented semantics, not measured in our
-    # cluster -- see the stall-path note in the env ConfigMap comment).
-    # maxUnavailable=0 means no old pod is torn down before a new pod passes its
-    # readiness probe; maxSurge=1 brings up one new pod at a time. When a new pod
-    # CrashLoops on the app's startup FATAL (e.g. iap-mode with an unset audience,
-    # or a local-mode-on-managed-platform backstop), if it never becomes Ready, the
-    # rollout STALLS and the old ReplicaSet keeps serving = fail-safe DOWN -- this
-    # fail-safe-down CONSEQUENCE rests on documented Kubernetes semantics
-    # (maxUnavailable=0) and is NOT measured in our cluster; to be observed at
-    # first apply, same tier as the wait (see the env ConfigMap comment). NOT
-    # Recreate (which would tear down the old pods first and open an outage /
-    # bad-state window).
+    # Vuln #4 (the content-hashed immutable-ConfigMap mechanism): explicit
+    # RollingUpdate with maxUnavailable=0/maxSurge=1 (the strategy VALUES are
+    # configured fact); under those values Kubernetes is documented to keep the OLD
+    # ReplicaSet serving until the new pods are Ready (documented semantics, not
+    # measured in our cluster -- see the stall-path note in the env ConfigMap
+    # comment). maxUnavailable=0 means no old pod is torn down before a new pod
+    # passes its readiness probe; maxSurge=1 brings up one new pod at a time. When
+    # a new pod CrashLoops on the app's startup FATAL (e.g. iap-mode with an unset
+    # audience, or a local-mode-on-managed-platform backstop), if it never becomes
+    # Ready, the rollout STALLS and the old ReplicaSet keeps serving = fail-safe
+    # DOWN -- this fail-safe-down CONSEQUENCE rests on documented Kubernetes
+    # semantics (maxUnavailable=0) and is NOT measured in our cluster; to be
+    # observed at first apply, same tier as the wait (see the env ConfigMap
+    # comment). NOT Recreate (which would tear down the old pods first and open an
+    # outage / bad-state window).
     strategy {
       type = "RollingUpdate"
       rolling_update {

@@ -159,10 +159,11 @@ locals {
   #   - REQUIRE_AUTHENTICATED_USER: gate on "no verified identity" (fail closed).
   #   - IAP_JWT_AUDIENCE: the GKE/Compute LB form
   #       /projects/<PROJECT_NUMBER>/global/backendServices/<NUMERIC_ID>
-  #     (confirmed iap-jwt-audience-facts.md §A row 3). PROJECT_NUMBER from the
-  #     data source (never hardcoded); the NUMERIC backend-service id is NOT
-  #     knowable at plan/apply — the GKE Ingress/NEG controller auto-creates the
-  #     backend service ASYNCHRONOUSLY AFTER apply, so its numeric id is supplied
+  #     (format per IAP signed-headers-howto; see
+  #     deploy/terraform/gke/IAP_JWT_AUDIENCE.md). PROJECT_NUMBER from the data
+  #     source (never hardcoded); the NUMERIC backend-service id is NOT knowable at
+  #     plan/apply — the GKE Ingress/NEG controller auto-creates the backend
+  #     service ASYNCHRONOUSLY AFTER apply, so its numeric id is supplied
   #     OUT-OF-BAND on a SECOND apply via var.iap_backend_service_id (mirroring the
   #     existing out-of-band var.iap_backend_service_name flow — that variable is
   #     the NAME, fine for the IAM binding; the aud additionally needs the NUMERIC

@@ -16,8 +16,7 @@ per-env S1+S3 wiring the Cloud Run root received in PR #1925 for native Cloud Ru
 The app cryptographically verifies the IAP-signed `X-Goog-IAP-JWT-Assertion` and
 checks its `aud` claim against `IAP_JWT_AUDIENCE`. For the **GKE
 Ingress/BackendConfig** topology the audience uses the Compute/GKE load-balancer
-form (confirmed from the IAP *signed-headers-howto* doc — see
-`infra-modernization/iap-jwt-audience-facts.md` §A row 3):
+form (confirmed from the IAP *signed-headers-howto* doc):
 
 ```
 /projects/<PROJECT_NUMBER>/global/backendServices/<NUMERIC_BACKEND_SERVICE_ID>

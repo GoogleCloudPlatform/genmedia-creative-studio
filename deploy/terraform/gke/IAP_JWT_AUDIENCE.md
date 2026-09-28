@@ -14,8 +14,11 @@ required to complete this self-contained GKE root.)
 
 (S1/S2/S3 are the three co-deployed **ELEMENTS** — S1 the IAP JWT audience, S2 the
 identity-verifying image, S3 the fail-closed gate — distinct from the numbered
-rollout **STAGES** below. They must land atomically:
-never an old image with the gate on.)
+rollout **STAGES** below.) The three elements must land atomically:
+
+```text
+never an old image with the gate on
+```
 
 ## The audience value
 

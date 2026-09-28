@@ -107,10 +107,16 @@ resource "google_service_account_iam_member" "workload_identity" {
 # can NEVER be mutated in place — an env change produces a brand-new ConfigMap
 # under a new name instead. `create_before_destroy` makes the new ConfigMap exist
 # BEFORE the pod template switches to it (and before the old one is destroyed), so
-# the Deployment can always resolve its config_map_ref during the roll. Old,
-# now-unreferenced ConfigMaps are GC'd out-of-band after the old ReplicaSet
-# retires (see gke/../phase5-gke-apply.md GC step) — Terraform does not mutate the
-# retired object, it simply stops managing that name once no template references it.
+# the Deployment can always resolve its config_map_ref during the roll.
+#
+# Content-hashed immutable name: a changed env set produces a new ConfigMap;
+# under `create_before_destroy` the new CM is created and the Deployment rolled
+# before the retired CM is removed (`wait_for_rollout` gates removal), so a
+# stalled roll is safe and running old pods are unaffected (`envFrom` resolves
+# at pod start). The retired CM is NOT retained as a rollback target —
+# post-success `kubectl rollout undo` will fail (`CreateContainerConfigError`).
+# Roll back by re-applying the previous config inputs (see runbook), not by
+# `rollout undo`.
 resource "kubernetes_config_map_v1" "env" {
   metadata {
     name      = local.env_config_map_name

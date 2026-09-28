@@ -27,10 +27,9 @@ Promptlandia offers several core tools for prompt engineering:
 This project uses the **Vibe Tasking** methodology for task management and AI-assisted development.
 
 *   **Methodology:** We follow a structured approach using "Stories" and "AI Guides" to maintain context and ensure high-quality AI contributions.
-*   **Location:** The Vibe Tasking framework and documentation are **vendored** in the `planning/vibe-tasking/` directory.
-    *   *Note:* We chose to vendor (copy) these files rather than using a Git Submodule to ensure compatibility with the larger monorepo structure this project is part of.
-*   **Usage:** Developers and AI assistants should refer to `planning/vibe-tasking/README.md` and the `CONTEXT.md` file in the project root to understand the workflow.
-*   **Roadmap:** Critical architectural plans are located in `planning/CRITICAL_ROADMAP.md` and `planning/IMPLEMENTATION_PLAN.md`.
+
+*Note:* the Vibe Tasking framework files, roadmap and implementation plan are not
+vendored into this repository; they are maintained outside it.
 
 ## Running the Application
 

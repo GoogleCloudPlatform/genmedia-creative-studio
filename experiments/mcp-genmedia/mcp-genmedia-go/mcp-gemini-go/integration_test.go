@@ -30,7 +30,7 @@ import (
 // uploaded. It asserts that a single output_filename produces the same
 // deterministic, extension-forced, 1-based-suffixed names on BOTH sinks at once —
 // the local file tree and the GCS object names — proving the naming is computed
-// once and applied consistently across destinations (design §4b/§4c).
+// once and applied consistently across destinations.
 //
 // TestProcessGeminiImageResponseNaming already covers the name computation via an
 // injected writeFileFn; this test additionally proves the real os.WriteFile lands

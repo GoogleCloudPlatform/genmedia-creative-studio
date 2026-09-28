@@ -5,17 +5,10 @@ Welcome! To effectively assist with tasks related to the Promptlandia project, p
 **A Note on Our Collaborative Ethos:**
 As an AI assistant contributing to Promptlandia, please remember that your role extends beyond mere execution. We view you as a thinking partner. In all interactions and tasks, strive to understand intent, leverage your analytical capabilities to offer insights, and engage in iterative refinement. Applying these collaborative principles consistently is key to our shared success and the spirit of this project.
 
-## Core Discovery Process (Vibe Tasking - CRITICAL)
+## Core Discovery Process
 
-1.  **AI Guide Discovery Process:**
-    - **File:** `planning/vibe-tasking/ai-guides/core/ai-guides/ai-guides-discovering-guide.md`
-    - **Purpose:** This core guide details the definitive process for how to discover, index, and use all AI Guides. You **MUST** trust this path and attempt to read it directly to find other project-specific guidance.
-2.  **Critical Roadmap & Architecture:**
-    - **File:** `planning/CRITICAL_ROADMAP.md`
-    - **Purpose:** A harsh, internal critique of the codebase and the high-level architectural strategy for refactoring.
-3.  **Implementation Plan:**
-    - **File:** `planning/IMPLEMENTATION_PLAN.md`
-    - **Purpose:** Detailed, step-by-step instructions for executing the roadmap, including regression testing strategies.
+Start from `developers_guide.md` in this directory, then read the module layout
+below. `README.md` covers setup and how to run the app.
 
 ## Project Structure Overview
 
@@ -27,7 +20,6 @@ As an AI assistant contributing to Promptlandia, please remember that your role 
 - **`services/`**: Core business logic layer (e.g., `PromptChecklist`, `PromptImprover`, `LLMClient`).
 - **`state/`**: Manages the application's reactive state.
 - **`tests/`**: Contains unit tests (`tests/unit/`) and end-to-end tests using Playwright (`tests/test_e2e.py`).
-- **`planning/`**: Vibe Tasking framework, stories, journals, and project plans.
 - **`developers_guide.md`**: Provides a more detailed, human-oriented guide.
 
 ## Development Workflow

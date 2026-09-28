@@ -50,7 +50,7 @@ class Profile:
       shot_media: what each per-shot slot produces —
         "clips": photoshoot still -> Veo clip (director); the ad path.
         "stills": photoshoot still ONLY (no director, no Veo); the storyboard
-        path (addendum §6: cheaper/faster/deterministic docs tool).
+        path (cheaper/faster/deterministic docs tool).
       assembler_recipe: which assembly the assembler runs —
         "video_ad_concat": concat clips + mix music/VO + trim + combine (ad).
         "stills_animatic": stills -> silent slideshow + mix music/narration +
@@ -61,8 +61,7 @@ class Profile:
       plan_state_key: the session-state key the planner writes its schema-
         validated plan to and every downstream stage reads via `{key}`
         templating. "ad_plan" for the ad profile (unchanged from PR-5), "plan"
-        for the storyboard profile (the key the addendum §4.2d/§4.4 packager
-        reads).
+        for the storyboard profile (the key the packager reads).
       enable_qc: when True, the 4th (assembler) stage is wrapped in a `LoopAgent`
         — the "Editor's QC Room" (PR-7). The assembler runs FIRST each iteration
         (builds/rebuilds the cut) and a critic runs SECOND: it MEASURES the cut
@@ -144,6 +143,6 @@ STORYBOARD_PROFILE = Profile(
     plan_state_key="plan",
     # PR-7: the storyboard animatic also gets the Editor's QC Room (profile-
     # agnostic). Its critic uses NO duration budget — only existence + audio/video
-    # sync — because the storyboard is board-paced (addendum §6).
+    # sync — because the storyboard is board-paced.
     enable_qc=True,
 )

@@ -191,7 +191,7 @@ func TestInteractionsClientCreateAPIError(t *testing.T) {
 }
 
 // TestFromLibResponseDrift proves the adopted library decodes the observed live
-// drift (findings §3) and that fromLibResponse + mapOmniResponse recover the video.
+// drift and that fromLibResponse + mapOmniResponse recover the video.
 // The library ignores the wire's created/updated timestamps and the thought step's
 // array "summary"/"signature" (unknown fields), which must not be fatal.
 func TestFromLibResponseDrift(t *testing.T) {

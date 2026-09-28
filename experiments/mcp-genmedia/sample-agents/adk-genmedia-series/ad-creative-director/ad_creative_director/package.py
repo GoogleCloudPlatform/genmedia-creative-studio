@@ -142,8 +142,8 @@ def build_manifest(
       suite_version: the genmedia suite version; defaults to `_suite_version()`.
 
     Returns:
-      The manifest dict (manifest_version "1"; see module docstring / addendum
-      §4.2c). The caller writes it to manifest.json.
+      The manifest dict (manifest_version "1"; see module docstring). The caller
+      writes it to manifest.json.
     """
     created = created or _utc_now_iso()
     suite_version = suite_version or _suite_version()

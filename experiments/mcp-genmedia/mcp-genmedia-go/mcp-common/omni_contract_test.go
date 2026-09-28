@@ -22,7 +22,7 @@ package common
 // pipeline end to end: library HTTP + JSON decode -> fromLibResponse ->
 // mapOmniResponse -> generateOmniVideoWithClient aggregation. This is the check that
 // would catch a library bump silently changing the wire contract, and it proves
-// the observed live drift (findings §3) survives the concrete transport, not just
+// the observed live drift survives the concrete transport, not just
 // the suite's structs. No live API call is made.
 
 import (

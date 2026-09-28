@@ -259,7 +259,7 @@ func TestExtensionForMIMETypeFallback(t *testing.T) {
 }
 
 // TestResolveOutputFilename covers the shared accept-and-alias precedence
-// contract (§4a): output_filename wins, then the first non-empty legacy alias
+// contract: output_filename wins, then the first non-empty legacy alias
 // (in order), then "" (caller falls back to its default scheme).
 func TestResolveOutputFilename(t *testing.T) {
 	tests := []struct {

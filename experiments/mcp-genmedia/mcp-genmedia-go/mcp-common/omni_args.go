@@ -37,7 +37,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-// maxOmniImages is the per-prompt image input limit (findings §1).
+// maxOmniImages is the per-prompt image input limit.
 const maxOmniImages = 10
 
 // maxInlineMediaBytes caps the size of a local media file that will be read into
@@ -216,7 +216,7 @@ func RenderOmniResult(ctx context.Context, result *OmniResult, outputDir, gcsBuc
 			fileName = names[n]
 		}
 
-		// Collision policy: overwrite with a warning (design §4e). Surface a local
+		// Collision policy: overwrite with a warning. Surface a local
 		// collision before the shared seam truncates the file.
 		if outputDir != "" {
 			if _, statErr := os.Stat(filepath.Join(outputDir, fileName)); statErr == nil {

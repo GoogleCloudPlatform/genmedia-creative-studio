@@ -236,7 +236,7 @@ def _load_scriptwriter_tool() -> AgentTool:
 
     The storyboard profile REUSES the scriptwriter LEAF (the text beat author,
     output_key="shot_list"), NOT the storyboarder image half — in this profile the
-    stills come from the shot stage reusing Photoshoot (addendum §4.4). Importing
+    stills come from the shot stage reusing Photoshoot. Importing
     scriptwriter_storyboarder.agent constructs its SequentialAgent, which sets
     `scriptwriter.parent_agent`; that is fine — AgentTool runs the wrapped agent in
     its OWN Runner and never adds it to a sub_agents list, so there is no "already
@@ -305,7 +305,7 @@ Return ONLY the plan as JSON matching the required schema — no preamble.
 # The storyboard planner's construct-level base. Unlike the ad planner it (a)
 # has a TOOL — it REUSES PR-4's scriptwriter to author the editorial beats rather
 # than re-authoring beat planning from scratch — and (b) has NO duration budget
-# (board-paced, addendum §6). `output_schema` (StoryboardPlan) and `tools` are
+# (board-paced). `output_schema` (StoryboardPlan) and `tools` are
 # used TOGETHER: ADK exposes the tool during the thought loop and enforces the
 # schema only on the final reply (llm_agent.py:404-418, docstring verbatim: "The
 # ADK supports using output_schema and tools together. It works by exposing tools
@@ -434,8 +434,8 @@ fabricate a path or URI.
 
 # ---------------------------------------------------------------------------
 # Stills-only shot slot (storyboard profile). NO director, NO Veo anywhere —
-# addendum §6: the storyboard is a stills board (cheaper/faster/deterministic
-# docs tool). Each slot reuses ONLY the Photoshoot persona and saves its still
+# the storyboard is a stills board (cheaper/faster/deterministic docs tool).
+# Each slot reuses ONLY the Photoshoot persona and saves its still
 # into the package's shots/ dir with an index-derived name the deterministic
 # packager can predict (shot-0N.png). Reads its panel from state[<plan key>]
 # and the destination dir from state['shots_dir'] (both seeded by the package

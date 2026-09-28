@@ -28,7 +28,7 @@ import (
 // (RenameGCSObjects) exactly as imagen/veo wire them. The GCS I/O is routed
 // through the in-memory fakeGCS seam, so no bucket or credentials are needed. It
 // asserts the deterministic 1-based suffix / no-suffix rules survive the rename
-// and that every source object ends up removed (design §4c/§4d).
+// and that every source object ends up removed.
 func TestIntegrationBuildNamesThenRename(t *testing.T) {
 	const (
 		bucket = "bkt"
@@ -100,7 +100,7 @@ func TestIntegrationBuildNamesThenRename(t *testing.T) {
 
 // TestIntegrationGCSRenameLiveRoundTrip exercises the real copy-rename against a
 // live bucket end-to-end: it uploads two objects, renames them via
-// RenameGCSObjects (the exact §4d copy-fatal/delete-nonfatal helper imagen/veo
+// RenameGCSObjects (the exact copy-fatal/delete-nonfatal helper imagen/veo
 // use), verifies the destinations exist and the sources are gone, then cleans up.
 //
 // It requires real GCS access and is therefore gated behind GENMEDIA_BUCKET: when

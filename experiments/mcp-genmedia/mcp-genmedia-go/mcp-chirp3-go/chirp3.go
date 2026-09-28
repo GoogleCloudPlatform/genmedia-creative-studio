@@ -482,9 +482,9 @@ func main() {
 const chirpAudioMIMEType = "audio/wav"
 
 // resolveChirpOutputFilename decides the saved audio filename. The canonical
-// output_filename wins over the deprecated output_filename_prefix (design §4a):
+// output_filename wins over the deprecated output_filename_prefix:
 // when set, it yields a client-predictable base name with the extension forced to
-// the true audio MIME (design §4b) — a single artifact is used as-is (<stem>.wav),
+// the true audio MIME — a single artifact is used as-is (<stem>.wav),
 // multiple would be suffixed _1..n by the shared helper. When only the legacy
 // prefix (or neither) is provided, the historical <prefix>-<voice>-<timestamp>.wav
 // scheme is preserved byte-for-byte.
@@ -506,9 +506,9 @@ func resolveChirpOutputFilename(args map[string]any, voiceName string) (string, 
 }
 
 // saveChirpAudio wires the resolved output_filename through to the local file
-// write: it resolves the client-predictable name (§4a/§4b via
+// write: it resolves the client-predictable name (via
 // resolveChirpOutputFilename), joins it under outputDir, applies the
-// collision-overwrite warning (§4e), and writes the bytes through the injectable
+// collision-overwrite warning, and writes the bytes through the injectable
 // writeFileFn seam. It returns the cleaned saved path. A name-resolution failure is
 // returned as nameErr (fatal to the caller); a write failure as writeErr (the
 // caller falls back to returning the audio inline). Splitting the two errors
@@ -531,7 +531,7 @@ func saveChirpAudio(args map[string]any, audioBytes []byte, outputDir, voiceName
 		return "", nil, mkErr
 	}
 	savedFilename = filepath.Join(confinedDir, genFilename)
-	// Collision policy: overwrite with a warning (design §4e).
+	// Collision policy: overwrite with a warning.
 	if _, statErr := os.Stat(savedFilename); statErr == nil {
 		log.Printf("Warning: output file %q already exists in %s; overwriting (collision policy).", genFilename, outputDir)
 	}

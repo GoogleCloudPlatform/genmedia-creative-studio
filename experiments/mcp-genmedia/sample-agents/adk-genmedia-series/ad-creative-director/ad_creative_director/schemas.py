@@ -173,9 +173,9 @@ class AdPlan(BaseModel):
 # ============================================================================
 # The storyboard profile is a SECOND audience for the same engine (see
 # profiles.py / agent.py). It is board-paced and narration-driven, NOT ad-
-# budgeted: there is deliberately NO veo, NO clip, and — per the design addendum
-# §6 ("Duration model: board-paced; narration length drives it, not a hard ad
-# budget") — NO hard duration budget. Consequences for this schema:
+# budgeted: there is deliberately NO veo, NO clip, and — because the duration
+# model is board-paced, narration length driving it rather than a hard ad
+# budget — NO hard duration budget. Consequences for this schema:
 #   * StoryboardShot carries NO `duration_seconds` (stills, not Veo clips), so
 #     the Veo-3 duration grid is irrelevant here.
 #   * StoryboardPlan carries NO total-duration field, so the AdPlan aggregate

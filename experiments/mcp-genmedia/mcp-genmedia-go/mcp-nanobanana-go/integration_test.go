@@ -69,7 +69,7 @@ func TestIntegrationNanobananaNamingToDisk(t *testing.T) {
 			imagePart("image/png", []byte("charlie")),
 		)
 		// Client asks for hero.jpeg but the bytes are PNG: the extension must be
-		// forced to .png (design §4b) and, because n>1, suffixed _1..n (§4c).
+		// forced to .png and, because n>1, suffixed _1..n.
 		if _, err := processImageResponse(context.Background(), resp, map[string]any{"output_filename": "hero.jpeg"}, relDir, ""); err != nil {
 			t.Fatalf("processImageResponse error: %v", err)
 		}

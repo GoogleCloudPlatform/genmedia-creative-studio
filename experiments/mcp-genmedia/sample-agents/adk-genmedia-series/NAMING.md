@@ -97,9 +97,8 @@ ever proves worth it, it can be added without changing the agents.
 
 ---
 
-<sub><b>Provenance.</b> This crosswalk was authored from the capability review's
-naming-crosswalk section (`capability-review.md` §6) and then re-verified
-parameter-by-parameter against the live genmedia Go sources at repo tip:
+<sub><b>Provenance.</b> This crosswalk was verified parameter-by-parameter against
+the live genmedia Go sources at repo tip:
 `mcp-nanobanana-go/main.go`, `mcp-gemini-go/main.go`, `mcp-veo-go/veo.go`,
 `mcp-lyria-go/lyria.go`, `mcp-chirp3-go/chirp3.go`, `mcp-avtool-go/mcp_handlers.go`,
 `mcp-omni-go/main.go`, and `mcp-imagen-go/imagen.go`. Live-source spellings win

@@ -83,7 +83,7 @@ type PersistedMedia struct {
 // GCS upload failure is non-fatal and reported via PersistedMedia.GCSError so
 // the local artifact is still usable. This centralizes the GCS upload +
 // V4-signed-URL + prefix-parsing logic that previously lived, duplicated, inside
-// individual servers (design §7.3).
+// individual servers.
 func PersistMediaOutputs(ctx context.Context, art MediaArtifact, outputDir, gcsBucketURI string, signedURLExpiry time.Duration) (PersistedMedia, error) {
 	var out PersistedMedia
 

@@ -31,7 +31,7 @@ var sampleMP4 = []byte{
 	0x00, 0x00, 0x02, 0x00, 'i', 's', 'o', 'm',
 }
 
-// omniResponseJSON reproduces the observed live Omni response drift (findings §3):
+// omniResponseJSON reproduces the observed live Omni response drift:
 // results in steps[] (not outputs[]), a leading thought step, created/updated
 // timestamps, lowercase status, and extra usage fields — all of which the mapper
 // must tolerate while still recovering the video bytes.

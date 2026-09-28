@@ -29,8 +29,8 @@ import (
 )
 
 // DefaultInteractionsAPIRevision is the Vertex Interactions API revision pinned by
-// the suite. It localizes Pre-GA wire drift to a single constant (design §4/§7,
-// Open Question Q4) and is sent via the "Api-Revision" header. It intentionally
+// the suite. It localizes Pre-GA wire drift to a single constant and is sent
+// via the "Api-Revision" header. It intentionally
 // matches interactions.DefaultAPIRevision in the adopted client library; we set it
 // explicitly so a future library default change cannot silently move our wire.
 const DefaultInteractionsAPIRevision = "2026-05-20"
@@ -48,7 +48,7 @@ const interactionsRequestTimeout = 10 * time.Minute
 // the suite's own request/response types (below), never on the transport package,
 // so the concrete implementation can be swapped later — from the currently adopted
 // github.com/ghchinoy/cloud-interactions-go to the future official Go GenAI SDK
-// Interactions surface — without touching callers (design §3 hybrid / §7.1).
+// Interactions surface — without touching callers.
 type InteractionsClient interface {
 	// Create performs a synchronous interaction POST to
 	// .../locations/global/interactions and returns the decoded response.
@@ -60,8 +60,8 @@ type InteractionsClient interface {
 // background); those fields are added when the wire is confirmed to accept them.
 type InteractionRequest struct {
 	Model string `json:"model"`
-	// ResponseModalities MUST be lowercase on the live wire, e.g. ["text","video"]
-	// (findings §3). Callers are responsible for lowercasing.
+	// ResponseModalities MUST be lowercase on the live wire, e.g.
+	// ["text","video"]. Callers are responsible for lowercasing.
 	ResponseModalities []string    `json:"response_modalities,omitempty"`
 	Input              []InputItem `json:"input"`
 	Store              bool        `json:"store"`
@@ -101,7 +101,7 @@ type Part struct {
 
 // InteractionResponse models the Vertex Interactions response in the suite's own
 // vocabulary. It is populated by translating the adopted library's response type
-// (fromLibResponse) and is tolerant of the observed live drift (findings §3):
+// (fromLibResponse) and is tolerant of the observed live drift:
 // results may arrive in steps[] (Omni) or outputs[] (Lyria).
 type InteractionResponse struct {
 	ID      string            `json:"id"`
@@ -163,7 +163,7 @@ type libInteractionsClient struct {
 // wrapped in an auto-refreshing oauth2 *http.Client that is injected as the
 // library's HTTPClient — the library then sets x-goog-user-project and the pinned
 // Api-Revision header on every request. The location is hard-pinned to "global"
-// because the Interactions models are global-only (design §4).
+// because the Interactions models are global-only.
 func NewInteractionsClient(ctx context.Context, cfg *Config) (InteractionsClient, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("interactions: nil config")
@@ -200,7 +200,7 @@ func NewInteractionsClient(ctx context.Context, cfg *Config) (InteractionsClient
 // Create translates the request into the library's type, performs a synchronous
 // interaction POST via the library, and translates the response back. Any 4xx/5xx
 // body is surfaced verbatim by the library so preview-access / quota errors remain
-// legible (design §4).
+// legible.
 func (c *libInteractionsClient) Create(ctx context.Context, req *InteractionRequest) (*InteractionResponse, error) {
 	libResp, err := c.inner.Create(ctx, toLibRequest(req))
 	if err != nil {

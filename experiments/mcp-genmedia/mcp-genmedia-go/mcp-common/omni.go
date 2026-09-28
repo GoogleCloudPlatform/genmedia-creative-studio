@@ -27,7 +27,7 @@ import (
 const omniVideoMimePrefix = "video/"
 
 // MaxOmniSampleCount is the maximum number of videos the Omni model produces per
-// prompt (findings §1). sample_count is clamped to this ceiling.
+// prompt. sample_count is clamped to this ceiling.
 const MaxOmniSampleCount = 3
 
 // OmniMediaRef is a single image or video input to an Omni generation. It is
@@ -42,7 +42,7 @@ type OmniMediaRef struct {
 	MimeType string
 }
 
-// OmniParams are the inputs to a Gemini Omni video generation call (design §5.1).
+// OmniParams are the inputs to a Gemini Omni video generation call.
 type OmniParams struct {
 	// Prompt is the text prompt (required).
 	Prompt string
@@ -86,7 +86,7 @@ type OmniResult struct {
 // mcp-gemini-go call, so the request/response contract can never drift. It builds
 // the Omni envelope (lowercase response_modalities, image/video input parts,
 // optional generation_config), calls the Interactions client sample_count times,
-// and aggregates the decoded MP4 bytes + text (design §7.2).
+// and aggregates the decoded MP4 bytes + text.
 func GenerateOmniVideo(ctx context.Context, cfg *Config, p OmniParams) (*OmniResult, error) {
 	if strings.TrimSpace(p.Prompt) == "" {
 		return nil, fmt.Errorf("omni: prompt must be a non-empty string")
@@ -158,7 +158,7 @@ func clampSampleCount(n int) int {
 }
 
 // buildOmniRequest constructs the Omni interaction envelope. response_modalities
-// is lowercase ["text","video"] per the live wire (findings §3). Image/video
+// is lowercase ["text","video"] per the live wire. Image/video
 // inputs become additional content parts; sampling controls become a
 // generation_config (only when set).
 func buildOmniRequest(model string, p OmniParams) (*InteractionRequest, error) {

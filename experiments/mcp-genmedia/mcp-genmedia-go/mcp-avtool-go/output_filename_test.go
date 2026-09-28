@@ -25,8 +25,8 @@ import (
 // TestAVToolOutputFilenameWiring is a handler-level wiring test: it drives the exact
 // chain each avtool handler runs — resolveAVToolOutputFilename → common.HandleOutputPreparation
 // — and asserts the resolved output_filename reaches the final output filename with
-// avtool's distinguishing behavior: the extension is NOT forced (design §4b avtool
-// exemption — for ffmpeg the extension selects the output container), precedence is
+// avtool's distinguishing behavior: the extension is NOT forced (avtool is
+// exempt — for ffmpeg the extension selects the output container), precedence is
 // honored (output_filename wins over the legacy output_file_name), a missing
 // extension gets the tool's default appended, traversal is sanitized, and an unset
 // value falls through to a unique <default> name. avtool is single-artifact, so no
@@ -101,7 +101,7 @@ func TestAVToolOutputFilenameWiring(t *testing.T) {
 
 // TestResolveAVToolOutputFilename covers the avtool naming decision: output_filename
 // wins over the deprecated output_file_name alias; the client-provided extension is
-// PRESERVED (avtool is exempt from extension-forcing, design §4d); traversal is
+// PRESERVED (avtool is exempt from extension-forcing); traversal is
 // sanitized; and an empty/unusable value falls through to the unique-name default.
 func TestResolveAVToolOutputFilename(t *testing.T) {
 	tests := []struct {

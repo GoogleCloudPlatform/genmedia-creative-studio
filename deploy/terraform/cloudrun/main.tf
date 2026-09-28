@@ -221,7 +221,7 @@ locals {
   prod_identity_env_vars = {
     APP_ENV                    = var.environment
     REQUIRE_AUTHENTICATED_USER = "true"
-    IAP_JWT_AUDIENCE           = "/projects/${data.google_project.project.number}/global/backendServices/${data.google_compute_backend_service.iap_lb[0].generated_id}"
+    IAP_JWT_AUDIENCE           = var.use_lb ? "/projects/${data.google_project.project.number}/global/backendServices/${one(data.google_compute_backend_service.iap_lb[*].generated_id)}" : ""
   }
   # Prod (use_lb = true) extends the base map with the LB-form identity vars;
   # nonprod (use_lb = false) extends it with the native-Cloud-Run identity vars.

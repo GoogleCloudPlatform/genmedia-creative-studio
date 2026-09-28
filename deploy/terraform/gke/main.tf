@@ -32,15 +32,14 @@
 #   4. Creates a fresh Autopilot regional cluster (gke-cluster) and the workload
 #      Deployment/Service/Ingress/BackendConfig/HPA (gke-workload).
 #
-# PROVIDER BOOTSTRAP ORDERING (real-world nuance — see p9-report.md P9c sequence):
+# PROVIDER BOOTSTRAP ORDERING (real-world nuance):
 # the kubernetes/kubectl providers are configured from gke-cluster outputs
 # (endpoint + CA) plus a google_client_config token. On a from-scratch apply those
 # outputs are unknown until the cluster exists, which is the classic
 # provider-config-depends-on-resource bootstrap problem. This is resolved with a
-# TWO-STAGE apply (documented in the P9c sequence): apply the cluster (and APIs)
-# first with -target, then a full apply once the provider inputs are known. A
-# single `terraform validate` is fully offline (no cluster needed); only the real
-# apply needs the two stages.
+# TWO-STAGE apply: apply the cluster (and APIs) first with -target, then a full
+# apply once the provider inputs are known. A single `terraform validate` is
+# fully offline (no cluster needed); only the real apply needs the two stages.
 # ---------------------------------------------------------------------------
 
 terraform {
@@ -91,8 +90,9 @@ provider "google-beta" {
 
 # Cluster-scoped provider auth for the kubernetes/kubectl providers, sourced from
 # the gke-cluster outputs + a short-lived google_client_config token. On a
-# from-scratch apply these are unknown until the cluster exists — see the
-# two-stage P9c apply sequence in p9-report.md.
+# from-scratch apply these are unknown until the cluster exists, which is why the
+# cluster must be applied first with -target (see the two-stage apply note in the
+# header comment above).
 data "google_client_config" "default" {}
 
 provider "kubernetes" {
@@ -133,8 +133,8 @@ locals {
   # Firestore DB + Cloud Tasks queue have NO first-class google-provider data
   # source (verified at the offline validate gate: the google_firestore_database
   # and google_cloud_tasks_queue DATA sources do not exist in hashicorp/google
-  # ~>6.49). Per plan §4.4, the root reconstructs their DETERMINISTIC names from
-  # the same convention the data-stores module hardcodes — a read-only string
+  # ~>6.49). The root therefore reconstructs their DETERMINISTIC names from the
+  # same convention the data-stores module hardcodes — a read-only string
   # reference, never a resource. The GKE apply therefore never creates, modifies,
   # or destroys Firestore or the queue.
   firestore_db_name = "create-studio-asset-metadata" # data-stores module literal
@@ -241,7 +241,8 @@ module "gke_workload" {
   create_static_ip = var.create_static_ip
 
   # IAP (auth parity). OAuth credentials are provisioned OUT-OF-BAND by default
-  # (create_iap_oauth_secret = false) — see the p9-report.md IAP OAuth contract.
+  # (create_iap_oauth_secret = false): the Secret named by iap_oauth_secret_name
+  # must already exist in the workload namespace before apply.
   enable_iap               = var.enable_iap
   iap_oauth_secret_name    = var.iap_oauth_secret_name
   create_iap_oauth_secret  = var.create_iap_oauth_secret

@@ -277,7 +277,7 @@ variable "enable_iap" {
 }
 
 variable "iap_oauth_secret_name" {
-  description = "Name of the Kubernetes Secret holding the IAP OAuth client credentials (keys client_id / client_secret), referenced by BackendConfig.spec.iap.oauthclientCredentials.secretName. See p9-report.md for the out-of-band provisioning contract."
+  description = "Name of the Kubernetes Secret holding the IAP OAuth client credentials (keys client_id / client_secret), referenced by BackendConfig.spec.iap.oauthclientCredentials.secretName. Unless create_iap_oauth_secret is true, this Secret must already exist in the workload namespace before an apply with enable_iap = true."
   type        = string
   default     = "creative-studio-iap-oauth"
 }

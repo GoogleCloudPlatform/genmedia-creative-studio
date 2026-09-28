@@ -1,5 +1,6 @@
 # deploy/terraform/gke/environments/nonprod.tfvars — non-production (staging)
-# configuration for the GKE deploy root. NON-PROD FIRST (see p9-report.md P9c).
+# configuration for the GKE deploy root. NON-PROD FIRST: apply and validate this
+# environment before prod.
 #
 # This is the GKE-specific env overlay. It is SEPARATE from the Cloud Run root's
 # ../../environments/*.tfvars because the GKE root has a different compute/ingress
@@ -32,7 +33,8 @@ deletion_protection = false     # cluster-only: allow clean non-prod teardown
 # IAP OAuth: provisioned OUT-OF-BAND as a Kubernetes Secret named by
 # iap_oauth_secret_name (default "creative-studio-iap-oauth"). create_iap_oauth_secret
 # stays false (default) so no client credentials are ever authored in Terraform.
-# See the p9-report.md "IAP OAuth out-of-band contract" for the exact prerequisite.
+# The Secret must already exist in the workload namespace before an apply with
+# enable_iap = true.
 
 # All other inputs inherit their repo defaults from variables.tf (models, sizing
 # cpu=2000m/mem=4Gi, replicas 1..3, labels team/owner/cost_center, secret_env

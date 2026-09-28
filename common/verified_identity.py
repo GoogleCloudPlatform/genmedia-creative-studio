@@ -23,7 +23,10 @@ Consumed by the request middleware (``main.py:set_request_context``) and, in a
 later phase, by the Mesop ``AppState``. Vuln #2's server-side ownership checks
 compare stored attribution against the identity produced here.
 
-Design: ``.design`` / vuln-response ``vuln4-design.md`` (sections 3.2-3.5).
+Design intent, in three rules: a failed or missing verification yields *no*
+identity rather than a fallback one; mock identity is accepted only in an
+explicitly local app environment; and a local-mode resolution on a managed
+platform is a hard refusal to serve, not a warning.
 """
 
 from __future__ import annotations

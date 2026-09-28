@@ -11,7 +11,7 @@ Analyzes local JSON application logs captured during UI generation flows.
 
 ```bash
 # 1. Start application with log tee in Terminal A:
-(cd ../gmcs-management && ./dev.sh cloud.aaie 2>&1 | tee /tmp/gmcs.log)
+uv run main.py 2>&1 | tee /tmp/gmcs.log
 
 # 2. Exercise UI flows at http://localhost:8080/
 

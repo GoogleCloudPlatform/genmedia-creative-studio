@@ -6,7 +6,7 @@
 #
 # Usage:
 #   # 1. Start app with log tee in Terminal A:
-#   #    (from gmcs-management) ./dev.sh cloud.aaie 2>&1 | tee /tmp/gmcs.log
+#   #    uv run main.py 2>&1 | tee /tmp/gmcs.log
 #   # 2. Exercise UI flows at http://localhost:8080/
 #   # 3. Run this script in Terminal B:
 #   ./scripts/smoke_telemetry.sh
@@ -35,7 +35,7 @@ if [ ! -f "${LOG_FILE}" ]; then
   echo "❌ Log file not found: ${LOG_FILE}"
   echo ""
   echo "To capture local logs, launch the app with 'tee':"
-  echo "  (cd ../gmcs-management && ./dev.sh cloud.aaie 2>&1 | tee /tmp/gmcs.log)"
+  echo "  uv run main.py 2>&1 | tee /tmp/gmcs.log"
   echo ""
   echo "Or run the offline sample generator first:"
   echo "  python3 scripts/emit_sample_telemetry.py 2>/tmp/gmcs.log"

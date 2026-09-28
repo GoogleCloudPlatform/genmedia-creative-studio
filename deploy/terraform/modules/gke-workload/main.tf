@@ -73,12 +73,14 @@ locals {
   # ConfigMap NAME (never an in-place mutation of a fixed name). A new name flows
   # into the Deployment pod template (env_from.config_map_ref.name below), which
   # rolls a NEW ReplicaSet — so the env change and the (out-of-band) image roll are
-  # carried by a single pod-template update. While the roll is in flight both
-  # ConfigMaps coexist (`create_before_destroy`; `wait_for_rollout` gates removal),
-  # so an old-RS pod that RESTARTS can still resolve the OLD immutable ConfigMap
-  # (`envFrom` resolves at pod start, so a restart re-reads it). That holds only
-  # while the retired CM still exists — it is NOT retained as a rollback target
-  # once removed; see the note on kubernetes_config_map_v1.env below. The hash
+  # carried by a single pod-template update. Both ConfigMaps are REASONED to
+  # coexist while the roll is in flight (`create_before_destroy`; retired-CM
+  # destroy sequenced after rollout completion — reasoned, NOT measured), so an
+  # old-RS pod that RESTARTS would still resolve the OLD immutable ConfigMap
+  # (`envFrom` resolves at pod start, so a restart re-reads it). Stall-path
+  # safety does NOT rest on that: already-running old pods are unaffected by
+  # removal of the retired CM. The retired CM is NOT retained as a rollback
+  # target; see the note on kubernetes_config_map_v1.env below. The hash
   # input is deterministic (jsonencode sorts map keys; no timestamps/random), so
   # a re-render of the same env produces the same name => a `terraform apply`
   # reconcile is a no-op.
@@ -110,18 +112,27 @@ resource "google_service_account_iam_member" "workload_identity" {
 # Vuln #4 (mechanism (b)): versioned/immutable ConfigMap. The NAME is content-
 # hashed (local.env_config_map_name) and the object is `immutable = true`, so it
 # can NEVER be mutated in place — an env change produces a brand-new ConfigMap
-# under a new name instead. `create_before_destroy` makes the new ConfigMap exist
-# BEFORE the pod template switches to it (and before the old one is destroyed), so
-# the Deployment can always resolve its config_map_ref during the roll.
+# under a new name instead. The new ConfigMap exists BEFORE the pod template
+# switches to it (ordering basis stated below), so the Deployment can always
+# resolve its config_map_ref during the roll.
 #
-# Content-hashed immutable name: a changed env set produces a new ConfigMap;
-# under `create_before_destroy` the new CM is created and the Deployment rolled
-# before the retired CM is removed (`wait_for_rollout` gates removal), so a
-# stalled roll is safe and running old pods are unaffected (`envFrom` resolves
-# at pod start). The retired CM is NOT retained as a rollback target —
-# post-success `kubectl rollout undo` will fail (`CreateContainerConfigError`).
-# Roll back by re-applying the previous config inputs (see runbook), not by
-# `rollout undo`.
+# Content-hashed immutable name: a changed env set produces a new ConfigMap.
+# Creation ordering is enforced by a real resource reference (Deployment
+# env_from -> kubernetes_config_map_v1.env.metadata[0].name) plus depends_on,
+# so the new CM exists before the Deployment is rolled. wait_for_rollout is set
+# true explicitly (effective default also true, observed across 2.31.0-2.38.0),
+# so the apply blocks until the new ReplicaSet is healthy. Stall-path safety
+# does NOT depend on ConfigMap retention: envFrom is resolved at pod START and
+# injected into the container env, so already-running old pods are unaffected
+# by deletion of the retired CM, and a successful maxUnavailable=0/maxSurge=1
+# roll does not recreate old-RS pods. Ordering of the retired-CM DESTROY after
+# rollout completion is REASONED (Terraform create_before_destroy
+# deposed-destroy sequenced after dependents update, which under
+# wait_for_rollout completes only when healthy) but NOT empirically measured --
+# to be observed at the first real-cluster apply (see runbook prove-it). The
+# retired CM is NOT retained as a rollback target -- post-success kubectl
+# rollout undo will fail (CreateContainerConfigError); roll back by re-applying
+# the previous config inputs (see runbook), not by rollout undo.
 resource "kubernetes_config_map_v1" "env" {
   metadata {
     name      = local.env_config_map_name
@@ -252,7 +263,7 @@ resource "kubernetes_deployment_v1" "workload" {
     }
   }
 
-  wait_for_rollout = true # gates removal of the retired hashed ConfigMap (see env ConfigMap comment)
+  wait_for_rollout = true # blocks the apply until the new ReplicaSet is healthy (see env ConfigMap comment)
 
   # Preserve the out-of-band image/deploy contract: the image is rolled by the
   # deploy pipeline, so Terraform ignores in-place changes to it (parity with the

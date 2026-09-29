@@ -299,9 +299,10 @@ A principle with no procedure gets agreed with and not followed. Before writing 
 
 ## Where this came from
 
-**Provenance, not evidence — you cannot check this paragraph.** Nor can you check *This is a family*
-or *Reasons, not answers*: those rest on review-conversation provenance and on pattern instances
-from the same programme, with no citable refs, and they are offered as illustration, not as support.
+**Provenance, not evidence — you cannot check this paragraph's account of the principle's origin.**
+Nor can you check *This is a family* or *Reasons, not answers*: those rest on review-conversation
+provenance and on pattern instances from the same programme, with no citable refs, and they are
+offered as illustration, not as support.
 The same goes for the three-site before state described under *The document as its own specimen*,
 which is reproduced there but pinned at no ref. This page's checkable spine is its pinned refs, its
 quoted Terraform and its greps: a claim is on the spine when you can name the ref, the quotation or

@@ -151,10 +151,3 @@ Build the tool using `go build` or `go install`.
   }
 }
 ```
- 6,
-      "bucket": "your-gcs-bucket/veo_i2v_outputs",
-      "output_directory": "./veo_videos_i2v"
-    }
-  }
-}
-```

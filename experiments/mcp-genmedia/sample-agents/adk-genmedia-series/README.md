@@ -41,8 +41,8 @@ or demo that does the same job on another surface.
 | 5 | **A real multi-agent app** — [Ad creative-director's assistant](./ad-creative-director/) | `SequentialAgent` ⊃ `ParallelAgent` + `AgentTool`; composing the persona agents; plus an optional self-critique `LoopAgent` ("Editor's QC Room") that re-assembles until an objective check passes or a small iteration cap is hit — both profiles | **ready** |
 | 6 | **Dogfood the studio — Creative Studio (storyboard profile)** — [same engine, storyboard profile + headless CLI](./ad-creative-director/#creative-studio--the-storyboard-profile-dogfood) | one engine, two profiles via a plain-Python profile factory; a machine-readable package + versioned `manifest.json` contract over a headless CLI | **ready** |
 
-> Steps 2–6 are being added as the series rolls out; they're listed here so you
-> can see the whole arc. Only linked steps are live today.
+> All steps in the table above are live today; follow them in order, or jump
+> straight to the one you need.
 
 ## How the series is organized
 

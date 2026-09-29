@@ -144,8 +144,8 @@ Two things worth knowing about the `{...}` template:
 
 ## Next in the series
 
-Head back to the [series overview](../README.md), or continue to **Ad
-creative-director's assistant** (coming next) — where this pipeline grows into a
-real multi-agent app: a `SequentialAgent` wrapping a `ParallelAgent` fan-out that
-composes the crawl personas (Photoshoot / Director / Music Producer) as tools to
-turn a brand brief into an assembled ad.
+Head back to the [series overview](../README.md), or continue to
+[**Ad creative-director's assistant**](../ad-creative-director/README.md) — where
+this pipeline grows into a real multi-agent app: a `SequentialAgent` wrapping a
+`ParallelAgent` fan-out that composes the crawl personas (Photoshoot / Director /
+Music Producer) as tools to turn a brand brief into an assembled ad.

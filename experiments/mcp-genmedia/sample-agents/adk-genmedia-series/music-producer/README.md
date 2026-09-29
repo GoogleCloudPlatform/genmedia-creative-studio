@@ -199,7 +199,7 @@ the first, baked instructions fix the second.** Concretely, this agent bakes:
 
 ## Next in the series
 
-Head back to the [series overview](../README.md), or jump to **Scriptwriter /
-Storyboarder** (coming next) — your first true *pipeline*, where a
-`SequentialAgent` passes state between agents with `output_key` instead of one
-agent driving every tool itself.
+Head back to the [series overview](../README.md), or jump to
+[**Scriptwriter / Storyboarder**](../scriptwriter-storyboarder/README.md) — your
+first true *pipeline*, where a `SequentialAgent` passes state between agents with
+`output_key` instead of one agent driving every tool itself.

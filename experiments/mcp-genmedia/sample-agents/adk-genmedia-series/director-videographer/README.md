@@ -170,7 +170,7 @@ persisted-path report is fine, but the real check is **listing the destination.*
 
 ## Next in the series
 
-Head back to the [series overview](../README.md), or jump to **Music Producer**
-(coming next) — the first agent that wires **more than one** MCP server (lyria +
-TTS + avtool), where you meet `tool_name_prefix` and the full naming crosswalk you
-just got a taste of.
+Head back to the [series overview](../README.md), or jump to
+[**Music Producer**](../music-producer/README.md) — the first agent that wires
+**more than one** MCP server (lyria + TTS + avtool), where you meet
+`tool_name_prefix` and the full naming crosswalk you just got a taste of.

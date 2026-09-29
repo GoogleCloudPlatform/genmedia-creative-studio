@@ -96,7 +96,7 @@ def test_triage_prompt_no_markdown(gemini_client, iteration):
     Tests that the triage prompt produces valid JSON without markdown formatting.
     Running multiple iterations to ensure consistency.
     """
-    model_id = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
+    model_id = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
     
     # Construct the full prompt with simulated environment variables
     full_prompt = PROMPT_TEMPLATE + f"\n\n[SIMULATED ENV VARS]\nISSUES_TO_TRIAGE={json.dumps(MOCK_ISSUES)}\nAVAILABLE_LABELS={','.join(MOCK_LABELS)}\n"

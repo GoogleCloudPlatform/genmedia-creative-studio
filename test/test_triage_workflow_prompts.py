@@ -79,7 +79,7 @@ MOCK_LABELS = [
 def gemini_client():
     """Initializes the Gemini client for testing."""
     project_id = os.environ.get("PROJECT_ID") or os.environ.get("GOOGLE_CLOUD_PROJECT")
-    location = os.environ.get("LOCATION", "us-central1")
+    location = os.environ.get("LOCATION", "global")
     
     if not project_id:
         pytest.skip("PROJECT_ID or GOOGLE_CLOUD_PROJECT environment variable not set.")
@@ -96,7 +96,7 @@ def test_triage_prompt_no_markdown(gemini_client, iteration):
     Tests that the triage prompt produces valid JSON without markdown formatting.
     Running multiple iterations to ensure consistency.
     """
-    model_id = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    model_id = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
     
     # Construct the full prompt with simulated environment variables
     full_prompt = PROMPT_TEMPLATE + f"\n\n[SIMULATED ENV VARS]\nISSUES_TO_TRIAGE={json.dumps(MOCK_ISSUES)}\nAVAILABLE_LABELS={','.join(MOCK_LABELS)}\n"

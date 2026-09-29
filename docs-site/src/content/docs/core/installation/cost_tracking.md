@@ -25,7 +25,7 @@ Google Cloud allows you to automatically route specific logs from Cloud Run dire
 
 The application enriches every `model_call` event with the following metadata inside the `jsonPayload.extra_data` field:
 
-*   `model_name`: The specific model version used (e.g., `gemini-2.5-flash`, `veo-3.1-lite-generate-001`).
+*   `model_name`: The specific model version used (e.g., `gemini-3.8-flash`, `veo-3.1-lite-generate-001`).
 *   `status`: Either `success` or `failure`.
 *   `duration_ms`: The total execution time of the API call.
 *   `user_email`: The email of the user who initiated the request.

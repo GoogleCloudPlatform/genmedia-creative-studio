@@ -19,7 +19,7 @@ The workflow consists of four main steps:
 ## Prerequisites
 
 -   **Models**:
-    -   `gemini-2.5-flash` (or configured text model) for scene direction/storyboarding.
+    -   `gemini-3.8-flash` (or configured text model) for scene direction/storyboarding.
     -   `gemini-3.1-flash-image` (or configured image model) for 8-bit and character sheet generation.
     -   `veo-3.1-generate-001` (or compatible Veo 3+ model) for video generation.
 -   **Libraries**:

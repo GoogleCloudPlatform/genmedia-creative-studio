@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	cloud.google.com/go/aiplatform v1.126.0
-	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260927082111-d3b5a57afca0
+	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20260929030551-8fd965a29743
 	github.com/mark3labs/mcp-go v1.0.0
 	github.com/rs/cors v1.11.1
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569

@@ -20,7 +20,7 @@ The application follows a multi-step process to generate the final video:
 
 This demo uses the following Google AI models:
 
-*   **Gemini 2.5 Pro:** For image analysis, description generation, and video prompt generation.
+*   **Gemini 3.1 Pro Preview:** For image analysis, description generation, and video prompt generation.
 *   **Imagen:** For generating the still images of the character in the new scene.
 *   **Veo:** For generating the final video.
 

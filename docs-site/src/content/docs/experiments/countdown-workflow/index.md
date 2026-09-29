@@ -23,16 +23,16 @@ This stage reverse-engineers the creative style of a given YouTube video. It can
 
 1.  **Download:** Downloads a specific time-ranged segment from a YouTube video using `yt-dlp`.
 2.  **Chunk:** Splits the downloaded video into smaller, equal-duration chunks using `moviepy`.
-3.  **Analyze:** Uses a multimodal AI model (Gemini 2.5 Pro) to process the video chunks and generate a detailed text file describing the visual style, scene composition, and overall aesthetic. This file becomes the creative brief for the next stage.
+3.  **Analyze:** Uses a multimodal AI model (Gemini 3.7 Flash) to process the video chunks and generate a detailed text file describing the visual style, scene composition, and overall aesthetic. This file becomes the creative brief for the next stage.
 
 ### Stage 2: Branded Video Generation
 
-1.  **Adapt Script:** Takes a company name and the style analysis file as input. It uses a generative AI model (Gemini 2.5 Pro) to create a new, structured JSON script with creative prompts tailored to the company's brand.
+1.  **Adapt Script:** Takes a company name and the style analysis file as input. It uses a generative AI model (Gemini 3.7 Flash) to create a new, structured JSON script with creative prompts tailored to the company's brand.
 2.  **Generate Scenes:** For each scene in the script:
     *   It generates an initial candidate image with **Imagen** for the very first scene.
     *   It generates multiple candidate video clips with **Veo**. To ensure continuity, each new video scene is generated using the last frame of the previously selected scene.
 3.  **Validate and Select Best:**
-    *   A selector model (Gemini 2.5 Pro) reviews the candidates to check if the countdown number is clearly visible.
+    *   A selector model (Gemini 3.7 Flash) reviews the candidates to check if the countdown number is clearly visible.
     *   If no valid video is found, the generation is retried.
     *   Once validated, the model chooses the candidate that best fits the prompt.
 4.  **Compose Video:** All the chosen video clips are assembled into a final MP4 file, sped up, and blended with a fade-out transition and background music.

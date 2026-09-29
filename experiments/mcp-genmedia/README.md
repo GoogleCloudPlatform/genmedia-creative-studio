@@ -23,6 +23,8 @@ We provide a set of expert **Agent Skills** that provide AI agents (like Gemini 
 *   `genmedia-image-artist`: Expert in visual generation, prompt optimization, and collaborative refinement.
 *   `genmedia-voice-director`: Expert in casting, directing, and generating expressive text-to-speech using Gemini TTS.
 *   `story-generator`: Expert in generating full multi-scene multimedia storybooks (image, video, voice, and music) using direct, native MCP tool calls and parallel subagent orchestration, and packaging them into premium Material 3 interactive making-of reports.
+*   `install-mcp-genmedia`: Installs the MCP servers from pre-compiled release binaries and registers them with your agent — no clone or Go toolchain required.
+*   `build-mcp-genmedia`: Builds the MCP servers from source and wires them into your agent config, for environments where the pre-compiled binaries cannot be used.
 
 See the [Agent Skills](./skills/README.md) directory for more information on how to link or install these skills.
 
@@ -64,8 +66,11 @@ The servers are configured primarily through environment variables. Key variable
 ## Available MCP Servers and Capabilities
 
 *   **Gemini Image** Generate and edit images from text prompts.
+*   **Imagen:** Generate images from text prompts (deprecated).
 *   **Gemini TTS** Synthesize high-quality audio from text.
+*   **Gemini Transcribe:** Transcribe pre-recorded audio files to text.
 *   **Veo:** Create videos from text or images.
+*   **Gemini Omni:** Create videos with optional embedded audio from text, optionally conditioned on input images or videos.
 *   **Lyria:** Generate music from text prompts.
 *   **Chirp 3 HD:** Synthesize high-quality audio from text.
 *   **AVTool:** Perform audio/video compositing and manipulation (e.g., combining, concatenating, format conversion).
@@ -94,15 +99,21 @@ This repository provides AI application samples for:
 
 * [geminicli](./sample-agents/geminicli/)
 * [Google ADK (Agent Development Kit)](./sample-agents/adk/README.md)
+* [ADK genmedia series (guided, multi-part ADK course)](./sample-agents/adk-genmedia-series/README.md)
 * [Google Firebase Genkit](./sample-agents/genkit/README.md)
+* [Genkit Go (tiered example series)](./sample-agents/genkit-go/README.md)
+* [Google Antigravity](./sample-agents/antigravity/README.md)
+* [MCP Inspector](./sample-agents/mcp-inspector/README.md)
 
 ## Development and Contribution
 
 For those interested in extending the existing servers or creating new ones, the `mcp-genmedia-go` directory contains a more detailed `README.md` with information on the architecture and development process. Please refer to the [mcp-genmedia-go/README.md](./mcp-genmedia-go/README.md) for more information.
 
+Contributions are welcome — see [CONTRIBUTING.md](../../CONTRIBUTING.md) for the contributor guide and CLA requirements.
+
 ## License
 
-Apache 2.0
+[Apache 2.0](../../LICENSE)
 
 ## Disclaimer
 

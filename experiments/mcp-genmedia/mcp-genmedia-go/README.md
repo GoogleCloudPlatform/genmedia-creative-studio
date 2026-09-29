@@ -57,8 +57,9 @@ This project uses a Go workspace (`go.work`) to manage the multiple modules. The
 3.  **Install the Binaries**
     This command explicitly builds and installs all the MCP server applications into your Go bin directory (`$GOPATH/bin` or `$GOBIN`).
     ```bash
-    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-nanobanana-go ./mcp-lyria-go ./mcp-veo-go
+    go install ./mcp-avtool-go ./mcp-chirp3-go ./mcp-gemini-go ./mcp-gemini-transcribe-go ./mcp-nanobanana-go ./mcp-lyria-go ./mcp-veo-go ./mcp-omni-go
     ```
+    `mcp-imagen-go` is deprecated (see the server list below) and is not included above; append `./mcp-imagen-go` if you still need it.
 
 4.  **Verify the Installation**
     Check that the binaries are available in your path.
@@ -164,6 +165,11 @@ This repository provides AI application samples for:
     *   Tools include `gemini_image_generation` for generating text and images, and `gemini_audio_tts` for synthesizing speech with Gemini TTS models.
     *   Also includes the `list_gemini_voices` helper tool and the `gemini://language_codes` resource.
     *   Output can be saved to a local directory or GCS.
+
+*   **`mcp-gemini-transcribe-go`**:
+    *   Provides synchronous speech-to-text transcription using Google's Gemini 3.5 Transcribe model via Vertex AI.
+    *   Tool: `gemini_transcribe` for transcribing pre-recorded audio files to text.
+    *   The single-purpose sibling of the `gemini_transcribe` tool bundled into `mcp-gemini-go`; served only in the `global` location.
 
 *   **`mcp-imagen-go`** (Deprecated — use `mcp-nanobanana-go` or `mcp-gemini-go` for new work; Imagen models are deprecated as of June 30, 2026):
     *   Enables image generation using Google's Imagen models via Vertex AI.
@@ -272,6 +278,8 @@ and `mcp-avtool-go` do not emit `resource_link` items.
 
 All servers in this project are configured using environment variables. While some servers have unique variables, the following are common to most of them:
 
+See [ENV_VARS.md](./ENV_VARS.md) for the complete environment-variable reference covering every server.
+
 ### Using a `.env` File
 
 For easier local development, you can place a `.env` file in the directory where you run the MCP server. The server will automatically load environment variables from this file.
@@ -328,6 +336,8 @@ Please refer to the `README.md` file within each server's subdirectory for detai
 ## Developing MCP Servers for Genmedia
 
 This section provides guidance on how to understand the architecture and extend or create a new MCP server for Genmedia.
+
+See [RELEASING.md](./RELEASING.md) for the release and versioning process, and [CHANGELOG.md](./CHANGELOG.md) for the change history.
 
 ### Architecture
 

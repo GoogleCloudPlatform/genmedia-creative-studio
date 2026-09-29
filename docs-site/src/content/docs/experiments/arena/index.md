@@ -195,7 +195,7 @@ PROJECT_ID=<YOUR_PROJECT_ID>
 GENMEDIA_BUCKET=${PROJECT_ID}-genmedia
 GEMINI_PROJECT_ID=<YOUR_PROJECT_ID_WITH_GEMINI_API_ACCESS>
 LOCATION="us-central1"
-MODEL_ID="gemini-3.8-flash"
+MODEL_ID="gemini-2.0-flash"
 IMAGE_FIREBASE_DB="arena"
 IMAGE_COLLECTION_NAME="arena_images"
 IMAGE_RATINGS_COLLECTION_NAME="arena_elo"
@@ -247,7 +247,7 @@ gcloud run deploy genmedia-arena --source . \
     --service-account=$SA_ID \
     --set-env-vars GENMEDIA_BUCKET=${PROJECT_ID}-genmedia \
     --set-env-vars PROJECT_ID=${PROJECT_ID} \
-    --set-env-vars MODEL_ID=gemini-3.8-flash \
+    --set-env-vars MODEL_ID=gemini-2.0-flash \
     --region us-central1
 ```
 

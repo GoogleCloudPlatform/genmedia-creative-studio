@@ -25,9 +25,10 @@
 #                `gcloud config get-value project`, else a local placeholder).
 #   PORT         Port to bind (default: 8080). Overridden by -p.
 #   LIVE_CHECK   Set to 1 to enable the live Vertex leg (same as -l).
-#   REGION       Vertex location for the live leg (default: global; the
-#                gemini-3.x flash family is global-only. Set a region like
-#                us-central1 only if you override the model to a regional one).
+#   GEMINI_LOCATION  Vertex location for the live leg (default: global; the
+#                gemini-3.x flash family is global-only). Matches the app env of
+#                the same name. Set a region like us-central1 only if you
+#                override the model to a regional one.
 #
 # Run this before merging any PR that touches core-app runtime code
 # (pages/, models/, state/, config/, main.py).
@@ -43,7 +44,7 @@ cd "${REPO_ROOT}"
 PORT="${PORT:-8080}"
 BOOT_TIMEOUT=90
 LIVE_CHECK="${LIVE_CHECK:-0}"
-REGION="${REGION:-global}"
+GEMINI_LOCATION="${GEMINI_LOCATION:-global}"
 
 while getopts "p:t:lh" opt; do
   case ${opt} in
@@ -201,10 +202,10 @@ if [ "${LIVE_CHECK}" = "1" ]; then
       # gemini-3.x flash is global-only. The global endpoint uses the plain
       # aiplatform.googleapis.com host (no region prefix); regional overrides use
       # the "<region>-aiplatform" host. Build the URL accordingly.
-      if [ "${REGION}" = "global" ]; then
+      if [ "${GEMINI_LOCATION}" = "global" ]; then
         URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
       else
-        URL="https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/publishers/google/models/gemini-3.8-flash:generateContent"
+        URL="https://${GEMINI_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${GEMINI_LOCATION}/publishers/google/models/gemini-3.8-flash:generateContent"
       fi
       gen_code="$(curl -s -o /tmp/gmcs_smoke_gen.json -w '%{http_code}' -m 30 \
         -H "Authorization: Bearer ${TOKEN}" \

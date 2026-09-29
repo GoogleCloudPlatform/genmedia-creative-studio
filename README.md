@@ -77,7 +77,7 @@ Prefer a fully hosted environment? Use Cloud Shell and follow the tutorial:
 
 #### Smoke-test before you merge
 
-`scripts/smoke_test.sh` is a quick, automated boot check for the core app: it runs `uv sync`, boots the app under gunicorn/uvicorn in `APP_ENV=local` mode, and verifies the UI serves (`GET /` → `/home` → 200, `GET /__login` → 200). An optional, env-gated leg (`-l`) makes one live Vertex `gemini-2.5-flash` generation call when a `PROJECT_ID` and Application Default Credentials are present.
+`scripts/smoke_test.sh` is a quick, automated boot check for the core app: it runs `uv sync`, boots the app under gunicorn/uvicorn in `APP_ENV=local` mode, and verifies the UI serves (`GET /` → `/home` → 200, `GET /__login` → 200). An optional, env-gated leg (`-l`) makes one live Vertex `gemini-3.8-flash` generation call (in the `global` location — the gemini-3.x flash family is global-only) when a `PROJECT_ID` and Application Default Credentials are present.
 
 ```bash
 ./scripts/smoke_test.sh        # boot + UI check

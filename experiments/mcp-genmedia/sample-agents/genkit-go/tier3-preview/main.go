@@ -112,10 +112,13 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// defaultModel orchestrates delegation and drives each specialist. Single-sourced
-// here; matches Tiers 0-2 ("vertexai/..." is the googlegenai plugin's Vertex
-// provider). Overridable via TIER3_MODEL for experimentation.
-const defaultModel = "vertexai/gemini-2.5-flash"
+// defaultModel orchestrates delegation and drives each specialist. The gemini-3.x
+// flash family is newer than the googlegenai plugin's curated catalog, but the
+// plugin resolves unknown IDs dynamically with default options, so
+// "vertexai/gemini-3.8-flash" is accepted. Runs in the global region (see
+// orchestratorLocation). Single-sourced here; matches Tiers 0-2. Overridable via
+// TIER3_MODEL for experimentation.
+const defaultModel = "vertexai/gemini-3.8-flash"
 
 // Load-bearing genmedia model ids (same footguns as Tier 2). veo with no model
 // falls back to veo-2.0, which rejects generate_audio=true; lyria's clip-preview
@@ -227,11 +230,15 @@ func run(ctx context.Context, reject bool, subject string) error {
 	if project == "" {
 		return fmt.Errorf("set GOOGLE_CLOUD_PROJECT (or PROJECT_ID) to your Google Cloud project")
 	}
-	location := firstEnv("GOOGLE_CLOUD_LOCATION")
-	if location == "" || location == "global" {
-		// The image/video models are regional; "global" (a common default) makes
-		// Vertex reject them. Standardize on us-central1 unless told otherwise.
-		location = "us-central1"
+	// The orchestrator (text) model runs in the GLOBAL region: the gemini-3.x
+	// flash family is global-only, so pinning it to a regional endpoint (e.g.
+	// us-central1) makes Vertex return NOT_FOUND. This mirrors the main app, whose
+	// GEMINI_LOCATION defaults to "global". The genmedia MCP media servers are
+	// separate processes that inherit GOOGLE_CLOUD_LOCATION and stay regional
+	// (us-central1) for Veo/Imagen/nanobanana — keep that env set for them.
+	orchestratorLocation := firstEnv("GEMINI_LOCATION")
+	if orchestratorLocation == "" {
+		orchestratorLocation = "global"
 	}
 	base := os.Getenv("GENMEDIA_BUCKET")
 	if base == "" {
@@ -266,7 +273,7 @@ func run(ctx context.Context, reject bool, subject string) error {
 	// Dev-UI reflection tidy.
 	g := genkit.Init(ctx,
 		genkit.WithPlugins(
-			&googlegenai.VertexAI{ProjectID: project, Location: location},
+			&googlegenai.VertexAI{ProjectID: project, Location: orchestratorLocation},
 			&middlewarex.Middleware{},
 		),
 		genkit.WithExperimental(),

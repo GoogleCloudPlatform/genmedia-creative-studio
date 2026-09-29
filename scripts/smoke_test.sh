@@ -8,7 +8,7 @@
 #   2. The app boots under gunicorn/uvicorn in APP_ENV=local mode.
 #   3. GET /        -> 307 redirect to /home, which serves HTTP 200 (Mesop UI).
 #   4. GET /__login -> HTTP 200.
-#   5. (Optional, env-gated) one live Vertex gemini-2.5-flash generateContent
+#   5. (Optional, env-gated) one live Vertex gemini-3.8-flash generateContent
 #      call, only when a PROJECT_ID + working ADC are available.
 #
 # What this does NOT check: it is not the full test suite, not a deploy
@@ -25,7 +25,9 @@
 #                `gcloud config get-value project`, else a local placeholder).
 #   PORT         Port to bind (default: 8080). Overridden by -p.
 #   LIVE_CHECK   Set to 1 to enable the live Vertex leg (same as -l).
-#   REGION       Vertex region for the live leg (default: us-central1).
+#   REGION       Vertex location for the live leg (default: global; the
+#                gemini-3.x flash family is global-only. Set a region like
+#                us-central1 only if you override the model to a regional one).
 #
 # Run this before merging any PR that touches core-app runtime code
 # (pages/, models/, state/, config/, main.py).
@@ -41,7 +43,7 @@ cd "${REPO_ROOT}"
 PORT="${PORT:-8080}"
 BOOT_TIMEOUT=90
 LIVE_CHECK="${LIVE_CHECK:-0}"
-REGION="${REGION:-us-central1}"
+REGION="${REGION:-global}"
 
 while getopts "p:t:lh" opt; do
   case ${opt} in
@@ -186,7 +188,7 @@ echo "     ✅ GET /__login -> ${login_code}"
 LIVE_RESULT="skipped"
 if [ "${LIVE_CHECK}" = "1" ]; then
   echo ""
-  echo "🧪 (optional) Live Vertex gemini-2.5-flash generateContent leg..."
+  echo "🧪 (optional) Live Vertex gemini-3.8-flash generateContent leg..."
   if [ "${PROJECT_ID}" = "local-smoke-test" ]; then
     echo "     ⏭️  Skipped: no real PROJECT_ID available."
   elif ! command -v gcloud >/dev/null 2>&1; then
@@ -196,7 +198,14 @@ if [ "${LIVE_CHECK}" = "1" ]; then
     if [ -z "${TOKEN}" ]; then
       echo "     ⏭️  Skipped: no Application Default Credentials available."
     else
-      URL="https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/publishers/google/models/gemini-2.5-flash:generateContent"
+      # gemini-3.x flash is global-only. The global endpoint uses the plain
+      # aiplatform.googleapis.com host (no region prefix); regional overrides use
+      # the "<region>-aiplatform" host. Build the URL accordingly.
+      if [ "${REGION}" = "global" ]; then
+        URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+      else
+        URL="https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/publishers/google/models/gemini-3.8-flash:generateContent"
+      fi
       gen_code="$(curl -s -o /tmp/gmcs_smoke_gen.json -w '%{http_code}' -m 30 \
         -H "Authorization: Bearer ${TOKEN}" \
         -H "Content-Type: application/json" \

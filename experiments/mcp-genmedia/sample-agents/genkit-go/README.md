@@ -92,7 +92,8 @@ Environment variables the tiers read (Tier 1 requires `GENMEDIA_BUCKET` to be `g
 |----------|----------|---------|
 | `GOOGLE_CLOUD_PROJECT` (or `PROJECT_ID`) | **yes** | Vertex AI + genmedia project |
 | `GENMEDIA_BUCKET` | **yes** | `gs://…` URI (or local dir) the image is written to and verified |
-| `GOOGLE_CLOUD_LOCATION` (or `GOOGLE_CLOUD_REGION`) | no | Vertex location; defaults to `us-central1` |
+| `GOOGLE_CLOUD_LOCATION` (or `GOOGLE_CLOUD_REGION`) | no | Vertex location for the **media** MCP servers (Veo/Imagen/nanobanana); regional, defaults to `us-central1` |
+| `GEMINI_LOCATION` | no | Vertex location for the **text orchestrator** model; defaults to `global` (the gemini-3.x flash family is global-only) |
 | `GENMEDIA_RELEASE_TAG` | no | genmedia release the launcher downloads; defaults to `v3.18.0` |
 | `GENMEDIA_LAUNCH` | no | override the launcher (see below) |
 | `GENMEDIA_CACHE` | no | writable cache dir for downloaded binaries |
@@ -293,7 +294,9 @@ pause/resume:
 
 ```bash
 export GOOGLE_CLOUD_PROJECT=your-project
-export GOOGLE_CLOUD_LOCATION=us-central1        # NOT "global" — the image/video models are regional
+export GOOGLE_CLOUD_LOCATION=us-central1        # media models (Veo/Imagen) are regional; NOT "global"
+# The text orchestrator ignores GOOGLE_CLOUD_LOCATION and runs at GEMINI_LOCATION
+# (default "global") because the gemini-3.x flash family is global-only.
 export GENMEDIA_BUCKET=gs://your-bare-bucket     # BARE bucket, no path (lyria/avtool write at the root)
 
 genkit start -- go run ./tier3-preview           # then open http://localhost:4000
@@ -391,7 +394,7 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
 | Go | `go 1.25.0` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
-| Orchestrating model | `vertexai/gemini-2.5-flash` | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
+| Orchestrating model | `vertexai/gemini-3.8-flash` (runs at `GEMINI_LOCATION`, default `global`) | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
 | Veo model (Tiers 1-3) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` + `tier3-preview/main.go` `veoModel` |
 | Lyria model (Tiers 2-3) | `lyria-3-clip-preview` | `tier2-producer/main.go` + `tier3-preview/main.go` `lyriaModel` |
 | **Tier 3 (PREVIEW) experimental APIs** | `genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`, `plugins/middleware/exp` behind `WithExperimental()` — **pinned to `genkit/go v1.13.1`, may break on upgrade** | `tier3-preview/main.go` |

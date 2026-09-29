@@ -70,10 +70,12 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// modelName is the Vertex Gemini model that orchestrates the tool calls. Verified
-// against the googlegenai plugin registry (provider "vertexai"). Single-sourced
-// here; matches Tiers 0-1.
-const modelName = "vertexai/gemini-2.5-flash"
+// modelName is the Vertex Gemini model that orchestrates the tool calls. The
+// gemini-3.x flash family is newer than the plugin's curated catalog, but the
+// googlegenai plugin resolves unknown IDs dynamically with default options, so
+// the "vertexai/" provider prefix + gemini-3.8-flash is accepted. Runs in the
+// global region (see orchestratorLocation). Single-sourced here; matches Tiers 0-1.
+const modelName = "vertexai/gemini-3.8-flash"
 
 // Model ids passed explicitly to the genmedia tools. These are load-bearing and
 // single-sourced here (the quirks prompt tells the model WHY; naming the ids in
@@ -167,9 +169,15 @@ func run(ctx context.Context) error {
 	if project == "" {
 		return fmt.Errorf("set GOOGLE_CLOUD_PROJECT (or PROJECT_ID) to your Google Cloud project")
 	}
-	location := firstEnv("GOOGLE_CLOUD_LOCATION", "GOOGLE_CLOUD_REGION")
-	if location == "" {
-		location = "us-central1"
+	// The orchestrator (text) model runs in the GLOBAL region: the gemini-3.x
+	// flash family is global-only, so pinning it to a regional endpoint (e.g.
+	// us-central1) makes Vertex return NOT_FOUND. This mirrors the main app, whose
+	// GEMINI_LOCATION defaults to "global". The genmedia MCP media servers are
+	// separate processes that inherit GOOGLE_CLOUD_LOCATION and stay regional
+	// (us-central1) for Veo/Imagen/nanobanana — keep that env set for them.
+	orchestratorLocation := firstEnv("GEMINI_LOCATION")
+	if orchestratorLocation == "" {
+		orchestratorLocation = "global"
 	}
 
 	// Tier 2 needs a BARE GCS bucket (gs://bucket with NO path). This is a genmedia
@@ -195,7 +203,7 @@ func run(ctx context.Context) error {
 	// series orchestrates through.
 	g := genkit.Init(ctx, genkit.WithPlugins(&googlegenai.VertexAI{
 		ProjectID: project,
-		Location:  location,
+		Location:  orchestratorLocation,
 	}))
 
 	// Connect to ALL FOUR genmedia servers at once through the shared multi-server

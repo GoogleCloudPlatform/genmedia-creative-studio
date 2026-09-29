@@ -8,7 +8,7 @@
 #   2. The app boots under gunicorn/uvicorn in APP_ENV=local mode.
 #   3. GET /        -> 307 redirect to /home, which serves HTTP 200 (Mesop UI).
 #   4. GET /__login -> HTTP 200.
-#   5. (Optional, env-gated) one live Vertex gemini-3.8-flash generateContent
+#   5. (Optional, env-gated) one live Vertex gemini-3.5-flash generateContent
 #      call, only when a PROJECT_ID + working ADC are available.
 #
 # What this does NOT check: it is not the full test suite, not a deploy
@@ -189,7 +189,7 @@ echo "     ✅ GET /__login -> ${login_code}"
 LIVE_RESULT="skipped"
 if [ "${LIVE_CHECK}" = "1" ]; then
   echo ""
-  echo "🧪 (optional) Live Vertex gemini-3.8-flash generateContent leg..."
+  echo "🧪 (optional) Live Vertex gemini-3.5-flash generateContent leg..."
   if [ "${PROJECT_ID}" = "local-smoke-test" ]; then
     echo "     ⏭️  Skipped: no real PROJECT_ID available."
   elif ! command -v gcloud >/dev/null 2>&1; then
@@ -203,9 +203,9 @@ if [ "${LIVE_CHECK}" = "1" ]; then
       # aiplatform.googleapis.com host (no region prefix); regional overrides use
       # the "<region>-aiplatform" host. Build the URL accordingly.
       if [ "${GEMINI_LOCATION}" = "global" ]; then
-        URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/gemini-3.8-flash:generateContent"
+        URL="https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/global/publishers/google/models/gemini-3.5-flash:generateContent"
       else
-        URL="https://${GEMINI_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${GEMINI_LOCATION}/publishers/google/models/gemini-3.8-flash:generateContent"
+        URL="https://${GEMINI_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${GEMINI_LOCATION}/publishers/google/models/gemini-3.5-flash:generateContent"
       fi
       gen_code="$(curl -s -o /tmp/gmcs_smoke_gen.json -w '%{http_code}' -m 30 \
         -H "Authorization: Bearer ${TOKEN}" \

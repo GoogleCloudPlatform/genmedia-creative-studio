@@ -112,13 +112,15 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// defaultModel orchestrates delegation and drives each specialist. The gemini-3.x
-// flash family is newer than the googlegenai plugin's curated catalog, but the
-// plugin resolves unknown IDs dynamically with default options, so
-// "vertexai/gemini-3.8-flash" is accepted. Runs in the global region (see
+// defaultModel orchestrates delegation and drives each specialist.
+// gemini-3.5-flash is the durable, guaranteed strong-tier flash (the official
+// replacement for gemini-2.5-pro; global-only, see orchestratorLocation). The
+// googlegenai plugin accepts it regardless of its pinned curated catalog — it
+// resolves IDs outside the catalog dynamically with default options, so
+// "vertexai/gemini-3.5-flash" is accepted. Runs in the global region (see
 // orchestratorLocation). Single-sourced here; matches Tiers 0-2. Overridable via
 // TIER3_MODEL for experimentation.
-const defaultModel = "vertexai/gemini-3.8-flash"
+const defaultModel = "vertexai/gemini-3.5-flash"
 
 // Load-bearing genmedia model ids (same footguns as Tier 2). veo with no model
 // falls back to veo-2.0, which rejects generate_audio=true; lyria's clip-preview

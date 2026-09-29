@@ -59,13 +59,14 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// modelName is the Vertex Gemini model that orchestrates the tool calls. The
-// gemini-3.x flash family is newer than the googlegenai plugin's curated catalog
-// (models.go stops at gemini-3.7-flash), but the plugin resolves unknown IDs
-// dynamically with default options, so "vertexai/gemini-3.8-flash" is accepted.
-// Runs in the global region (see orchestratorLocation). Single-sourced here;
-// bump in one place. Matches Tier 0.
-const modelName = "vertexai/gemini-3.8-flash"
+// modelName is the Vertex Gemini model that orchestrates the tool calls.
+// gemini-3.5-flash is the durable, guaranteed strong-tier flash (the official
+// replacement for gemini-2.5-pro; global-only, see orchestratorLocation). The
+// googlegenai plugin accepts it regardless of the pinned curated catalog in
+// models.go — it resolves IDs outside the catalog dynamically with default
+// options, so "vertexai/gemini-3.5-flash" is accepted. Runs in the global region
+// (see orchestratorLocation). Single-sourced here; bump in one place. Matches Tier 0.
+const modelName = "vertexai/gemini-3.5-flash"
 
 // veoModel is the explicit Veo-3 model passed to veo_i2v. This is load-bearing:
 // with no model the veo server falls back to "veo-2.0-generate-001", which

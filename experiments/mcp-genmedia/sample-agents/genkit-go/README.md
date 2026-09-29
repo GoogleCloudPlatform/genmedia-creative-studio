@@ -394,7 +394,7 @@ download bridge — `StdioConfig.Command` resolves it directly.
 | Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
 | Go | `go 1.25.0` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
-| Orchestrating model | `vertexai/gemini-3.8-flash` (runs at `GEMINI_LOCATION`, default `global`) | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
+| Orchestrating model | `vertexai/gemini-3.5-flash` (runs at `GEMINI_LOCATION`, default `global`) | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
 | Veo model (Tiers 1-3) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` + `tier3-preview/main.go` `veoModel` |
 | Lyria model (Tiers 2-3) | `lyria-3-clip-preview` | `tier2-producer/main.go` + `tier3-preview/main.go` `lyriaModel` |
 | **Tier 3 (PREVIEW) experimental APIs** | `genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`, `plugins/middleware/exp` behind `WithExperimental()` — **pinned to `genkit/go v1.13.1`, may break on upgrade** | `tier3-preview/main.go` |

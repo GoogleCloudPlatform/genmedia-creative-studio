@@ -70,12 +70,14 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/sample-agents/genkit-go/internal/verify"
 )
 
-// modelName is the Vertex Gemini model that orchestrates the tool calls. The
-// gemini-3.x flash family is newer than the plugin's curated catalog, but the
-// googlegenai plugin resolves unknown IDs dynamically with default options, so
-// the "vertexai/" provider prefix + gemini-3.8-flash is accepted. Runs in the
-// global region (see orchestratorLocation). Single-sourced here; matches Tiers 0-1.
-const modelName = "vertexai/gemini-3.8-flash"
+// modelName is the Vertex Gemini model that orchestrates the tool calls.
+// gemini-3.5-flash is the durable, guaranteed strong-tier flash (the official
+// replacement for gemini-2.5-pro; global-only, see orchestratorLocation). The
+// googlegenai plugin accepts it regardless of its pinned curated catalog — it
+// resolves IDs outside the catalog dynamically with default options, so the
+// "vertexai/" provider prefix + gemini-3.5-flash is accepted. Runs in the global
+// region (see orchestratorLocation). Single-sourced here; matches Tiers 0-1.
+const modelName = "vertexai/gemini-3.5-flash"
 
 // Model ids passed explicitly to the genmedia tools. These are load-bearing and
 // single-sourced here (the quirks prompt tells the model WHY; naming the ids in

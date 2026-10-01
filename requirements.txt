@@ -369,7 +369,7 @@ pygments==2.21.0
     #   ipython
     #   ipython-pygments-lexers
     #   pytest
-pyjwt==2.14.0
+pyjwt==2.15.0
     # via firebase-admin
 pyopenssl==26.4.0
     # via vertex-ai-genmedia-creative-studio

@@ -476,7 +476,7 @@ tzdata==2026.3 ; sys_platform == 'win32'
     # via tzlocal
 tzlocal==5.4.4
     # via google-adk
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
     # via

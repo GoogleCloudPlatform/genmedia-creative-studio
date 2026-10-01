@@ -458,7 +458,7 @@ typing-inspection==0.4.4
     #   pydantic
 tzdata==2026.3 ; sys_platform == 'emscripten' or sys_platform == 'win32'
     # via pandas
-urllib3==2.7.0
+urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
     # via vertex-ai-genmedia-creative-studio

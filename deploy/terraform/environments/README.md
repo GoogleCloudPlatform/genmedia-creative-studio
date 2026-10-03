@@ -80,6 +80,35 @@ operating against the previous environment's state object. Skipping
 explicit prefix + `-var-file` per environment (instead of Terraform workspaces)
 keeps "which environment am I about to touch" visible on every command.
 
+## Vuln #4 (nonprod): verified-identity env contract & apply ordering
+
+The nonprod path (`use_lb = false`) sets three verified-identity env vars on the
+Cloud Run service (`APP_ENV`, `REQUIRE_AUTHENTICATED_USER`, `IAP_JWT_AUDIENCE`).
+`APP_ENV` resolves to a non-local value (the `staging` label) so the app derives
+`AUTH_MODE='iap'`; `IAP_JWT_AUDIENCE` is the native Cloud Run audience built from
+the project **number**, region, and the static service name `creative-studio`
+(never a hardcoded literal). Prod (`use_lb = true`) is unaffected — its IAP
+audience is the LB backend-service form, a separate two-stage change held for a
+later phase.
+
+- **Atomic co-deploy (REQUIRED).** In `iap` mode the app FATALs at boot if
+  `IAP_JWT_AUDIENCE` is unset, and once `REQUIRE_AUTHENTICATED_USER=true` the
+  service rejects any request without a verified identity. These env vars MUST
+  therefore land in the **same Cloud Run revision as the app image that reads
+  them** — i.e. a single `terraform apply` where `var.initial_container_image`
+  points at the merged verified-identity build, so image + env render into one
+  `google_cloud_run_v2_service` spec / one revision. Never apply these env vars
+  before that image exists, and never split image and env across two updates.
+- **Fail-closed guard.** A `terraform_data.nonprod_app_env_guard` precondition
+  fails the plan/apply on the nonprod path if `APP_ENV` resolves to a local-mode
+  value (`""`, `dev`, `development`, `local`, `test`), preventing a silent
+  fail-open (mock identity) misconfiguration.
+- **Post-apply fail-closed smoke (owner-run, do NOT run from CI/agents).** After
+  the atomic apply, confirm the service fails **closed**: (1) a request to the
+  Cloud Run URL lacking a valid `X-Goog-IAP-JWT-Assertion` is rejected (not served
+  an authenticated page); (2) the running revision resolves `APP_ENV` to the
+  non-local value (so `AUTH_MODE='iap'`) and has a non-empty `IAP_JWT_AUDIENCE`.
+
 ## Notes
 
 - **Backend config is never stored in these tfvars files.** The state bucket and

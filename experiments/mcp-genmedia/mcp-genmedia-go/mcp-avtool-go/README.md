@@ -62,6 +62,13 @@ The `avtool` provides the following functionalities, exposed as MCP tools:
     *   By default the segment is extracted with a fast, lossless stream copy (`-c copy`). Because a stream copy can only begin on a keyframe, the cut may start at the nearest keyframe at or before the requested start time, so it may not be exactly frame-accurate. Set `re_encode=true` for a frame-accurate cut (slower, slightly lossy). If a stream copy is not possible for the chosen output container, the tool automatically falls back to a re-encode.
     *   Output: The trimmed media file (input container/extension preserved by default). Can be saved locally and/or to a GCS bucket.
 
+*   **`ffmpeg_extract_frame`**:
+    *   Extracts a single still frame from a video as a PNG or JPEG image.
+    *   `mode=last_frame` (default) captures the exact final frame of the clip (decodes the tail and keeps the last decoded frame, so it is frame-accurate even for very short clips); `mode=at_timestamp` captures the frame at a given `timestamp` (seconds from the start, must be `>= 0` and less than the input's duration).
+    *   Inputs: URI of the input video file (must contain a video stream), optional `mode`, conditional `timestamp` (required for `at_timestamp`), optional `output_format` (`png` default/lossless, or `jpg`).
+    *   The output image path/URI drops straight into reference-image conditioning (e.g. `mcp-omni-go`'s `omni_video_generation` `images`, or Veo first/last / reference-image inputs) to chain long-form video segments on the previous clip's last frame. Fails if the input has no video stream.
+    *   Output: A single image file (PNG by default; JPEG via `output_format` or the `output_filename` extension). Can be saved locally and/or to a GCS bucket.
+
 *   **`ffmpeg_normalize_loudness`**:
     *   Normalizes the perceived loudness of an audio file (or the audio track of a video file) to a target level using EBU R128 loudness normalization. Works for both pure-audio inputs and videos with an audio track.
     *   Uses the accurate two-pass `loudnorm` method: a first pass measures the input's actual integrated loudness, true peak, loudness range and threshold, and a second pass applies a linear correction toward the target using those measurements. This is more accurate than a single-pass normalize.

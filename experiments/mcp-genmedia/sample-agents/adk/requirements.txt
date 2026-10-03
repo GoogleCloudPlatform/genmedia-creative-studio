@@ -349,7 +349,7 @@ proto-plus==1.28.4
     #   google-cloud-spanner
     #   google-cloud-speech
     #   google-cloud-trace
-protobuf==6.33.6
+protobuf==7.36.2
     # via
     #   google-api-core
     #   google-cloud-aiplatform

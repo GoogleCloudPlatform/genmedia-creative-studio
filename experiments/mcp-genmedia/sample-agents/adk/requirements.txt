@@ -261,7 +261,7 @@ mcp==1.29.1
     # via google-adk
 mmh3==5.3.0
     # via google-cloud-spanner
-multidict==6.7.1
+multidict==7.0.0
     # via
     #   aiohttp
     #   yarl

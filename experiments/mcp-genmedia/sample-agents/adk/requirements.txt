@@ -37,7 +37,7 @@ certifi==2026.7.22
     #   requests
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via requests
 click==8.5.0
     # via
@@ -45,7 +45,7 @@ click==8.5.0
     #   uvicorn
 cloudpickle==3.1.2
     # via google-cloud-aiplatform
-cryptography==50.0.1
+cryptography==50.0.2
     # via
     #   authlib
     #   google-auth
@@ -57,15 +57,15 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 dotenv==0.9.9
     # via adk-genmedia-agent
-fastapi==0.141.1
+fastapi==0.142.2
     # via google-adk
 frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-google-adk==2.8.0
+google-adk==2.11.0
     # via adk-genmedia-agent
-google-api-core==2.34.0
+google-api-core==2.40.0
     # via
     #   google-cloud-aiplatform
     #   google-cloud-appengine-logging
@@ -87,7 +87,7 @@ google-api-core==2.34.0
     #   google-cloud-speech
     #   google-cloud-storage
     #   google-cloud-trace
-google-auth==2.57.1
+google-auth==2.59.1
     # via
     #   google-adk
     #   google-api-core
@@ -112,78 +112,78 @@ google-auth==2.57.1
     #   google-cloud-storage
     #   google-cloud-trace
     #   google-genai
-google-cloud-aiplatform==2.1.0
+google-cloud-aiplatform==2.3.0
     # via google-adk
-google-cloud-appengine-logging==1.10.0
+google-cloud-appengine-logging==1.11.0
     # via google-cloud-logging
 google-cloud-audit-log==0.6.2
     # via google-cloud-logging
-google-cloud-bigquery==3.45.0
+google-cloud-bigquery==3.46.1
     # via
     #   google-adk
     #   google-cloud-aiplatform
-google-cloud-bigquery-storage==2.41.0
+google-cloud-bigquery-storage==2.42.0
     # via google-adk
-google-cloud-bigtable==2.44.0
+google-cloud-bigtable==2.49.0
     # via google-adk
-google-cloud-core==2.7.0
+google-cloud-core==2.8.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-bigtable
     #   google-cloud-logging
     #   google-cloud-spanner
     #   google-cloud-storage
-google-cloud-dataplex==2.20.0
+google-cloud-dataplex==2.21.0
     # via google-adk
-google-cloud-discoveryengine==0.13.12
+google-cloud-discoveryengine==0.20.5
     # via google-adk
-google-cloud-eventarc-publishing==0.10.1
+google-cloud-eventarc-publishing==0.10.2
     # via google-adk
-google-cloud-logging==3.16.3
+google-cloud-logging==3.17.0
     # via
     #   google-cloud-aiplatform
     #   opentelemetry-exporter-gcp-logging
-google-cloud-modelarmor==0.7.1
+google-cloud-modelarmor==0.7.2
     # via google-adk
-google-cloud-monitoring==2.31.0
+google-cloud-monitoring==2.32.0
     # via
     #   google-cloud-bigtable
     #   google-cloud-spanner
     #   opentelemetry-exporter-gcp-monitoring
-google-cloud-parametermanager==0.4.1
+google-cloud-parametermanager==0.4.3
     # via google-adk
-google-cloud-pubsub==2.40.0
+google-cloud-pubsub==2.42.0
     # via google-adk
-google-cloud-resource-manager==1.18.0
+google-cloud-resource-manager==1.19.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
-google-cloud-secret-manager==2.30.0
+google-cloud-secret-manager==2.31.0
     # via google-adk
 google-cloud-spanner==3.71.0
     # via google-adk
-google-cloud-speech==2.40.0
+google-cloud-speech==2.41.0
     # via google-adk
-google-cloud-storage==3.13.1
+google-cloud-storage==3.16.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
-google-cloud-trace==1.20.0
+google-cloud-trace==1.21.0
     # via opentelemetry-exporter-gcp-trace
-google-crc32c==1.8.0
+google-crc32c==1.9.0
     # via
     #   google-cloud-bigtable
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.22.0
+google-genai==2.28.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
-google-resumable-media==2.10.2
+google-resumable-media==2.11.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.75.3
+googleapis-common-protos==1.75.5
     # via
     #   google-api-core
     #   google-cloud-audit-log
@@ -204,7 +204,7 @@ grpc-google-iam-v1==0.14.5
     #   google-cloud-spanner
 grpc-interceptor==0.15.4
     # via google-cloud-spanner
-grpcio==1.83.1
+grpcio==1.84.0
     # via
     #   google-api-core
     #   google-cloud-appengine-logging
@@ -226,7 +226,7 @@ grpcio==1.83.1
     #   grpc-google-iam-v1
     #   grpc-interceptor
     #   grpcio-status
-grpcio-status==1.83.1
+grpcio-status==1.84.0
     # via
     #   google-api-core
     #   google-cloud-pubsub
@@ -243,7 +243,7 @@ httpx==0.28.1
     #   mcp
 httpx-sse==0.4.3
     # via mcp
-idna==3.19
+idna==3.20
     # via
     #   anyio
     #   httpx
@@ -257,15 +257,15 @@ jsonschema==4.26.0
     #   mcp
 jsonschema-specifications==2025.9.1
     # via jsonschema
-mcp==1.29.1
+mcp==1.30.0
     # via google-adk
-mmh3==5.3.0
+mmh3==5.3.1
     # via google-cloud-spanner
-multidict==6.7.1
+multidict==6.9.1
     # via
     #   aiohttp
     #   yarl
-opentelemetry-api==1.42.1
+opentelemetry-api==1.45.0
     # via
     #   google-adk
     #   google-cloud-bigtable
@@ -287,13 +287,13 @@ opentelemetry-exporter-gcp-monitoring==1.15.0a0
     # via google-adk
 opentelemetry-exporter-gcp-trace==1.15.0
     # via google-adk
-opentelemetry-exporter-otlp-proto-common==1.42.1
+opentelemetry-exporter-otlp-proto-common==1.45.0
     # via opentelemetry-exporter-otlp-proto-http
-opentelemetry-exporter-otlp-proto-http==1.42.1
+opentelemetry-exporter-otlp-proto-http==1.45.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
-opentelemetry-proto==1.42.1
+opentelemetry-proto==1.45.0
     # via
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-http
@@ -304,7 +304,7 @@ opentelemetry-resourcedetector-gcp==1.14.0
     #   opentelemetry-exporter-gcp-logging
     #   opentelemetry-exporter-gcp-monitoring
     #   opentelemetry-exporter-gcp-trace
-opentelemetry-sdk==1.42.1
+opentelemetry-sdk==1.45.0
     # via
     #   google-adk
     #   google-cloud-aiplatform
@@ -325,11 +325,11 @@ packaging==26.3
     #   google-adk
     #   google-cloud-aiplatform
     #   google-cloud-bigquery
-propcache==0.5.2
+propcache==0.5.4
     # via
     #   aiohttp
     #   yarl
-proto-plus==1.28.4
+proto-plus==1.29.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -389,17 +389,17 @@ pydantic==2.13.5
     #   google-genai
     #   mcp
     #   pydantic-settings
-pydantic-core==2.46.5
+pydantic-core==2.49.0
     # via pydantic
 pydantic-settings==2.15.0
     # via mcp
-pyjwt==2.15.0
+pyjwt==2.15.1
     # via mcp
 python-dateutil==2.9.0.post0
     # via
     #   google-adk
     #   google-cloud-bigquery
-python-dotenv==1.2.3
+python-dotenv==1.2.4
     # via
     #   dotenv
     #   google-adk
@@ -436,9 +436,9 @@ sniffio==1.3.1
     # via google-genai
 sqlparse==0.6.0
     # via google-cloud-spanner
-sse-starlette==3.4.11
+sse-starlette==3.5.0
     # via mcp
-starlette==1.6.0
+starlette==1.7.0
     # via
     #   fastapi
     #   google-adk
@@ -472,13 +472,13 @@ typing-inspection==0.4.4
     #   mcp
     #   pydantic
     #   pydantic-settings
-tzdata==2026.3 ; sys_platform == 'win32'
+tzdata==2026.5 ; sys_platform == 'win32'
     # via tzlocal
 tzlocal==5.4.4
     # via google-adk
 urllib3==2.8.0
     # via requests
-uvicorn==0.52.4
+uvicorn==0.54.0
     # via
     #   google-adk
     #   mcp
@@ -488,5 +488,5 @@ websockets==15.0.1
     # via
     #   google-adk
     #   google-genai
-yarl==1.24.5
+yarl==1.25.1
     # via aiohttp

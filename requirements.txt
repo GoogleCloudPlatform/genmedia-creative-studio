@@ -17,7 +17,7 @@ black==26.5.1
     # via vertex-ai-genmedia-creative-studio
 blinker==1.9.0
     # via flask
-c2pa-python==0.37.10
+c2pa-python==0.38.0
     # via vertex-ai-genmedia-creative-studio
 cachecontrol==0.14.4
     # via firebase-admin
@@ -31,7 +31,7 @@ cffi==2.1.1
     # via
     #   cryptography
     #   soundfile
-charset-normalizer==3.5.1
+charset-normalizer==3.5.2
     # via requests
 click==8.5.0
     # via
@@ -45,9 +45,9 @@ colorama==0.4.6 ; sys_platform == 'win32'
     #   ipython
     #   pytest
     #   tqdm
-contourpy==1.3.3
+contourpy==1.4.0
     # via matplotlib
-cryptography==50.0.1
+cryptography==50.0.2
     # via
     #   c2pa-python
     #   google-auth
@@ -67,15 +67,15 @@ docstring-parser==0.18.0
     # via google-cloud-aiplatform
 executing==2.2.1
     # via stack-data
-fastapi==0.141.1
+fastapi==0.142.2
     # via vertex-ai-genmedia-creative-studio
-firebase-admin==7.5.0
+firebase-admin==7.7.0
     # via vertex-ai-genmedia-creative-studio
 flask==3.1.3
     # via mesop
-fonttools==4.64.0
+fonttools==4.66.1
     # via matplotlib
-google-api-core==2.36.0
+google-api-core==2.40.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
@@ -88,7 +88,7 @@ google-api-core==2.36.0
     #   google-cloud-storage
     #   google-cloud-tasks
     #   google-cloud-texttospeech
-google-auth[requests]==2.57.1
+google-auth[requests]==2.59.1
     # via
     #   genmedia-creative-studio (pyproject.toml)
     #   google-api-core
@@ -103,47 +103,47 @@ google-auth[requests]==2.57.1
     #   google-cloud-tasks
     #   google-cloud-texttospeech
     #   google-genai
-google-cloud-aiplatform==2.1.0
+google-cloud-aiplatform==2.3.0
     # via vertex-ai-genmedia-creative-studio
-google-cloud-appengine-logging==1.10.0
+google-cloud-appengine-logging==1.11.0
     # via google-cloud-logging
 google-cloud-audit-log==0.6.2
     # via google-cloud-logging
-google-cloud-bigquery==3.45.0
+google-cloud-bigquery==3.46.1
     # via google-cloud-aiplatform
-google-cloud-core==2.7.0
+google-cloud-core==2.8.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-firestore
     #   google-cloud-logging
     #   google-cloud-storage
-google-cloud-firestore==2.30.0 ; platform_python_implementation != 'PyPy'
+google-cloud-firestore==2.34.0 ; platform_python_implementation != 'PyPy'
     # via firebase-admin
-google-cloud-logging==3.16.3
+google-cloud-logging==3.17.0
     # via vertex-ai-genmedia-creative-studio
-google-cloud-resource-manager==1.18.0
+google-cloud-resource-manager==1.19.0
     # via google-cloud-aiplatform
-google-cloud-storage==3.13.1
+google-cloud-storage==3.16.0
     # via
     #   firebase-admin
     #   google-cloud-aiplatform
-google-cloud-tasks==2.24.0
+google-cloud-tasks==2.26.0
     # via vertex-ai-genmedia-creative-studio
-google-cloud-texttospeech==2.37.0
+google-cloud-texttospeech==2.38.0
     # via vertex-ai-genmedia-creative-studio
-google-crc32c==1.8.0
+google-crc32c==1.9.0
     # via
     #   google-cloud-storage
     #   google-resumable-media
-google-genai==2.22.0
+google-genai==2.28.0
     # via
     #   google-cloud-aiplatform
     #   vertex-ai-genmedia-creative-studio
-google-resumable-media==2.10.2
+google-resumable-media==2.11.0
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos==1.75.3
+googleapis-common-protos==1.75.5
     # via
     #   google-api-core
     #   google-cloud-audit-log
@@ -154,7 +154,7 @@ grpc-google-iam-v1==0.14.5
     #   google-cloud-logging
     #   google-cloud-resource-manager
     #   google-cloud-tasks
-grpcio==1.83.1
+grpcio==1.84.0
     # via
     #   google-api-core
     #   google-cloud-appengine-logging
@@ -166,7 +166,7 @@ grpcio==1.83.1
     #   googleapis-common-protos
     #   grpc-google-iam-v1
     #   grpcio-status
-grpcio-status==1.83.1 ; platform_python_implementation != 'PyPy'
+grpcio-status==1.84.0 ; platform_python_implementation != 'PyPy'
     # via google-api-core
 gunicorn==26.2.0
     # via vertex-ai-genmedia-creative-studio
@@ -186,12 +186,12 @@ httpx==0.28.1
     #   google-genai
 hyperframe==6.1.0
     # via h2
-idna==3.19
+idna==3.20
     # via
     #   anyio
     #   httpx
     #   requests
-imageio==2.37.4
+imageio==2.38.0
     # via
     #   moviepy
     #   scikit-image
@@ -215,41 +215,41 @@ joblib==1.6.0
     #   scikit-learn
 kiwisolver==1.5.1
     # via matplotlib
-lazy-loader==0.5
+lazy-loader==0.6
     # via
     #   librosa
     #   scikit-image
 librosa==1.0.0
     # via vertex-ai-genmedia-creative-studio
-llvmlite==0.49.0
+llvmlite==0.50.0
     # via numba
-markupsafe==3.0.3
+markupsafe==3.0.4
     # via
     #   flask
     #   jinja2
     #   werkzeug
-matplotlib==3.11.1
+matplotlib==3.11.2
     # via mediapy
 matplotlib-inline==0.2.2
     # via ipython
 mediapy==1.2.7
     # via vertex-ai-genmedia-creative-studio
-mesop==1.3.5
+mesop==1.3.7
     # via vertex-ai-genmedia-creative-studio
 moviepy==2.2.1
     # via vertex-ai-genmedia-creative-studio
-msgpack==1.2.2
+msgpack==1.2.3
     # via
     #   cachecontrol
     #   librosa
     #   mesop
 mypy-extensions==1.1.0
     # via black
-narwhals==2.25.0
+narwhals==2.26.0
     # via scikit-learn
-networkx==3.6.1
+networkx==3.7
     # via scikit-image
-numba==0.67.0
+numba==0.68.0
     # via librosa
 numpy==2.5.3
     # via
@@ -272,7 +272,7 @@ numpy==2.5.3
     #   vertex-ai-genmedia-creative-studio
 opencv-python==5.0.0.93
     # via vertex-ai-genmedia-creative-studio
-opentelemetry-api==1.44.0
+opentelemetry-api==1.45.0
     # via
     #   google-api-core
     #   google-cloud-logging
@@ -288,7 +288,7 @@ packaging==26.3
     #   pooch
     #   pytest
     #   scikit-image
-pandas==3.0.5
+pandas==3.0.6
     # via vertex-ai-genmedia-creative-studio
 parso==0.8.7
     # via jedi
@@ -304,7 +304,7 @@ pillow==12.3.0
     #   moviepy
     #   scikit-image
     #   vertex-ai-genmedia-creative-studio
-platformdirs==4.11.7
+platformdirs==4.12.2
     # via
     #   black
     #   pooch
@@ -318,7 +318,7 @@ proglog==0.1.12
     # via moviepy
 prompt-toolkit==3.0.53
     # via ipython
-proto-plus==1.28.4
+proto-plus==1.29.0
     # via
     #   google-api-core
     #   google-cloud-aiplatform
@@ -348,7 +348,7 @@ psutil==7.2.2 ; sys_platform != 'cygwin' and sys_platform != 'emscripten'
     # via ipython
 ptyprocess==0.7.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via pexpect
-pure-eval==0.2.3
+pure-eval==0.2.4
     # via stack-data
 pyasn1==0.6.4
     # via pyasn1-modules
@@ -362,18 +362,18 @@ pydantic==2.13.5
     #   google-cloud-aiplatform
     #   google-genai
     #   mesop
-pydantic-core==2.46.5
+pydantic-core==2.49.0
     # via pydantic
 pygments==2.21.0
     # via
     #   ipython
     #   ipython-pygments-lexers
     #   pytest
-pyjwt==2.15.0
+pyjwt==2.15.1
     # via firebase-admin
 pyopenssl==26.4.0
     # via vertex-ai-genmedia-creative-studio
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via matplotlib
 pytest==9.1.1
     # via vertex-ai-genmedia-creative-studio
@@ -382,7 +382,7 @@ python-dateutil==2.9.0.post0
     #   google-cloud-bigquery
     #   matplotlib
     #   pandas
-python-dotenv==1.2.3
+python-dotenv==1.2.4
     # via
     #   mesop
     #   moviepy
@@ -398,11 +398,11 @@ requests==2.34.2
     #   google-cloud-storage
     #   google-genai
     #   pooch
-ruff==0.16.6
+ruff==0.16.10
     # via vertex-ai-genmedia-creative-studio
 scikit-image==0.26.0
     # via vertex-ai-genmedia-creative-studio
-scikit-learn==1.9.0
+scikit-learn==1.9.1
     # via librosa
 scipy==1.18.1
     # via
@@ -422,19 +422,19 @@ soxr==1.1.0
     # via librosa
 stack-data==0.6.3
     # via ipython
-starlette==1.6.0
+starlette==1.7.0
     # via fastapi
 tenacity==9.1.4
     # via
     #   google-genai
     #   vertex-ai-genmedia-creative-studio
-threadpoolctl==3.6.0
+threadpoolctl==3.7.0
     # via scikit-learn
-tifffile==2026.8.23
+tifffile==2026.9.20
     # via scikit-image
 toml==0.10.2
     # via c2pa-python
-tqdm==4.70.0
+tqdm==4.70.1
     # via proglog
 traitlets==5.16.1
     # via
@@ -456,19 +456,19 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.3 ; sys_platform == 'emscripten' or sys_platform == 'win32'
+tzdata==2026.5 ; sys_platform == 'emscripten' or sys_platform == 'win32'
     # via pandas
 urllib3==2.8.0
     # via requests
-uvicorn==0.52.4
+uvicorn==0.54.0
     # via vertex-ai-genmedia-creative-studio
 watchdog==6.0.0
     # via mesop
-wcwidth==0.8.3
+wcwidth==0.9.1
     # via prompt-toolkit
 websockets==16.1.1
     # via google-genai
-werkzeug==3.1.8
+werkzeug==3.1.9
     # via
     #   flask
     #   mesop

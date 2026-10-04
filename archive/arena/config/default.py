@@ -47,6 +47,12 @@ class Default:
     DEFAULT_STUDY_NAME: str = os.environ.get("DEFAULT_STUDY_NAME", "live")
     ELO_K_FACTOR: int = int(os.environ.get("ELO_K_FACTOR", 32))
 
+    # Comma-separated allowlist of admin emails authorized to perform destructive
+    # operations (e.g. resetting a study's ELO leaderboard). Empty by default so
+    # the destructive purge fails closed. Consumed by common.authz (which reads
+    # the ARENA_ADMIN_EMAILS environment variable directly). See common/authz.py.
+    ARENA_ADMIN_EMAILS: str = os.environ.get("ARENA_ADMIN_EMAILS", "")
+
     # image models
     MODEL_IMAGEN2: str = "imagen-4.0-generate-001"
     MODEL_IMAGEN3_FAST: str = "imagen-4.0-fast-generate-001"

@@ -20,6 +20,7 @@ from components.page_scaffold import (
 )
 
 from typing import Any
+from common import authz
 from config.default import Default
 from config.firebase_config import FirebaseClient
 
@@ -47,8 +48,17 @@ def settings_page_content(app_state: me.state):
             me.text(f"Vote pause time: {Default.SHOW_RESULTS_PAUSE_TIME} seconds")
 
 
-async def _purge_elo_ratings(study: str) -> bool:
-    """Reset the ELO Ratings"""
+async def _purge_elo_ratings(study: str, caller_email: str | None = None) -> bool:
+    """Reset the ELO Ratings.
+
+    Fail-closed authorization gate: refuse the destructive purge unless
+    ``caller_email`` is a verified, allowlisted admin. The check runs *before*
+    any Firestore client is constructed or any document is read/deleted, so an
+    unauthorized/unauthenticated caller deletes nothing and gets no existence
+    oracle. See ``common/authz.py`` (mirrors main-app PRs #1920 / #1930).
+    """
+    authz.authorize_admin(caller_email, action="reset the leaderboard")
+
     db = AsyncClient(project=cnfg.PROJECT_ID, database=cnfg.IMAGE_FIREBASE_DB)
 
     batch_transcations = db.batch()
@@ -92,7 +102,17 @@ def _render_study_info(studies: dict[dict[str, Any]], app_state: me.state):
         app_state.study_models = studies[study.key].get('models', [])
     
     def _handle_purge(study: me.ClickEvent):
-        asyncio.run(_purge_elo_ratings(study=study.key))
+        # Resolve the server-*verified* caller and authorize before doing
+        # anything destructive. Arena has no verified-identity pipeline yet, so
+        # this currently resolves to None and the purge fails closed (no data is
+        # touched) until a verified identity is wired. See common/authz.py.
+        caller_email = authz.get_verified_caller_email()
+        try:
+            authz.authorize_admin(caller_email, action="reset the leaderboard")
+        except authz.AuthorizationError as exc:
+            print(f"Reset Leaderboard denied: {exc}")
+            return
+        asyncio.run(_purge_elo_ratings(study=study.key, caller_email=caller_email))
     
     if len(studies):
         me.text("Available Studies", type="headline-5")

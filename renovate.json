@@ -10,6 +10,17 @@
       "enabled": false
     },
     {
+      "description": "Do not let the pip_requirements manager line-edit DERIVED uv-export requirements.txt files. These are `uv export`/`uv pip compile` artifacts of pyproject.toml + uv.lock; a single-line bump does not re-resolve and produces no-op / self-contradictory PRs (defect #1757 -> fix #1804). uv.lock/pyproject.toml stay managed via the pep621/uv manager; hand-maintained requirements.txt files (no uv provenance) remain managed by pip_requirements. See docs/repo-management/uv-lockfile-conventions.md.",
+      "matchManagers": ["pip_requirements"],
+      "matchFileNames": [
+        "requirements.txt",
+        "experiments/babel/app/requirements.txt",
+        "experiments/mcp-genmedia/sample-agents/adk/requirements.txt",
+        "experiments/promptlandia/requirements.txt"
+      ],
+      "enabled": false
+    },
+    {
       "matchPackageNames": ["hashicorp/google", "hashicorp/google-beta"],
       "matchUpdateTypes": ["major"],
       "enabled": false

@@ -18,7 +18,6 @@ import json
 
 import mesop as me
 
-from common.metadata import get_media_item_by_id
 from common.storage import store_to_gcs
 from common.utils import create_display_url
 from components.header import header

@@ -378,3 +378,135 @@ def test_get_media_for_page_filters_by_user_email(monkeypatch, fake_db):
 
     assert {i.user_email for i in items} == {"alice@example.com"}
     assert len(items) == 2
+
+
+# --------------------------------------------------------------------------- #
+# D. get_media_item_by_id — load-by-client-supplied-id (b/565102630 residual)
+# --------------------------------------------------------------------------- #
+# ``selected_media_item_id`` is set from a client-controlled Mesop ``WebEvent.key``
+# (guideline_analysis / library_v2) and the Veo HTTP job id is client-supplied,
+# so an unauthorized caller could read ANY user's media item by id. These prove
+# the fix: the load is now owner-scoped (mirrors authorize_read / PR #1930), and
+# the intentional system bypass stays unscoped for background job processing.
+def _seed_alice_media_item(fake_db):
+    import common.metadata as md
+
+    coll = md.config.GENMEDIA_COLLECTION_NAME
+    fake_db.seed(
+        coll,
+        "m_alice_secret",
+        {
+            "user_email": "alice@example.com",
+            "timestamp": datetime.datetime(2026, 1, 1, 12, 0, 0),
+            "mime_type": "video/mp4",
+            "gcsuri": "gs://private/alice.mp4",
+            "prompt": "alice-private-prompt",
+        },
+    )
+    return coll
+
+
+def test_get_media_item_by_id_denies_non_owner(monkeypatch, fake_db):
+    """Unauthorized (authenticated-but-not-owner) caller gets NO doc back —
+    fail-closed, no disclosure of another user's media item."""
+    import common.metadata as md
+
+    _seed_alice_media_item(fake_db)
+    monkeypatch.setattr(md, "db", fake_db)
+    _set_server_identity(monkeypatch, "attacker@evil.com")
+
+    assert md.get_media_item_by_id("m_alice_secret") is None
+    # Explicit caller identity path is denied identically.
+    assert (
+        md.get_media_item_by_id("m_alice_secret", caller_email="attacker@evil.com")
+        is None
+    )
+
+
+def test_get_media_item_by_id_denies_unauthenticated(monkeypatch, fake_db):
+    """No resolvable server-derived identity => denied (never returned)."""
+    import common.metadata as md
+
+    _seed_alice_media_item(fake_db)
+    monkeypatch.setattr(md, "db", fake_db)
+    _set_server_identity(monkeypatch, None)
+
+    assert md.get_media_item_by_id("m_alice_secret") is None
+    assert md.get_media_item_by_id("m_alice_secret", caller_email="") is None
+
+
+def test_get_media_item_by_id_allows_owner(monkeypatch, fake_db):
+    """The legitimate owner still gets their own item."""
+    import common.metadata as md
+
+    _seed_alice_media_item(fake_db)
+    monkeypatch.setattr(md, "db", fake_db)
+    _set_server_identity(monkeypatch, "alice@example.com")
+
+    item = md.get_media_item_by_id("m_alice_secret")
+    assert item is not None
+    assert item.id == "m_alice_secret"
+    assert item.user_email == "alice@example.com"
+    assert item.gcsuri == "gs://private/alice.mp4"
+
+    # Explicit server-derived caller identity path also returns the owner's item.
+    item2 = md.get_media_item_by_id("m_alice_secret", caller_email="alice@example.com")
+    assert item2 is not None
+    assert item2.id == "m_alice_secret"
+
+
+def test_get_media_item_by_id_non_owner_and_missing_indistinguishable(
+    monkeypatch, fake_db
+):
+    """No existence oracle: a non-owner read and a not-found read both return the
+    identical ``None`` so an attacker cannot probe whether a victim's id exists."""
+    import common.metadata as md
+
+    _seed_alice_media_item(fake_db)
+    monkeypatch.setattr(md, "db", fake_db)
+    _set_server_identity(monkeypatch, "attacker@evil.com")
+
+    non_owner = md.get_media_item_by_id("m_alice_secret")
+    not_found = md.get_media_item_by_id("does_not_exist")
+    assert non_owner is None
+    assert not_found is None
+    assert non_owner == not_found
+
+
+def test_get_media_item_by_id_allows_legacy_ownerless(monkeypatch, fake_db):
+    """Pre-existing unattributed items (no owner field) stay reachable, consistent
+    with #1920/#1930 ownerless tolerance."""
+    import common.metadata as md
+
+    coll = md.config.GENMEDIA_COLLECTION_NAME
+    fake_db.seed(
+        coll,
+        "m_legacy",
+        {"timestamp": datetime.datetime(2026, 1, 1), "mime_type": "image/png"},
+    )
+    monkeypatch.setattr(md, "db", fake_db)
+    _set_server_identity(monkeypatch, "anyone@example.com")
+
+    item = md.get_media_item_by_id("m_legacy")
+    assert item is not None
+    assert item.id == "m_legacy"
+
+
+def test_get_media_item_by_id_system_is_unscoped(monkeypatch, fake_db):
+    """The explicit system bypass returns the item regardless of caller identity —
+    it is the sanctioned path for background job processing (veo_service) and MUST
+    remain unscoped. This documents that the scoping lives in get_media_item_by_id,
+    not here."""
+    import common.metadata as md
+
+    _seed_alice_media_item(fake_db)
+    monkeypatch.setattr(md, "db", fake_db)
+    # Even with a non-owner / no identity resolvable, the system read returns it.
+    _set_server_identity(monkeypatch, None)
+
+    item = md.get_media_item_by_id_system("m_alice_secret")
+    assert item is not None
+    assert item.id == "m_alice_secret"
+    assert item.user_email == "alice@example.com"
+    # Missing id still returns None.
+    assert md.get_media_item_by_id_system("ghost") is None

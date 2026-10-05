@@ -405,10 +405,69 @@ def _create_media_item_from_dict(doc_id: str, raw_item_data: dict) -> MediaItem:
 
 def get_media_item_by_id(
     item_id: str,
+    *,
+    caller_email: str | None = None,
 ) -> MediaItem | None:  # Assuming MediaItem class is defined/imported
-    """Retrieve a specific media item by its Firestore document ID."""
+    """Retrieve a media item by its Firestore document ID, scoped to its owner.
+
+    This is a load-by-client-supplied-id path: ``item_id`` can originate from a
+    client-controllable value (a Mesop ``WebEvent.key`` → ``selected_media_item_id``,
+    a URL/query param, etc.). Returning the document with no ownership check is a
+    read-side IDOR (information disclosure of another user's media). This mirrors
+    the server-side read authorization added for the other load-by-id paths in
+    PR #1930 (``common.authz.authorize_read``).
+
+    The server-derived caller identity is resolved via
+    :func:`common.authz.resolve_caller_email` (the verified ``AppState.user_email``
+    for the active request, or an explicit ``caller_email`` a caller already
+    derived server-side). The item is returned **only** when the caller owns it
+    (or it is a legacy ownerless document, per :func:`common.authz.is_owner`).
+
+    Returns ``None`` when the document does not exist **or** the caller is not
+    authorized — the two cases are deliberately indistinguishable so a non-owner
+    cannot probe existence/contents (no existence oracle). Fails closed when no
+    server-derived caller identity is resolvable.
+
+    System/background callers that legitimately run outside a request context and
+    operate on a server-managed id (e.g. the Veo generation/thumbnail pipeline
+    updating its own job) must use :func:`get_media_item_by_id_system`, which is
+    the only sanctioned unscoped read.
+    """
     try:
         logger.info(f"Trying to retrieve {item_id}")
+        caller = authz.resolve_caller_email(caller_email)
+        doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(item_id)
+        data = authz.authorize_read(
+            doc_ref, "user_email", caller, resource="media item"
+        )
+        if data is None:
+            # Not found OR not authorized — indistinguishable by design.
+            logger.warning(
+                f"No media item returned for ID {item_id} "
+                "(absent or caller not authorized)"
+            )
+            return None
+        return _create_media_item_from_dict(item_id, data)
+    except Exception as e:
+        logger.error(f"Error fetching media item by ID {item_id}: {e}")
+        return None
+
+
+def get_media_item_by_id_system(item_id: str) -> MediaItem | None:
+    """Unscoped read by id for trusted server-side callers only (NO ownership check).
+
+    This is the deliberate, clearly-named bypass of the owner-scoping enforced by
+    :func:`get_media_item_by_id`. It exists for internal server-side code that runs
+    **outside** a request context (no ``AppState.user_email`` to resolve) and
+    operates on a document id the server itself produced and manages — today, the
+    Veo background generation/thumbnail pipeline reading back the job it is
+    processing to update its status.
+
+    It MUST NOT be used on any path reachable by a client-controllable id for a
+    caller-facing read; doing so reintroduces the read-side IDOR that
+    :func:`get_media_item_by_id` closes.
+    """
+    try:
         doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(item_id)
         doc = doc_ref.get()
         if doc.exists:

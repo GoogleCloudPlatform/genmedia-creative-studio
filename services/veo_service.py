@@ -16,7 +16,11 @@ import datetime
 import logging
 import threading
 
-from common.metadata import MediaItem, add_media_item_to_firestore, get_media_item_by_id
+from common.metadata import (
+    MediaItem,
+    add_media_item_to_firestore,
+    get_media_item_by_id_system,
+)
 from common.tasks import enqueue_thumbnail_task
 from models.gemini import get_best_video_frame_timestamp
 from models.requests import VideoGenerationRequest
@@ -38,7 +42,7 @@ def run_thumbnail_job(job_id: str, video_uri: str) -> None:
         thumbnail_uri = extract_and_upload_thumbnail(video_uri, timestamp_s)
 
         if thumbnail_uri:
-            item = get_media_item_by_id(job_id)
+            item = get_media_item_by_id_system(job_id)
             if item:
                 item.thumbnail_uri = thumbnail_uri
                 add_media_item_to_firestore(item)
@@ -98,7 +102,7 @@ def process_veo_generation_task(
 
 def _update_job_status(job_id: str, status: str):
     """Helper to update just the status of a job."""
-    item = get_media_item_by_id(job_id)
+    item = get_media_item_by_id_system(job_id)
     if item:
         item.status = status
         add_media_item_to_firestore(item)
@@ -106,7 +110,7 @@ def _update_job_status(job_id: str, status: str):
 
 def _complete_job(job_id: str, video_uris: list[str], resolution: str, duration: float = None):
     """Helper to mark a job as complete with results."""
-    item = get_media_item_by_id(job_id)
+    item = get_media_item_by_id_system(job_id)
     if item:
         item.status = "complete"
         item.gcs_uris = video_uris
@@ -136,7 +140,7 @@ def _complete_job(job_id: str, video_uris: list[str], resolution: str, duration:
 
 def _fail_job(job_id: str, error_message: str):
     """Helper to mark a job as failed."""
-    item = get_media_item_by_id(job_id)
+    item = get_media_item_by_id_system(job_id)
     if item:
         item.status = "failed"
         item.error_message = error_message

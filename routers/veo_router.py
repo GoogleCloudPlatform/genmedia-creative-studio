@@ -73,11 +73,17 @@ async def generate_veo_async(
     return {"job_id": job_id, "status": "pending"}
 
 @router.get("/job/{job_id}")
-async def get_veo_job_status(job_id: str):
+async def get_veo_job_status(job_id: str, req: Request):
     """
     Checks the status of a Veo generation job.
     """
-    item = get_media_item_by_id(job_id)
+    # Owner-scoped read: the job id is client-supplied, so authorize it against
+    # the server-derived verified identity the middleware placed on the request
+    # scope (see main.py). Without this a caller could poll ANY user's job by id
+    # (read-side IDOR / information disclosure). A non-owner / unauthenticated
+    # caller is indistinguishable from "not found" (no existence oracle).
+    user_email = req.scope.get("MESOP_USER_EMAIL")
+    item = get_media_item_by_id(job_id, caller_email=user_email)
     if not item:
         return {"error": "Job not found"}, 404
 

@@ -11,6 +11,10 @@
 > commits were almost entirely automated dependency bumps) and is not actively used.
 >
 > - **On 2026-09-13**, this experiment was moved from `experiments/arena` to `archive/arena`.
+> - **On 2026-10-05**, this experiment was **decommissioned**: its `Dockerfile` and
+>   `Procfile` were removed so the service can no longer be built or deployed. The
+>   source below is retained for historical reference only — the deployment
+>   instructions it once contained have been removed.
 > - **Approximately 2 months after archiving (around 2026-11-13)**, it will be considered
 >   for full removal from the repository.
 
@@ -207,52 +211,15 @@ MODEL_FLUX1_ENDPOINT_ID=<YOUR_FLUX1_MODEL_ENDPOINT_ID> # This is the endpoint ID
 MODEL_STABLE_DIFFUSION_ENDPOINT_ID=<MODEL_STABLE_DIFFUSION_ENDPOINT_ID> # This is the endpoint ID for the StableDiffusion model in Model Garden
 ```
 
-## Arena app
+## Running & deployment — removed (decommissioned)
 
-Start the app to explore
-
-```bash
-mesop main.py
-```
-
-## Deployment
-
-### Service Account
-
-Create a Service Account to run your service, and provide the following permissions to the Service Account
-
-* Cloud Run Invoker
-* Vertex AI User
-* Cloud Datastore User
-* Storage Object User
-
-```bash
-export PROJECT_ID=$(gcloud info --format='value(config.project)')
-
-export DESC="genmedia arena"
-export SA_NAME="sa-genmedia-arena"
-export SA_ID=${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
-
-# create a service account
-gcloud iam service-accounts create $SA_NAME --description $DESC --display-name $SA_NAME
-
-# assign vertex and cloud run roles
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:${SA_ID}" --role "roles/run.invoker"
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:${SA_ID}" --role "roles/aiplatform.user"
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:${SA_ID}" --role "roles/storage.objectUser"
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:${SA_ID}" --role "roles/datastore.user"
-```
-
-### Deploy
-
-```bash
-gcloud run deploy genmedia-arena --source . \
-    --service-account=$SA_ID \
-    --set-env-vars GENMEDIA_BUCKET=${PROJECT_ID}-genmedia \
-    --set-env-vars PROJECT_ID=${PROJECT_ID} \
-    --set-env-vars MODEL_ID=gemini-3.5-flash \
-    --region us-central1
-```
+> [!WARNING]
+> **This experiment has been decommissioned and is no longer deployable.**
+> The container (`Dockerfile`), the process entrypoint (`Procfile`), and the
+> local-run and `gcloud run deploy` instructions that used to live in this
+> section were **removed on 2026-10-05** so the service can no longer be built,
+> run, or deployed. The remaining source is kept for historical reference only.
+> Do not attempt to stand this service up.
 
 ## Disclaimer
 

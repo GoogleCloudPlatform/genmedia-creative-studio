@@ -8,6 +8,7 @@ This experiment has been archived (2026-09-13). It is retained for reference onl
 It relies on unmaintained dependencies and its core image-battle feature is broken: the default battle pool depends on Imagen models that were [shut down across Vertex AI on 2026-08-17](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev), so every default battle fails. The experiment is not actively maintained (recent commits were almost entirely automated dependency bumps) and is not actively used.
 
 - **On 2026-09-13**, the experiment source was moved from `experiments/arena` to `archive/arena` in the repository.
+- **On 2026-10-05**, the experiment was **decommissioned**: its `Dockerfile` and `Procfile` were removed so the service can no longer be built or deployed. The source is retained for historical reference only.
 - **Approximately 2 months after archiving (around 2026-11-13)**, it will be considered for full removal from the repository.
 :::
 

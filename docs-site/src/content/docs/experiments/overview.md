@@ -23,7 +23,7 @@ The experimental folder contains stand-alone applications, demos, and features n
 * [Imagen Product Recontextualization at Scale](/genmedia-creative-studio/experiments/imagen_product_recontext) - A set of notebooks for the Imagen Product Recontext model to run at scale.
 * [Virtual Try-On](/genmedia-creative-studio/experiments/vto) - A notebook example for virtually trying on outfits at scale.
 * [Brand Consistency](/genmedia-creative-studio/experiments/brand_consistency) - Maintain brand identity in generated media.
-* [Arena](/genmedia-creative-studio/experiments/arena) - Rate your images within a visual arena. **(Archived 2026-09-13 — source moved to `archive/arena`; retained for reference, no longer maintained.)**
+* [Arena](/genmedia-creative-studio/experiments/arena) - Rate your images within a visual arena. **(Archived 2026-09-13 — source moved to `archive/arena`; retained for reference, no longer maintained. Decommissioned 2026-10-05 — `Dockerfile`/`Procfile` removed; no longer deployable.)**
 
 ## Audio & Voice
 

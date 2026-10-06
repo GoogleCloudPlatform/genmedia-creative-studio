@@ -846,14 +846,43 @@ def get_media_for_page_optimized(
 
 
 def get_media_for_chooser(
-    media_type: str, page_size: int, start_after=None,
+    media_type: str,
+    page_size: int,
+    start_after=None,
+    *,
+    caller_email: str | None = None,
 ) -> tuple[list[MediaItem], firestore.DocumentSnapshot | None]:
-    """Fetches media items for the chooser, using a hybrid query strategy."""
+    """Fetches media items for the chooser, owner-scoped to the caller.
+
+    This backs the media chooser dialog (``pages/test_media_chooser.py``). The
+    listing is a read-side IDOR risk: returning the whole ``genmedia`` collection
+    with no owner filter discloses every user's media to any caller (READ-SWEEP-A,
+    cross-user listing). It is now owner-scoped the same way as the other readers
+    (``get_media_for_page`` / ``get_all_media_for_chooser``) and the single-doc
+    reads fixed in PR #1930/#1971.
+
+    The server-derived caller identity is resolved via
+    :func:`common.authz.resolve_caller_email` (the verified ``AppState.user_email``
+    for the active request, or an explicit ``caller_email`` a caller already
+    derived server-side — the default-safe kwarg auto-scopes in a live Mesop
+    request context). Only the caller's own items are returned, plus any legacy
+    ownerless documents, per :func:`common.authz.is_owner`'s tolerance.
+
+    Fails closed: when no server-derived caller identity is resolvable the listing
+    is empty (never a cross-user list) and Firestore is not queried at all.
+    """
     # TODO: This function uses two queries for backward compatibility (one for `media_type`
     # and one for `mime_type`). After a data migration to ensure all documents have the
     # `media_type` field, this should be simplified to a single, more performant query
     # on `media_type` only.
     if not db:
+        return [], None
+
+    # Fail closed: without a server-derived caller identity we must never list
+    # another user's media. Return nothing rather than everything, and do not
+    # touch Firestore.
+    caller = authz.resolve_caller_email(caller_email)
+    if not caller:
         return [], None
 
     try:
@@ -891,9 +920,18 @@ def get_media_for_chooser(
             if doc.id not in merged_docs:
                 merged_docs[doc.id] = doc
 
+        # Owner-scope the merged results: keep only the caller's own items (plus
+        # legacy ownerless docs), consistent with authz.is_owner. This closes the
+        # cross-user listing (READ-SWEEP-A) the same way get_media_for_page filters.
+        owned_docs = {
+            doc_id: doc
+            for doc_id, doc in merged_docs.items()
+            if authz.is_owner((doc.to_dict() or {}).get("user_email"), caller)
+        }
+
         # Sort merged results by timestamp
         sorted_docs = sorted(
-            merged_docs.values(),
+            owned_docs.values(),
             key=lambda doc: doc.to_dict().get("timestamp"),
             reverse=True,
         )

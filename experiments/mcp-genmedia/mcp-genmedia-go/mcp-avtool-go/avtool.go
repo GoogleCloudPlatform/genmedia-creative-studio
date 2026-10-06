@@ -102,15 +102,29 @@ func main() {
 	addNormalizeLoudnessTool(s, cfg)
 	addResizeReframeTool(s, cfg)
 
+	// Resolve the application-layer auth policy once, before serving any
+	// network transport. This fails closed: it refuses to serve an HTTP/SSE
+	// transport unless an expected OIDC audience is configured or the explicit
+	// local-dev bypass is set. This defends the service independently of the
+	// Cloud Run --no-allow-unauthenticated deployment flag (b/565096167).
+	authCfg, authErr := newAuthConfig()
+
 	switch transport {
 	case "sse":
+		if authErr != nil {
+			log.Fatalf("Refusing to start SSE server: %v", authErr)
+		}
 		ssePort := determinePort("sse", port)
 		log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: sse, Port: %d)", version, ssePort)
 		sseServer := server.NewSSEServer(s, server.WithBaseURL(fmt.Sprintf("http://localhost:%d", ssePort)))
-		if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
+		listenAddr := fmt.Sprintf(":%d", ssePort)
+		if err := http.ListenAndServe(listenAddr, authCfg.middleware(sseServer)); err != nil {
 			log.Fatalf("SSE Server error: %v", err)
 		}
 	case "http":
+		if authErr != nil {
+			log.Fatalf("Refusing to start HTTP server: %v", authErr)
+		}
 		httpPort := determinePort("http", port)
 		log.Printf("Starting AV Compositing Tool (avtool) MCP Server (Version: %s, Transport: http, Port: %d)", version, httpPort)
 		mcpHTTPHandler := server.NewStreamableHTTPServer(s) // Base path /mcp
@@ -122,9 +136,11 @@ func main() {
 			AllowCredentials: true,
 			MaxAge:           300,
 		})
-		handlerWithCORS := c.Handler(mcpHTTPHandler)
+		// Order: CORS outermost (so preflight OPTIONS still work), then the
+		// auth gate, then the MCP handler.
+		handler := c.Handler(authCfg.middleware(mcpHTTPHandler))
 		listenAddr := fmt.Sprintf(":%d", httpPort)
-		if err := http.ListenAndServe(listenAddr, handlerWithCORS); err != nil {
+		if err := http.ListenAndServe(listenAddr, handler); err != nil {
 			log.Fatalf("HTTP Server error: %v", err)
 		}
 	case "stdio":

@@ -92,7 +92,7 @@ class Default:
     INIT_VERTEX: bool = True
     GEMINI_IMAGE_GEN_MODEL: str = os.environ.get(
         "GEMINI_IMAGE_GEN_MODEL",
-        "gemini-3.1-flash-image",
+        "gemini-nano-banana-2.1",
     )
     GEMINI_IMAGE_GEN_LOCATION: str = os.environ.get(
         "GEMINI_IMAGE_GEN_LOCATION",

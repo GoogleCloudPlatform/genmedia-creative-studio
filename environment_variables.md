@@ -32,7 +32,7 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`MODEL_ID`** | `gemini-3.5-flash` | The primary Gemini model used for general text and reasoning tasks throughout the app. |
 | **`GEMINI_LOCATION`** | `global` | Region for Gemini 3.x model calls. Gemini 3.x is served only from the `global` endpoint (and the us/eu multi-regions), so this is kept separate from `LOCATION`. |
 | **`GEMINI_TTS_LOCATION`** | `global` | Region for Gemini text-to-speech (TTS) model calls. |
-| **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-3.1-flash-image` | The default model used for image generation features (supports `gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`, or `gemini-2.5-flash-image`). |
+| **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-nano-banana-2.1` | The default model used for image generation features (supports `gemini-nano-banana-2.1` (default), `gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, `gemini-3-pro-image`, or `gemini-2.5-flash-image`). |
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-3.1-flash-lite` | The model used specifically for analyzing audio content. |
 | **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
@@ -184,7 +184,7 @@ These variables are computed within `main.tf` based on the resources Terraform c
 ### 3. Variables NOT Set by Terraform (Using Python Defaults)
 The following variables are **not** explicitly set in the `main.tf` configuration. This means the application will use the **default values defined in `config/default.py`** when deployed via Terraform.
 
-*   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL` (supports Nano Banana 2 Lite `gemini-3.1-flash-lite-image`), `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
+*   **Gemini Models:** `GEMINI_IMAGE_GEN_MODEL` (defaults to Nano Banana 2.1 `gemini-nano-banana-2.1`), `GEMINI_IMAGE_GEN_LOCATION`, `GEMINI_AUDIO_ANALYSIS_MODEL_ID`
 *   **Gemini Omni:** `DEFAULT_OMNI_MODEL_NAME`, `OMNI_LOCATION`, `OMNI_MODEL_ID`, `OMNI_PROJECT_ID`, `OMNI_TIMEOUT_MS`
 *   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
 *   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.

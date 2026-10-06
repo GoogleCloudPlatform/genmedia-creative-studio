@@ -175,15 +175,16 @@ GEMINI_IMAGE_MODELS: list[GeminiImageModelConfig] = [
         # spike): the literal id works without a custom base_url, so the flag
         # stays False. See nanobanana-2.1-spike-2026-10-06.md.
         requires_base_url=False,
-        # Doc: 15 aspect ratios, including 9:21.
+        # Doc: 15 aspect ratios, including 9:21. Ordered to match the sibling
+        # gemini-3.1-flash-image entry, with the 2.1-only 9:21 appended.
         supported_aspect_ratios=[
             "1:1",
             "3:2",
             "2:3",
             "3:4",
+            "4:3",
             "1:4",
             "4:1",
-            "4:3",
             "4:5",
             "5:4",
             "1:8",

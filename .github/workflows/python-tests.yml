@@ -52,4 +52,4 @@ jobs:
           VEO_PROJECT_ID: test-project
           VEO_LOCATION: us-central1
         run: |
-          uv run pytest test/test_app_imports.py test/test_telemetry.py -v
+          uv run pytest test/test_app_imports.py test/test_telemetry.py test/test_gemini_image_models.py -v

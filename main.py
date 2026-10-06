@@ -366,6 +366,47 @@ def get_proxy_storage_client():
     return _proxy_storage_client
 
 
+def _allowed_proxy_buckets() -> set[str]:
+    """Return the set of GCS bucket NAMES the media proxy is permitted to serve.
+
+    The allowlist is sourced exclusively from the application's own storage
+    configuration (the buckets this app writes its generated media to). Several
+    of those config values embed a path prefix (e.g. ``"my-bucket/videos"``) or
+    a ``gs://`` scheme; only the leading bucket component is used for the
+    allowlist comparison.
+
+    An empty result means "allow nothing": callers MUST fail closed so that a
+    missing/unconfigured allowlist can never degrade into "allow all".
+    """
+    candidates = (
+        config.Default.GENMEDIA_BUCKET,
+        config.Default.VIDEO_BUCKET,
+        config.Default.IMAGE_BUCKET,
+        config.Default.GCS_ASSETS_BUCKET,
+        getattr(config.Default, "MEDIA_BUCKET", None),
+    )
+    allowed: set[str] = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        # Normalize: drop any gs:// scheme, then keep only the bucket component
+        # preceding the first path separator.
+        name = candidate.replace("gs://", "", 1).split("/", 1)[0].strip()
+        if name:
+            allowed.add(name)
+    return allowed
+
+
+def _is_proxy_bucket_allowed(bucket_name: str) -> bool:
+    """Return True only if ``bucket_name`` is one of the app's own buckets.
+
+    Fails closed: any empty/unknown bucket, or an empty allowlist, returns False.
+    """
+    if not bucket_name:
+        return False
+    return bucket_name in _allowed_proxy_buckets()
+
+
 # Add a new endpoint to proxy GCS media for better caching.
 @app.get("/media/{bucket_name}/{object_path:path}")
 def get_media_proxy(request: Request, bucket_name: str, object_path: str):
@@ -380,6 +421,16 @@ def get_media_proxy(request: Request, bucket_name: str, object_path: str):
         not user_email or user_email == ANONYMOUS_USER_EMAIL
     ):
         raise HTTPException(status_code=401, detail="Authentication required")
+
+    # Bucket allowlist enforcement (READ-SWEEP-B, defense-in-depth): the bucket
+    # name arrives from the request path, so without this check an authenticated
+    # caller could proxy objects from ANY bucket the app's service account can
+    # read, not just the app's own media buckets. Restrict to the configured
+    # allowlist and fail closed. Reject with the SAME generic 404 used for a
+    # missing object so this does not become an oracle that distinguishes
+    # "bucket not allowed" from "object does not exist".
+    if not _is_proxy_bucket_allowed(bucket_name):
+        raise HTTPException(status_code=404, detail="Object not found")
 
     try:
         storage_client = get_proxy_storage_client()

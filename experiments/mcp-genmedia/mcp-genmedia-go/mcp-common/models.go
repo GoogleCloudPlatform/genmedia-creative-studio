@@ -177,6 +177,18 @@ var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
 		SupportedImageSizes:   []string{}, // no resolution control: image_size is silently ignored by the API (verified empirically)
 		Description:           "Gemini 2.5 Flash Image, or Nano Banana, is optimized for image understanding and generation and offers a balance of price and performance.",
 	},
+	"gemini-nano-banana-2.1": {
+		CanonicalName:         "gemini-nano-banana-2.1",
+		Aliases:               []string{"Nano Banana 2.1", "nano-banana-2.1"},
+		SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"},
+		SupportedImageSizes:   []string{"1K", "2K", "4K"},
+		// NOTE: Nano Banana 2.1 rejects the seed, temperature, topP, topK, and
+		// logprobs parameters (the API returns an error if any are set). The
+		// gemini_image_generation handler never sends these, and the
+		// nanobanana_image_generation handler gates its seed param on this
+		// canonical name (see mcp-nanobanana-go/handlers.go).
+		Description: "Gemini Nano Banana 2.1 is optimized for multimodal image generation and editing and offers a balance of price and performance.",
+	},
 }
 
 var geminiImageAliasMap = make(map[string]string)

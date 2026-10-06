@@ -180,6 +180,7 @@ This repository provides AI application samples for:
 *   **`mcp-nanobanana-go`**:
     *   Provides a dedicated multimodal interface to Google's Nano Banana (Gemini Image) models.
     *   Tool: `nanobanana_image_generation` for generating text and images.
+    *   Defaults to the `gemini-nano-banana-2.1` image model.
     *   Output can be saved to a local directory or GCS.
 
 *   **`mcp-lyria-go`**:

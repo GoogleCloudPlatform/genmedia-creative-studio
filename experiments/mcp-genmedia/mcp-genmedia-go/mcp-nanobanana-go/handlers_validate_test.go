@@ -102,3 +102,37 @@ func TestValidateGeminiImageParams(t *testing.T) {
 		})
 	}
 }
+
+// TestSeedForModel pins the Q3 behavior: gemini-nano-banana-2.1 rejects the seed
+// parameter, so any caller-supplied seed must be dropped before it reaches the
+// API; every other model forwards the seed unchanged.
+func TestSeedForModel(t *testing.T) {
+	s := int32(42)
+
+	tests := []struct {
+		name  string
+		model string
+		seed  *int32
+		want  *int32
+	}{
+		{name: "seed dropped for nano-banana-2.1", model: "gemini-nano-banana-2.1", seed: &s, want: nil},
+		{name: "nil seed stays nil for nano-banana-2.1", model: "gemini-nano-banana-2.1", seed: nil, want: nil},
+		{name: "seed forwarded for gemini-3.1-flash-image", model: "gemini-3.1-flash-image", seed: &s, want: &s},
+		{name: "seed forwarded for gemini-2.5-flash-image", model: "gemini-2.5-flash-image", seed: &s, want: &s},
+		{name: "nil seed stays nil for other model", model: "gemini-3.1-flash-image", seed: nil, want: nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := seedForModel(tt.model, tt.seed)
+			switch {
+			case tt.want == nil && got != nil:
+				t.Errorf("seedForModel(%q, %v) = %d, want nil", tt.model, tt.seed, *got)
+			case tt.want != nil && got == nil:
+				t.Errorf("seedForModel(%q, %v) = nil, want %d", tt.model, tt.seed, *tt.want)
+			case tt.want != nil && got != nil && *got != *tt.want:
+				t.Errorf("seedForModel(%q, %v) = %d, want %d", tt.model, tt.seed, *got, *tt.want)
+			}
+		})
+	}
+}

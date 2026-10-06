@@ -11,14 +11,14 @@ Generates content (text and/or images) based on a multimodal prompt.
 **Parameters:**
 
 - `prompt` (string, required): The text prompt for content generation.
-- `model` (string, optional): The specific NanoBanana (Gemini Image) model to use. Defaults to `gemini-3.1-flash-image`.
+- `model` (string, optional): The specific NanoBanana (Gemini Image) model to use. Defaults to `gemini-nano-banana-2.1`. Other supported models include `gemini-3.1-flash-image` (Nano Banana 2), `gemini-3.1-flash-lite-image` (Nano Banana 2 Lite), `gemini-3-pro-image` (Nano Banana Pro), and `gemini-2.5-flash-image` (Nano Banana).
 - `aspect_ratio` (string, optional): Aspect ratio of the generated image(s), e.g. `1:1`, `16:9`, `21:9`. Defaults to `1:1`. Supported ratios are model-dependent.
 - `image_size` (string, optional): Size of the generated image(s): `1K`, `2K`, or `4K`. When unset the model's default (`1K`) is used. Supported sizes are model-dependent.
 - `images` (string array, optional): A list of local file paths or GCS URIs for input images.
 - `output_directory` (string, optional): Local directory to save any generated image(s) to.
 - `gcs_bucket_uri` (string, optional): GCS URI prefix to store any generated images.
 - `output_filename` (string, optional): Base name for the output(s), e.g. `hero.png`. The extension is forced to the true image type and, when more than one image is generated, a `_1..n` suffix is inserted before the extension. Applied identically to local files and GCS objects. See [Naming Outputs](../README.md#naming-outputs-output_filename).
-- `seed` (number, optional): Non-negative integer seed for best-effort reproducible image generation.
+- `seed` (number, optional): Non-negative integer seed for best-effort reproducible image generation. Not supported by `gemini-nano-banana-2.1` (the API rejects it), so any supplied seed is ignored for that model.
 
 
 

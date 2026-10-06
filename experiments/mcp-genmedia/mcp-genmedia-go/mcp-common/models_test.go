@@ -29,6 +29,7 @@ func TestGeminiImageModelAspectRatios(t *testing.T) {
 		"gemini-3.1-flash-lite-image": {"1:1", "1:4", "4:1", "1:8", "8:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
 		"gemini-3-pro-image":          {"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"},
 		"gemini-2.5-flash-image":      {"1:1", "3:2", "2:3", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
+		"gemini-nano-banana-2.1":      {"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"},
 	}
 	for model, ratios := range want {
 		info, ok := SupportedGeminiImageModels[model]
@@ -51,6 +52,7 @@ func TestGeminiImageModelSizes(t *testing.T) {
 		"gemini-3.1-flash-lite-image": {"1K"},
 		"gemini-3-pro-image":          {"1K", "2K", "4K"},
 		"gemini-2.5-flash-image":      {},
+		"gemini-nano-banana-2.1":      {"1K", "2K", "4K"},
 	}
 	for model, sizes := range want {
 		info, ok := SupportedGeminiImageModels[model]

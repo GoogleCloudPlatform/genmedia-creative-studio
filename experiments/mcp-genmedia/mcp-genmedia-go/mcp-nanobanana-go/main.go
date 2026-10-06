@@ -101,14 +101,14 @@ func main() {
 	tool := mcp.NewTool("nanobanana_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini Image generation models."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt for content generation.")),
-		mcp.WithString("model", mcp.DefaultString("gemini-3.1-flash-image"), mcp.Description(common.BuildGeminiImageModelDescription())),
+		mcp.WithString("model", mcp.DefaultString("gemini-nano-banana-2.1"), mcp.Description(common.BuildGeminiImageModelDescription())),
 		mcp.WithString("aspect_ratio", mcp.DefaultString("1:1"), mcp.Description("Aspect ratio of the generated images. Note: supported aspect ratios are model-dependent.")),
 		mcp.WithString("image_size", mcp.Description("Optional. Size of the generated images: 1K, 2K, or 4K. Defaults to 1K when unset. Note: supported sizes are model-dependent.")),
 		mcp.WithArray("images", mcp.Description("Optional. A list of local file paths or GCS URIs for input media (images, videos, or PDFs)."), mcp.Items(map[string]any{"type": "string"})),
 		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save generated image(s) to.")),
 		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated images (e.g., your-bucket/outputs/).")),
 		mcp.WithString("output_filename", mcp.Description("Optional. Client-predictable base name for the generated file(s). The extension is forced to the true output media type (e.g. .png). When a single image is produced the name is used as-is (e.g. 'hero.png'); when multiple images are produced they are suffixed '_1', '_2', ... before the extension (e.g. 'hero_1.png', 'hero_2.png'). An existing file/object of the same name is overwritten.")),
-		mcp.WithNumber("seed", mcp.Description("Optional. Non-negative integer seed for best-effort reproducible image generation.")),
+		mcp.WithNumber("seed", mcp.Description("Optional. Non-negative integer seed for best-effort reproducible image generation. Not supported by gemini-nano-banana-2.1 (ignored for that model).")),
 	)
 
 	handlerWithClient := func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

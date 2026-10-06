@@ -57,6 +57,25 @@ func validateGeminiImageParams(info common.GeminiImageModelInfo, model, aspectRa
 	return aspectRatio, imageSize
 }
 
+// modelsRejectingSeed lists the canonical Gemini image models that return an API
+// error when a seed is supplied. Nano Banana 2.1 rejects seed, temperature, topP,
+// topK, and logprobs; of these, seed is the only one this handler ever sends, so
+// it is the only one that needs gating here.
+var modelsRejectingSeed = map[string]bool{
+	"gemini-nano-banana-2.1": true,
+}
+
+// seedForModel returns the seed to forward to the API for the given canonical
+// model name. For models that reject seed it returns nil (dropping any
+// caller-supplied value); for all others it returns seed unchanged.
+func seedForModel(model string, seed *int32) *int32 {
+	if seed != nil && modelsRejectingSeed[model] {
+		log.Printf("Warning: seed is not supported by model %s and will be ignored.", model)
+		return nil
+	}
+	return seed
+}
+
 func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	tr := otel.Tracer(serviceName)
 	ctx, span := tr.Start(ctx, "nanobanana_generate_content")
@@ -79,7 +98,7 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 	}
 
 	modelArg, _ := request.GetArguments()["model"].(string)
-	model := "gemini-3.1-flash-image"
+	model := "gemini-nano-banana-2.1"
 	if modelArg != "" {
 		model = modelArg
 	}
@@ -95,6 +114,9 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+	// Drop the seed for models that reject it (gemini-nano-banana-2.1) before it is
+	// forwarded to the API. `model` is already the resolved canonical name here.
+	seed = seedForModel(model, seed)
 
 	outputDir := ""
 	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {

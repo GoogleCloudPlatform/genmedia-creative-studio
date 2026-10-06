@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import APIRouter, BackgroundTasks, Request
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel
 
 from common.metadata import get_media_item_by_id
+from common.task_auth import TaskAuthError, authorize_cloud_task_caller
+from config.default import Default as cfg
 from models.requests import VideoGenerationRequest
 from services.veo_service import (
     create_initial_job,
@@ -23,7 +27,14 @@ from services.veo_service import (
     run_thumbnail_job,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/veo", tags=["veo"])
+
+# Path of the thumbnail task endpoint. The Cloud Tasks OIDC token's audience
+# defaults to the task's full target URL, which common.tasks builds as
+# ``{API_BASE_URL}{THUMBNAIL_TASK_PATH}`` — keep the two in sync.
+THUMBNAIL_TASK_PATH = "/api/veo/thumbnail"
 
 
 class ThumbnailRequest(BaseModel):
@@ -34,8 +45,32 @@ class ThumbnailRequest(BaseModel):
 
 
 @router.post("/thumbnail")
-async def generate_thumbnail(request: ThumbnailRequest):
-    """FastAPI endpoint triggered by Cloud Tasks to extract a thumbnail."""
+async def generate_thumbnail(request: ThumbnailRequest, req: Request):
+    """FastAPI endpoint triggered by Cloud Tasks to extract a thumbnail.
+
+    This is a *task* endpoint, not a user endpoint: it is invoked only by Cloud
+    Tasks with a Google-signed OIDC token minted for ``SERVICE_ACCOUNT_EMAIL``
+    (see ``common.tasks.enqueue_thumbnail_task``). Authorize that trusted
+    identity server-side and fail closed.
+
+    Without this check any authenticated *user* could POST a victim's ``job_id``
+    with an attacker-controlled ``video_uri``: ``run_thumbnail_job`` writes the
+    resulting ``thumbnail_uri`` onto the item keyed by ``job_id`` with no owner
+    check, overwriting the victim item's thumbnail (write-side IDOR). The
+    legitimate in-process fallback (``process_veo_generation_task`` -> background
+    thread) calls ``run_thumbnail_job`` directly and never traverses this HTTP
+    endpoint, so restricting the endpoint does not break it.
+    """
+    try:
+        authorize_cloud_task_caller(
+            req.headers,
+            expected_service_account=cfg().SERVICE_ACCOUNT_EMAIL,
+            audience=f"{cfg().API_BASE_URL}{THUMBNAIL_TASK_PATH}",
+        )
+    except TaskAuthError as exc:
+        logger.warning("Rejected unauthorized thumbnail task request: %s", exc)
+        raise HTTPException(status_code=403, detail="Forbidden") from exc
+
     run_thumbnail_job(request.job_id, request.video_uri)
     return {"status": "ok"}
 

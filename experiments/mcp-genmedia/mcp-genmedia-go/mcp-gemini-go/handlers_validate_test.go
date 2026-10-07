@@ -27,7 +27,7 @@ func TestValidateGeminiImageParams(t *testing.T) {
 		SupportedImageSizes:   []string{"1K", "2K", "4K"},
 	}
 	noSizes := common.GeminiImageModelInfo{
-		CanonicalName:         "gemini-3.1-flash-image",
+		CanonicalName:         "test-model-no-sizes",
 		SupportedAspectRatios: []string{"1:1", "16:9"},
 		SupportedImageSizes:   []string{},
 	}

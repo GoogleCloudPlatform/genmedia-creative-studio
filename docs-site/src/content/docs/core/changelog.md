@@ -45,6 +45,9 @@ If you have an active local feature branch with unmerged commits:
 
 ## Recent Updates
 
+### Removed `gemini-2.5-flash-image` as a Selectable Image Model (October 2026)
+* **Models:** `gemini-2.5-flash-image` has been removed as a selectable image generation model. `gemini-nano-banana-2.1` is now the current default for image generation, with the Gemini 3.1 series (`gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`) and `gemini-3-pro-image` retained as supported options.
+
 ### Transitioning to Nano Banana as Imagen is Deprecated (August 2026)
 * **Models:** We are in the process of transitioning to Nano Banana (Gemini Image Generation, `gemini-2.5-flash-image`) as Imagen has been deprecated. All Imagen models were shut down across Google — including Vertex AI — around August 17, 2026. See the [Imagen models migration guide](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev) for the replacement mapping.
 

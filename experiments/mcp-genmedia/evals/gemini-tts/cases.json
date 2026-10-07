@@ -1,0 +1,486 @@
+{
+ "_doc": "gemini_audio_tts / list_gemini_voices eval cases. 'expect' keys: error (bool), advisories (list of substrings that must appear), no_advisories (bool), ext (saved file extension), min_seconds, judge (bool: send audio to the LLM listener), not_spoken (words that must not be heard; soft unless hard_judge), transcript_has (words that should be heard), speakers (int), result_has (substrings in tool text). 'group' tags let you run a subset. control: true inverts the judge checks (the case PASSES only if the listener catches the defect), proving the not_spoken check is not vacuous.",
+ "cases": [
+  {
+   "id": "t38-clean-lite",
+   "group": "38",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Wait... <short pause> did you hear that? <gasp> Someone's at the door.",
+    "prompt": "whispered, nervous",
+    "voice_name": "Kore"
+   },
+   "expect": {
+    "no_advisories": true,
+    "ext": ".wav",
+    "min_seconds": 2,
+    "judge": true,
+    "not_spoken": [
+     "short pause",
+     "gasp",
+     "whispered"
+    ],
+    "transcript_has": [
+     "did you hear that",
+     "door"
+    ]
+   }
+  },
+  {
+   "id": "t38-clean-flash-library-voice",
+   "group": "38",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "text": "Righto, the kettle's on. <chuckle> Come in and take a load off.",
+    "prompt": "warm, relaxed",
+    "voice_name": "en-au-training-6"
+   },
+   "expect": {
+    "no_advisories": true,
+    "ext": ".wav",
+    "judge": true,
+    "not_spoken": [
+     "chuckle"
+    ],
+    "transcript_has": [
+     "kettle"
+    ]
+   }
+  },
+  {
+   "id": "t38-emphasis-disfluency",
+   "group": "38",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "text": "So, uhm... it was a VERY long day. <sigh> Nobody listens anymore.",
+    "prompt": "tired, flat",
+    "voice_name": "Iapetus"
+   },
+   "expect": {
+    "no_advisories": true,
+    "judge": true,
+    "not_spoken": [
+     "sigh"
+    ],
+    "transcript_has": [
+     "long day"
+    ]
+   }
+  },
+  {
+   "id": "t38-legacy-square-tags",
+   "group": "38-lint",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "[sigh] I can't believe the build failed again. [whispering] Don't tell anyone."
+   },
+   "expect": {
+    "advisories": [
+     "[square] tags",
+     "[whispering] -> style"
+    ],
+    "judge": true,
+    "not_spoken": [
+     "sigh"
+    ]
+   }
+  },
+  {
+   "id": "t38-angle-whisper",
+   "group": "38-lint",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "I think someone is outside. <whispering> Don't move."
+   },
+   "expect": {
+    "advisories": [
+     "<whispering>/<whispers>"
+    ]
+   }
+  },
+  {
+   "id": "t38-say-the-following",
+   "group": "38-lint",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Say the following cheerfully: The eagle flies at midnight."
+   },
+   "expect": {
+    "advisories": [
+     "Say the following"
+    ],
+    "judge": true,
+    "transcript_has": [
+     "eagle"
+    ]
+   }
+  },
+  {
+   "id": "t38-take-markers",
+   "group": "38-lint",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Take 1. Direct.\nGet yours today.\nTake 2. Urgent.\nGet yours today!"
+   },
+   "expect": {
+    "advisories": [
+     "Take N"
+    ]
+   }
+  },
+  {
+   "id": "t38-speaker-prefixes",
+   "group": "38-lint",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Joe: How's it going?\nJane: Not bad at all."
+   },
+   "expect": {
+    "advisories": [
+     "turns + speakers"
+    ]
+   }
+  },
+  {
+   "id": "t38-long-style",
+   "group": "38-lint",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Yes, massive vibes in the studio!",
+    "voice_name": "Puck",
+    "prompt": "# AUDIO PROFILE: Jaz R. The Morning Hype. THE SCENE: The London Studio. It is 10:00 PM in a glass-walled studio overlooking the moonlit London skyline, but inside it is blindingly bright. DIRECTOR'S NOTES Style: the vocal smile, high projection without shouting. Pace: bouncing. Accent: Brixton, London."
+   },
+   "expect": {
+    "advisories": [
+     "short styles"
+    ]
+   }
+  },
+  {
+   "id": "t38-two-speaker",
+   "group": "38",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "speakers": [
+     {
+      "name": "Joe",
+      "voice": "Puck"
+     },
+     {
+      "name": "Jane",
+      "voice": "Kore"
+     }
+    ],
+    "turns": [
+     {
+      "speaker": "Joe",
+      "text": "So the launch is Thursday |oh hmm| are we actually ready?",
+      "style": "brisk, a little anxious"
+     },
+     {
+      "speaker": "Jane",
+      "text": "Ready enough. The last blocker cleared this morning. <laugh>",
+      "style": "relaxed, confident"
+     }
+    ]
+   },
+   "expect": {
+    "no_advisories": true,
+    "judge": true,
+    "speakers": 2,
+    "not_spoken": [
+     "Joe",
+     "Jane"
+    ],
+    "transcript_has": [
+     "Thursday",
+     "blocker"
+    ]
+   }
+  },
+  {
+   "id": "t38-three-speakers-error",
+   "group": "38-validate",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "speakers": [
+     {
+      "name": "A",
+      "voice": "Puck"
+     },
+     {
+      "name": "B",
+      "voice": "Kore"
+     },
+     {
+      "name": "C",
+      "voice": "Charon"
+     }
+    ],
+    "turns": [
+     {
+      "speaker": "A",
+      "text": "Hi."
+     }
+    ]
+   },
+   "expect": {
+    "error": true,
+    "result_has": [
+     "exactly 2"
+    ]
+   }
+  },
+  {
+   "id": "t38-mp3-error",
+   "group": "38-validate",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Hi.",
+    "audio_encoding": "MP3"
+   },
+   "expect": {
+    "error": true,
+    "result_has": [
+     "not supported by Gemini 3.8"
+    ]
+   }
+  },
+  {
+   "id": "t38-mulaw",
+   "group": "38",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Thanks for calling. How can I help?",
+    "audio_encoding": "MULAW"
+   },
+   "expect": {
+    "ext": ".mulaw"
+   }
+  },
+  {
+   "id": "t38-pcm",
+   "group": "38",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "text": "Thanks for calling.",
+    "audio_encoding": "PCM"
+   },
+   "expect": {
+    "ext": ".pcm"
+   }
+  },
+  {
+   "id": "take3-1",
+   "group": "take3",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "voice_name": "Puck",
+    "prompt": "frustrated, clipped",
+    "text": "<sigh> I can't believe the build failed again."
+   },
+   "expect": {
+    "no_advisories": true,
+    "judge": true,
+    "not_spoken": [
+     "sigh",
+     "take"
+    ],
+    "transcript_has": [
+     "build failed"
+    ]
+   }
+  },
+  {
+   "id": "take3-2",
+   "group": "take3",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "voice_name": "Puck",
+    "prompt": "defeated, quiet, almost whispering",
+    "text": "I can't believe... <short pause> the build failed again."
+   },
+   "expect": {
+    "no_advisories": true,
+    "judge": true,
+    "not_spoken": [
+     "short pause",
+     "take"
+    ],
+    "transcript_has": [
+     "build failed"
+    ]
+   }
+  },
+  {
+   "id": "take3-3",
+   "group": "take3",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "voice_name": "Puck",
+    "prompt": "dry sarcasm, amused",
+    "text": "<chuckle> Oh great. I can't believe the build failed AGAIN. Fantastic."
+   },
+   "expect": {
+    "no_advisories": true,
+    "judge": true,
+    "not_spoken": [
+     "chuckle",
+     "take"
+    ],
+    "transcript_has": [
+     "fantastic"
+    ]
+   }
+  },
+  {
+   "id": "t31-legacy",
+   "group": "31",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.1-flash-tts-preview",
+    "text": "[sigh] Fine. I'll do it. [short pause] But I'm not happy.",
+    "prompt": "reluctant and a little grumpy"
+   },
+   "expect": {
+    "no_advisories": true,
+    "ext": ".wav",
+    "judge": true,
+    "not_spoken": [
+     "sigh",
+     "short pause"
+    ],
+    "transcript_has": [
+     "not happy"
+    ]
+   }
+  },
+  {
+   "id": "t31-angle-advisory",
+   "group": "31",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.1-flash-tts-preview",
+    "text": "<sigh> Fine."
+   },
+   "expect": {
+    "advisories": [
+     "[square] tags"
+    ]
+   }
+  },
+  {
+   "id": "t31-library-voice-error",
+   "group": "31",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.1-flash-tts-preview",
+    "text": "Hi.",
+    "voice_name": "en-au-training-6"
+   },
+   "expect": {
+    "error": true,
+    "result_has": [
+     "require a Gemini 3.8 model"
+    ]
+   }
+  },
+  {
+   "id": "t31-turns-error",
+   "group": "31",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-2.5-flash-tts",
+    "speakers": [
+     {
+      "name": "A",
+      "voice": "Puck"
+     },
+     {
+      "name": "B",
+      "voice": "Kore"
+     }
+    ],
+    "turns": [
+     {
+      "speaker": "A",
+      "text": "Hi."
+     }
+    ]
+   },
+   "expect": {
+    "error": true,
+    "result_has": [
+     "only with Gemini 3.8"
+    ]
+   }
+  },
+  {
+   "id": "voices-prebuilt",
+   "group": "voices",
+   "tool": "list_gemini_voices",
+   "args": {},
+   "expect": {
+    "result_has": [
+     "Found 30 prebuilt",
+     "Callirrhoe"
+    ]
+   }
+  },
+  {
+   "id": "voices-accent",
+   "group": "voices",
+   "tool": "list_gemini_voices",
+   "args": {
+    "accent": "Dublin",
+    "limit": 3
+   },
+   "expect": {
+    "result_has": [
+     "en-ie-",
+     "Dublin English"
+    ]
+   }
+  },
+  {
+   "id": "voices-search",
+   "group": "voices",
+   "tool": "list_gemini_voices",
+   "args": {
+    "search": "storyteller",
+    "language_code": "en-GB",
+    "limit": 3
+   },
+   "expect": {
+    "result_has": [
+     "en-gb-"
+    ]
+   }
+  },
+  {
+   "id": "control-take-markers-spoken",
+   "group": "control",
+   "tool": "gemini_audio_tts",
+   "args": {
+    "model_name": "gemini-3.8-flash-tts",
+    "text": "Take 1. The direct read.\nGet yours today.\nTake 2. Urgent.\nGet yours today!"
+   },
+   "expect": {
+    "advisories": [
+     "Take N"
+    ],
+    "judge": true,
+    "control": true,
+    "not_spoken": [
+     "take"
+    ]
+   }
+  }
+ ]
+}

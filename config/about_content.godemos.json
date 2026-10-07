@@ -20,8 +20,8 @@
     },
     {
       "id": "gemini_image_generation",
-      "title": "Gemini 2.5 Flash Image Generation",
-      "description": "Gemini 2.5 Flash Image Generation - Nano-banana\n\nGenerate, transform and edit images with simple text prompts, or combine multiple images to create something new. All in Gemini.\n\n[Learn more about Gemini Image generation on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash#image)",
+      "title": "Gemini Image Generation",
+      "description": "Gemini Image Generation - Nano-banana\n\nGenerate, transform and edit images with simple text prompts, or combine multiple images to create something new. All in Gemini.\n\n[Learn more about Gemini Image generation on Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-pro-image)",
       "image": null,
       "video": null
     },

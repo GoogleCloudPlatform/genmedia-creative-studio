@@ -59,7 +59,7 @@ class PageState:
     # Settings & Models
     aspect_ratio: str = "16:9"
     num_images: int = 4
-    selected_image_model: str = "2.5-flash"
+    selected_image_model: str = "nano-banana-2.1"
     selected_narrative_model: str = "gemini-3.5-flash"
     selected_video_model: str = "3.1-lite"
 

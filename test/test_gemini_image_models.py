@@ -19,7 +19,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config.gemini_image_models import get_gemini_image_model_config
+from config.gemini_image_models import (
+    GEMINI_IMAGE_MODELS,
+    get_gemini_image_model_config,
+)
 
 
 def test_gemini_31_flash_lite_config_lookup() -> None:
@@ -46,6 +49,27 @@ def test_gemini_31_flash_lite_capabilities() -> None:
     assert cfg.supports_thinking is True
     assert len(cfg.supported_aspect_ratios) == 14
     assert "video/mp4" in cfg.supported_input_mime_types
+
+
+def test_gemini_25_flash_image_removed() -> None:
+    """Regression: gemini-2.5-flash-image must not be a selectable option.
+
+    The 2.5-flash entry was removed as deprecation hygiene while the surviving
+    models (nano-banana-2.1 default and the 3.1 series) remain selectable.
+    """
+    model_names = {m.model_name for m in GEMINI_IMAGE_MODELS}
+    version_ids = {m.version_id for m in GEMINI_IMAGE_MODELS}
+
+    # Removed model is gone by both full name and short version ID.
+    assert "gemini-2.5-flash-image" not in model_names
+    assert "2.5-flash" not in version_ids
+    assert get_gemini_image_model_config("gemini-2.5-flash-image") is None
+    assert get_gemini_image_model_config("2.5-flash") is None
+
+    # Surviving models remain present.
+    assert "gemini-nano-banana-2.1" in model_names
+    assert "gemini-3.1-flash-image" in model_names
+    assert "gemini-3.1-flash-lite-image" in model_names
 
 
 def test_gemini_nano_banana_21_config_lookup() -> None:

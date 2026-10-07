@@ -21,9 +21,9 @@ from dataclasses import dataclass, field
 class GeminiImageModelConfig:
     """Configuration for a specific Gemini Image Generation model version."""
 
-    version_id: str  # Short ID for UI/Logic (e.g., "2.5-flash", "3.0-pro")
-    model_name: str  # Full API Model ID (e.g., "gemini-2.5-flash-image")
-    display_name: str  # Human-readable name (e.g., "Gemini 2.5 Flash")
+    version_id: str  # Short ID for UI/Logic (e.g., "3.0-pro", "3.1-flash")
+    model_name: str  # Full API Model ID (e.g., "gemini-3.1-flash-image")
+    display_name: str  # Human-readable name (e.g., "Gemini 3.1 Flash")
     button_label: str  # Label for the UI button (e.g., "Flash", "Pro", "2")
 
     # Capabilities
@@ -66,17 +66,6 @@ class GeminiImageModelConfig:
 
 # Single source of truth
 GEMINI_IMAGE_MODELS: list[GeminiImageModelConfig] = [
-    GeminiImageModelConfig(
-        version_id="2.5-flash",
-        model_name="gemini-2.5-flash-image",
-        display_name="Gemini 2.5 Flash",
-        button_label="",
-        max_input_images=3,
-        max_output_images=1,
-        requires_base_url=False,
-        supported_image_sizes=["1K", "2K"],
-        supports_search=False,
-    ),
     GeminiImageModelConfig(
         version_id="3.0-pro",
         model_name="gemini-3-pro-image",

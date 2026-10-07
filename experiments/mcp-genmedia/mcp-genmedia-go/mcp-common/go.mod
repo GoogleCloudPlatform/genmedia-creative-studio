@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	golang.org/x/oauth2 v0.37.0
-	google.golang.org/genai v1.72.0
+	google.golang.org/genai v1.73.0
 )
 
 require github.com/felixge/httpsnoop v1.1.0 // indirect

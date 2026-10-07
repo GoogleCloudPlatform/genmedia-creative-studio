@@ -7,7 +7,7 @@ require (
 	github.com/mark3labs/mcp-go v1.1.1
 	github.com/rs/cors v1.11.1
 	go.opentelemetry.io/otel v1.47.0
-	google.golang.org/genai v1.72.0
+	google.golang.org/genai v1.73.0
 )
 
 replace github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common => ../mcp-common

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+*   **Feature:** `gemini_audio_tts` (`mcp-gemini-go`) supports **Gemini 3.8 TTS** (`gemini-3.8-flash-lite-tts`, now the default, and `gemini-3.8-flash-tts`).
+    *   3.8 requests go to Vertex AI `generateContent` in the `global` location. The Cloud Text-to-Speech API does not serve 3.8. `prompt` is sent as `speechMetadata.style`, and `voice_name` also accepts Extended Voice Library and designed/replicated voice IDs.
+    *   New optional `turns` / `speakers` parameters synthesize two-speaker dialogue.
+    *   The 3.8 text limit is 4,000 characters; supported encodings are `LINEAR16`, `PCM`, `MULAW` and `ALAW`.
+    *   Results include prompt advisories for patterns that misbehave on the selected model family.
+    *   `<=3.1` models are unchanged and still use Cloud Text-to-Speech.
+    *   `list_gemini_voices` can search the Voices API by `search`, `language_code`, `accent` and `voice_types`.
+*   **Docs:** the `genmedia-voice-director` skill now covers Gemini 3.1 vs 3.8 prompting:
+    *   new `references/model-differences.md`
+    *   the 3.8 angle-bracket vocal-tag vocabulary
+    *   take-3 sessions as one call per take on 3.8
+    *   personas with 3.8 voice castings
+    
+    The audio-engineer, producer and story-generator skills carry matching notes.
 *   **Feature:** Add `gemini-nano-banana-2.1` (Nano Banana 2.1) as a supported Gemini image model and make it the default for both `nanobanana_image_generation` (`mcp-nanobanana-go`) and `gemini_image_generation` (`mcp-gemini-go`). The model supports 15 aspect ratios (including `9:21`) and `1K`/`2K`/`4K` sizes. Because Nano Banana 2.1 rejects the `seed` parameter (the API errors if it is set), any caller-supplied `seed` is now dropped for this model instead of being forwarded.
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 

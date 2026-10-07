@@ -40,7 +40,8 @@ def main():
     parser.add_argument("--scene_id", type=int, required=True)
     parser.add_argument("--narrator", type=str, required=True)
     parser.add_argument("--voice", type=str, default="Callirrhoe")
-    parser.add_argument("--voice_prompt", type=str, default="soothing female voice")
+    # Short delivery style (Gemini 3.8 speechMetadata.style). Gender/accent come from --voice.
+    parser.add_argument("--voice_prompt", type=str, default="soothing, gentle, unhurried")
     parser.add_argument("--music", type=str, required=True)
     parser.add_argument("--image", type=str, required=True)
     parser.add_argument("--video", type=str, required=True)

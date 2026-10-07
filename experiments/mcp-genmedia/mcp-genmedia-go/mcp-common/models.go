@@ -170,13 +170,6 @@ var SupportedGeminiImageModels = map[string]GeminiImageModelInfo{
 		SupportedImageSizes:   []string{"1K", "2K", "4K"}, // 4K is Preview
 		Description:           "Gemini 3 Pro Image, or Gemini 3 Pro (with Nano Banana), is designed to tackle the most challenging image generation by incorporating state-of-the-art reasoning capabilities. It's the best model for complex and multi-turn image generation and editing, having improved accuracy and enhanced image quality.",
 	},
-	"gemini-2.5-flash-image": {
-		CanonicalName:         "gemini-2.5-flash-image",
-		Aliases:               []string{"Nano Banana", "nano-banana"},
-		SupportedAspectRatios: []string{"1:1", "3:2", "2:3", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
-		SupportedImageSizes:   []string{}, // no resolution control: image_size is silently ignored by the API (verified empirically)
-		Description:           "Gemini 2.5 Flash Image, or Nano Banana, is optimized for image understanding and generation and offers a balance of price and performance.",
-	},
 	"gemini-nano-banana-2.1": {
 		CanonicalName:         "gemini-nano-banana-2.1",
 		Aliases:               []string{"Nano Banana 2.1", "nano-banana-2.1"},

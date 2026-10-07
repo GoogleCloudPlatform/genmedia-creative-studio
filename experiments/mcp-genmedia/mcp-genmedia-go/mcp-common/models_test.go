@@ -28,7 +28,6 @@ func TestGeminiImageModelAspectRatios(t *testing.T) {
 		"gemini-3.1-flash-image":      {"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"},
 		"gemini-3.1-flash-lite-image": {"1:1", "1:4", "4:1", "1:8", "8:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
 		"gemini-3-pro-image":          {"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"},
-		"gemini-2.5-flash-image":      {"1:1", "3:2", "2:3", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"},
 		"gemini-nano-banana-2.1":      {"1:1", "3:2", "2:3", "3:4", "1:4", "4:1", "4:3", "4:5", "5:4", "1:8", "8:1", "9:16", "16:9", "21:9", "9:21"},
 	}
 	for model, ratios := range want {
@@ -44,14 +43,11 @@ func TestGeminiImageModelAspectRatios(t *testing.T) {
 }
 
 // TestGeminiImageModelSizes pins the SupportedImageSizes field added for #1746.
-// gemini-2.5-flash-image has no resolution control (empirically verified: an
-// image_size value is silently ignored by the API), so its list is empty.
 func TestGeminiImageModelSizes(t *testing.T) {
 	want := map[string][]string{
 		"gemini-3.1-flash-image":      {"512", "1K", "2K", "4K"},
 		"gemini-3.1-flash-lite-image": {"1K"},
 		"gemini-3-pro-image":          {"1K", "2K", "4K"},
-		"gemini-2.5-flash-image":      {},
 		"gemini-nano-banana-2.1":      {"1K", "2K", "4K"},
 	}
 	for model, sizes := range want {
@@ -73,15 +69,15 @@ func TestGeminiImageModelSizes(t *testing.T) {
 // TestResolveGeminiImageModelAlias confirms alias resolution still returns the
 // canonical entry (with its populated SupportedImageSizes).
 func TestResolveGeminiImageModelAlias(t *testing.T) {
-	info, found := ResolveGeminiImageModel("nano-banana", false)
+	info, found := ResolveGeminiImageModel("nano-banana-2.1", false)
 	if !found {
-		t.Fatal("expected alias 'nano-banana' to resolve")
+		t.Fatal("expected alias 'nano-banana-2.1' to resolve")
 	}
-	if info.CanonicalName != "gemini-2.5-flash-image" {
-		t.Errorf("CanonicalName = %q, want gemini-2.5-flash-image", info.CanonicalName)
+	if info.CanonicalName != "gemini-nano-banana-2.1" {
+		t.Errorf("CanonicalName = %q, want gemini-nano-banana-2.1", info.CanonicalName)
 	}
-	if len(info.SupportedImageSizes) != 0 {
-		t.Errorf("gemini-2.5-flash-image SupportedImageSizes = %v, want empty", info.SupportedImageSizes)
+	if len(info.SupportedImageSizes) == 0 {
+		t.Errorf("gemini-nano-banana-2.1 SupportedImageSizes = %v, want non-empty", info.SupportedImageSizes)
 	}
 }
 

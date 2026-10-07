@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+*   **Removal:** Removed `gemini-2.5-flash-image` (alias "Nano Banana") as a supported Gemini image model. It is no longer selectable in `gemini_image_generation` (`mcp-gemini-go`) or `nanobanana_image_generation` (`mcp-nanobanana-go`); the current default remains `gemini-nano-banana-2.1` and the `gemini-3.x` image models are unaffected.
 *   **Feature:** Add `gemini-nano-banana-2.1` (Nano Banana 2.1) as a supported Gemini image model and make it the default for both `nanobanana_image_generation` (`mcp-nanobanana-go`) and `gemini_image_generation` (`mcp-gemini-go`). The model supports 15 aspect ratios (including `9:21`) and `1K`/`2K`/`4K` sizes. Because Nano Banana 2.1 rejects the `seed` parameter (the API errors if it is set), any caller-supplied `seed` is now dropped for this model instead of being forwarded.
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 

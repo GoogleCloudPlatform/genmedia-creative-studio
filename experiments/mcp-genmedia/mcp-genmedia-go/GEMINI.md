@@ -158,7 +158,7 @@ For each test run, create a new directory named with the current date and time (
 *Note: Generative tool calls (Nano Banana, Veo, Lyria) may occasionally fail or time out. If a generation step fails, retrying or using a pre-existing file for subsequent steps (especially FFmpeg operations) may be necessary to complete the test plan.*
 
 1.  Generate 1-4 images using `nanobanana_image_generation`
-    *   Use Nano Banana (gemini-2.5-flash-image)
+    *   Use Nano Banana (gemini-nano-banana-2.1)
 2.  Generate 1-4 images using `nanobanana_image_generation`
     *   Use Nano Banana Pro (gemini-3-pro-image)
 3.  Generate 1-4 videos from text using `veo_t2v` (using veo-2.0).

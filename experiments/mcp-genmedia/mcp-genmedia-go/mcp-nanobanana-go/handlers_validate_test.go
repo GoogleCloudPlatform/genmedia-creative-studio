@@ -27,7 +27,7 @@ func TestValidateGeminiImageParams(t *testing.T) {
 		SupportedImageSizes:   []string{"1K", "2K", "4K"},
 	}
 	noSizes := common.GeminiImageModelInfo{
-		CanonicalName:         "gemini-2.5-flash-image",
+		CanonicalName:         "gemini-3.1-flash-image",
 		SupportedAspectRatios: []string{"1:1", "16:9"},
 		SupportedImageSizes:   []string{},
 	}
@@ -118,7 +118,7 @@ func TestSeedForModel(t *testing.T) {
 		{name: "seed dropped for nano-banana-2.1", model: "gemini-nano-banana-2.1", seed: &s, want: nil},
 		{name: "nil seed stays nil for nano-banana-2.1", model: "gemini-nano-banana-2.1", seed: nil, want: nil},
 		{name: "seed forwarded for gemini-3.1-flash-image", model: "gemini-3.1-flash-image", seed: &s, want: &s},
-		{name: "seed forwarded for gemini-2.5-flash-image", model: "gemini-2.5-flash-image", seed: &s, want: &s},
+		{name: "seed forwarded for gemini-3-pro-image", model: "gemini-3-pro-image", seed: &s, want: &s},
 		{name: "nil seed stays nil for other model", model: "gemini-3.1-flash-image", seed: nil, want: nil},
 	}
 

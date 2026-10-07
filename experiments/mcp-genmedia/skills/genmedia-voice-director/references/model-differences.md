@@ -52,6 +52,8 @@ The tool returns **prompt advisories** when a request uses a pattern that misbeh
 ## Observed behavior (live probe, Oct 2026)
 
 - On 3.8, inline `[whispering]` was spoken as a word in 3 of 3 runs. "Say the following cheerfully:" was spoken in 1 of 3 runs. "Take one, the direct read..." markers were always spoken. `Joe:` prefixes were spoken.
+- Even the documented `<whispering>` tag was spoken as a word in 2 of 3 runs. Whispering is a sustained delivery: put it in style.
 - 3.8 still performs legacy `[sigh]` / `[short pause]` tags, but angle brackets are the documented form.
+- Designed and library voices worked in two-speaker requests. For designed or replicated voices the docs still recommend one call per turn plus concatenation, for identity stability.
 - A style that contradicts the words (e.g. `shouting angrily` on a cheerful line) may lose to the text. Write text and style that agree, or make the style specific and physical.
 - 3.1 ignores 3.8-style `speechMetadata` without any error. The tool sends `prompt` correctly for each family.

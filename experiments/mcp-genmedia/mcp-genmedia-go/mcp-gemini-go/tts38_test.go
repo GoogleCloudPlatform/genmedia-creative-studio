@@ -144,6 +144,7 @@ func TestLintTTSInput(t *testing.T) {
 		{"inline style tag", m38, "[whispering] Don't move.", "", `[whispering] -> style "whispering"`},
 		{"undocumented angle", m38, "<sarcastic> Great.", "", "<sarcastic>"},
 		{"long style", m38, "Hi.", strings.Repeat("very ", 50), "short styles"},
+		{"angle whisper", m38, "I think someone is outside. <whispering> Don't move.", "", "<whispering>/<whispers>"},
 		{"angle on 3.1", m31, "<sigh> Hi.", "", "[square] tags"},
 		{"square on 3.1", m31, "[sigh] Hi.", "", ""},
 	}
@@ -155,6 +156,12 @@ func TestLintTTSInput(t *testing.T) {
 		if c.want != "" && !has(ws, c.want) {
 			t.Errorf("%s: expected warning containing %q, got %v", c.name, c.want, ws)
 		}
+	}
+	if ws := lintTTSSpeakers([]ttsSpeaker{{"A", "Puck"}, {"B", "voice_abc"}}); len(ws) != 1 {
+		t.Errorf("custom voice in speakers should warn: %v", ws)
+	}
+	if ws := lintTTSSpeakers([]ttsSpeaker{{"A", "Puck"}, {"B", "en-au-podcaster-4"}}); len(ws) != 0 {
+		t.Errorf("library voice should not warn: %v", ws)
 	}
 	// Turns are linted too.
 	if ws := lintTTSInput(m38, "", "", []ttsTurn{{"A", "[shouting] Go!", ""}}); !has(ws, "shouting") {

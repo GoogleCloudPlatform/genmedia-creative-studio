@@ -13,7 +13,7 @@ Use **angle brackets** and only **momentary human vocal sounds and pauses**. Put
 | Distress | `<sigh>`, `<sighs>`, `<groan>`, `<moan>`, `<cry>`, `<sob>`, `<whimper>`, `<gasp>` |
 | Loud bursts | `<shout>`, `<scream>`, `<shriek>`, `<cheer>`, `<argh>` |
 | Throat and nose | `<cough>`, `<throat-clearing>`, `<sneeze>`, `<snort>` |
-| Other vocal | `<growl>`, `<grr>`, `<grunt>`, `<hiss>`, `<tsk>`, `<whispers>`, `<whispering>` |
+| Other vocal | `<growl>`, `<grr>`, `<grunt>`, `<hiss>`, `<tsk>`, `<whispers>`, `<whispering>` (documented, but the word was spoken aloud in 2 of 3 test runs; use style `whispering` instead) |
 | Pauses | `<short pause>`, `<long pause>` (there is no medium pause; use `...` or punctuation) |
 
 Rules:

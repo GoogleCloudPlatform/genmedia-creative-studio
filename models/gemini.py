@@ -139,6 +139,10 @@ def generate_image_from_prompt_and_images(
             mime_type = "video/mp4"  # General video type
         elif any(image_uri.lower().endswith(ext) for ext in [".wav", ".mp3", ".flac"]):
             mime_type = "audio/wav"  # General audio type
+        elif image_uri.lower().endswith(".heic"):
+            mime_type = "image/heic"
+        elif image_uri.lower().endswith(".heif"):
+            mime_type = "image/heif"
         elif any(
             image_uri.lower().endswith(ext)
             for ext in [".png", ".jpg", ".jpeg", ".webp", ".gif"]
@@ -1095,6 +1099,10 @@ def describe_image(image_uri: str) -> str:
         for ext in [".mp4", ".mov", ".avi", ".mkv", ".webm"]
     ):
         mime_type = "video/mp4"
+    elif image_uri.lower().endswith(".heic"):
+        mime_type = "image/heic"
+    elif image_uri.lower().endswith(".heif"):
+        mime_type = "image/heif"
 
     prompt_parts = [
         "Describe this media file in two sentences.",

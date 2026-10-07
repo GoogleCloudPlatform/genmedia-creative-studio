@@ -103,7 +103,7 @@ class Evaluation:
 class PageState:
     """Gemini Image Generation Page State"""
 
-    selected_model: str = "gemini-3.1-flash-image"
+    selected_model: str = "gemini-nano-banana-2.1"
     uploaded_image_gcs_uris: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     uploaded_image_display_urls: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call
     image_descriptions: list[str] = field(default_factory=list)  # pylint: disable=invalid-field-call

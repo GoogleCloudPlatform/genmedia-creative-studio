@@ -46,3 +46,35 @@ def test_gemini_31_flash_lite_capabilities() -> None:
     assert cfg.supports_thinking is True
     assert len(cfg.supported_aspect_ratios) == 14
     assert "video/mp4" in cfg.supported_input_mime_types
+
+
+def test_gemini_nano_banana_21_config_lookup() -> None:
+    """Test lookup of gemini-nano-banana-2.1 by short ID and full model name."""
+    by_short = get_gemini_image_model_config("nano-banana-2.1")
+    assert by_short is not None
+    assert by_short.model_name == "gemini-nano-banana-2.1"
+    assert by_short.display_name == "Gemini Nano Banana 2.1"
+
+    by_full = get_gemini_image_model_config("gemini-nano-banana-2.1")
+    assert by_full is not None
+    assert by_full == by_short
+
+
+def test_gemini_nano_banana_21_capabilities() -> None:
+    """Pin the doc-accurate capabilities for Nano Banana 2.1."""
+    cfg = get_gemini_image_model_config("gemini-nano-banana-2.1")
+    assert cfg is not None
+    assert cfg.max_input_images == 14
+    # Validated on the default Vertex endpoint (spike 2026-10-06): no base_url.
+    assert cfg.requires_base_url is False
+    assert cfg.supports_search is True, "NB2.1 supports Google/image search grounding."
+    assert cfg.supports_thinking is True
+    # Doc: 15 aspect ratios, including the portrait 9:21 ratio.
+    assert len(cfg.supported_aspect_ratios) == 15
+    assert "9:21" in cfg.supported_aspect_ratios
+    # Doc resolutions: 1K/2K/4K.
+    assert cfg.supported_image_sizes == ["1K", "2K", "4K"]
+    # Doc input MIME adds HEIC/HEIF; video input is supported.
+    assert "image/heic" in cfg.supported_input_mime_types
+    assert "image/heif" in cfg.supported_input_mime_types
+    assert "video/mp4" in cfg.supported_input_mime_types

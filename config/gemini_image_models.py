@@ -164,6 +164,52 @@ GEMINI_IMAGE_MODELS: list[GeminiImageModelConfig] = [
         supports_search=False,
         supports_thinking=True,
     ),
+    GeminiImageModelConfig(
+        version_id="nano-banana-2.1",
+        model_name="gemini-nano-banana-2.1",
+        display_name="Gemini Nano Banana 2.1",
+        button_label="2.1",
+        max_input_images=14,
+        max_output_images=1,
+        # Validated live on the default Vertex `global` endpoint (2026-10-06
+        # spike): the literal id works without a custom base_url, so the flag
+        # stays False. See nanobanana-2.1-spike-2026-10-06.md.
+        requires_base_url=False,
+        # Doc: 15 aspect ratios, including 9:21. Ordered to match the sibling
+        # gemini-3.1-flash-image entry, with the 2.1-only 9:21 appended.
+        supported_aspect_ratios=[
+            "1:1",
+            "3:2",
+            "2:3",
+            "3:4",
+            "4:3",
+            "1:4",
+            "4:1",
+            "4:5",
+            "5:4",
+            "1:8",
+            "8:1",
+            "9:16",
+            "16:9",
+            "21:9",
+            "9:21",
+        ],
+        supported_image_sizes=["1K", "2K", "4K"],
+        # Doc input MIME: png/jpeg/webp/heic/heif; video input is supported.
+        supported_input_mime_types=[
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/heic",
+            "image/heif",
+            "video/mp4",
+            "video/quicktime",
+            "video/x-matroska",
+            "video/webm",
+        ],
+        supports_search=True,
+        supports_thinking=True,
+    ),
 ]
 
 

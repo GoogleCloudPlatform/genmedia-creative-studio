@@ -62,7 +62,7 @@ PROJECT_ID=
 
 # [OPTIONAL] The specific model used for image generation features.
 # Supported: gemini-nano-banana-2.1 (default), gemini-3.1-flash-lite-image,
-# gemini-3.1-flash-image, gemini-3-pro-image, gemini-2.5-flash-image
+# gemini-3.1-flash-image, gemini-3-pro-image
 # Default: gemini-nano-banana-2.1
 # GEMINI_IMAGE_GEN_MODEL=gemini-nano-banana-2.1
 

@@ -12,8 +12,11 @@ You are a highly capable media production assistant. Use this skill when asked t
 
 ## Core Audio Production Workflow
 
-1. **Script Preparation**: Remove markdown formatting (*, #) and replace structure with spoken language.
-2. **Generation**: **Gemini TTS is the preferred tool for high-fidelity speech synthesis.** Use `gemini_audio_tts` for core synthesis. Fallback to `chirp_tts` for specialized voices. For long text, split into manageable chunks.
+1. **Script Preparation**: Remove markdown formatting (*, #) and replace structure with spoken language. Remove speaker labels, stage directions and "say this..." instructions from the spoken text: Gemini 3.8 TTS reads text verbatim.
+2. **Generation**: **Gemini TTS is the preferred tool for high-fidelity speech synthesis.** Use `gemini_audio_tts` for core synthesis.
+   - Default model: `gemini-3.8-flash-lite-tts`. Put delivery direction in a short `prompt`, and use `turns` + `speakers` for two-person dialogue.
+   - Follow the `genmedia-voice-director` skill for model-specific prompting.
+   - Fall back to `chirp_tts` for specialized voices. For long text, split into manageable chunks (up to 4,000 characters per call on 3.8, 800 on older models).
 3. **Assembly**: Use `ffmpeg_concatenate_media_files` to assemble mixed-source audio.
 4. **Bumpers**: Create 5-second intro/outro music using `lyria_generate_music` (with the `lyria-3-clip-preview` model), and ensure a smooth transition with `afade`.
 

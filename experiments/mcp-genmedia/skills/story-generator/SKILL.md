@@ -55,7 +55,7 @@ The agent must present a structured inquiry covering **The Four Pillars of Media
 *   **Visual Art Medium**: (e.g., *3D Claymation / Stop-Motion* [recommended for charming consistency], *Realistic Sci-Fi Cinematic*, or *Watercolor Sketch*).
 *   **Color Palette & Mood**: (e.g., "Vibrant pasture greens and soft gold sunlight" or "Desaturated charcoal and glowing bioluminescent cyan").
 *   **Soundtrack Genre & Tone**: (e.g., "Whimsical acoustic guitar and playful tuba" or "Ethereal synth pads and slow, soft chimes").
-*   **Voice Actor Cast**: (Prefer *Callirrhoe* for warm/soothing female narration, *Fenrir* for resonant/deep sci-fi narration, or *Kore* for playful/bright stories).
+*   **Voice Actor Cast**: (Prefer *Callirrhoe* for warm/soothing female narration, *Fenrir* for resonant/deep sci-fi narration, or *Kore* for playful/bright stories. With the default Gemini 3.8 TTS you can also cast an Extended Voice Library narrator, e.g. `list_gemini_voices` with `search: "storyteller"`. Keep the voice prompt to a short delivery style such as "soothing, gentle"; the voice itself carries gender and accent).
 
 #### Pillar 4: Audio Speed-Fitting Preference
 *   Confirm if the user wants the system to automatically speed-fit the narrator voice-over using the FFmpeg `atempo` filter if it runs longer than the video scene (recommended to avoid video stalling/looping).
@@ -72,7 +72,7 @@ The agent must present a structured inquiry covering **The Four Pillars of Media
 Once the user approves the story bible, format the scene-by-scene scripts in a structured `scenes.json` file. For each scene (1 to N), specify:
 *   **id**: Sequential scene index (1-indexed).
 *   **title**: Concise scene name.
-*   **narrator**: Text for the voice-over (keep under 800 characters for Gemini TTS limits).
+*   **narrator**: Text for the voice-over: only the words to be spoken, with no stage directions (Gemini 3.8 TTS reads it verbatim). Keep it under 800 characters, both to fit the scene and so it works on every Gemini TTS model; 3.8 itself accepts up to 4,000. Vocal events may use `<sigh>`, `<laugh>`, `<short pause>`.
 *   **music_prompt**: Specific background music prompt for Lyria.
     *   *Rule*: Music prompts must automatically append the strict instrumental negative filter: `, strictly instrumental, no vocals, no voice, no singing, ambient background score` to avoid synthetic vocal artifacts.
 *   **image_prompt**: Nano Banana visual prompt incorporating the character descriptions and visual medium.

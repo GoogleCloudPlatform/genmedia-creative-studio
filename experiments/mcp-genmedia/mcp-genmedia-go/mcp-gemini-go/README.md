@@ -23,17 +23,34 @@ When `gcs_bucket_uri` is set, `gemini_image_generation` appends one MCP `resourc
 
 ### `gemini_audio_tts`
 
-Synthesizes speech from text using Gemini models, allowing for granular control over style, pace, tone, and emotional expression through natural-language prompts.
+Synthesizes speech with Gemini TTS. The request format depends on the model family:
+
+| | Gemini 3.8 (`gemini-3.8-flash-lite-tts` default, `gemini-3.8-flash-tts`) | Gemini 3.1 / 2.5 (`gemini-3.1-flash-tts-preview`, `gemini-2.5-*-tts`) |
+|---|---|---|
+| API | Vertex AI `generateContent`, always in the `global` location (independent of `LOCATION`) | Cloud Text-to-Speech API |
+| `text` | Verbatim transcript; instructions or speaker names written into it may be spoken | Transcript |
+| `prompt` | Short turn-level style, sent as `speechMetadata.style` | Natural-language style instructions (Cloud TTS `prompt` field) |
+| Inline tags | `<sigh>`, `<laugh>`, `<short pause>`, ... | `[sigh]`, `[laughing]`, `[short pause]`, ... |
+| Voices | 30 prebuilt, Extended Voice Library IDs, designed/replicated `voice_...` IDs | 30 prebuilt |
+| Multi-speaker | `turns` + `speakers` (exactly 2) | Not supported |
+| Max `text` | 4,000 characters | 800 characters |
+| Encodings | `LINEAR16` (WAV), `PCM`, `MULAW`, `ALAW` | `LINEAR16`, `MP3`, `OGG_OPUS`, `MULAW`, `ALAW`, `PCM`, `M4A` |
+
+The result text includes **prompt advisories** when the input uses a pattern that misbehaves on the selected model. Examples: "Say the following ...:" preambles, `Take 1` markers, `Name:` prefixes, square-bracket or style tags such as `[whispering]` on 3.8, and long styles. The input itself is never rewritten. See the [`genmedia-voice-director` skill](../../skills/genmedia-voice-director/references/model-differences.md) for prompting guidance.
 
 **Parameters:**
 
-- `text` (string, required): The text to synthesize (up to 800 characters).
-- `prompt` (string, optional): Stylistic instructions on how to synthesize the content.
-- `voice_name` (string, optional): The voice to use. Defaults to `Callirrhoe`. Use the `list_gemini_voices` tool to see all options.
-- `model_name` (string, optional): The model to use. Defaults to `gemini-3.1-flash-tts-preview`.
+- `text` (string): The transcript to synthesize. Required unless `turns` is provided.
+- `prompt` (string, optional): Delivery direction (see table).
+- `voice_name` (string, optional): Defaults to `Callirrhoe`. On 3.8, also accepts library and custom voice IDs. Use `list_gemini_voices` to discover voices.
+- `model_name` (string, optional): Defaults to `gemini-3.8-flash-lite-tts`.
+- `turns` (array, optional, 3.8 only): `[{speaker, text, style?}]` dialogue turns. Listener backchannels can be written inline as `|oh really?|`.
+- `speakers` (array, optional, 3.8 only): exactly two `[{name, voice}]` entries used by `turns`.
+- `language_code` (string, optional): 3.8 detects the language automatically. Older models default to `en-US`.
+- `audio_encoding` (string, optional): Defaults to `LINEAR16` (WAV).
 - `output_directory` (string, optional): Local directory to save the generated audio file to.
-- `output_filename` (string, optional): Full base name for the output WAV file, e.g. `greeting.wav`. The extension is forced to `.wav`. Takes precedence over `output_filename_prefix` (which only supplies a prefix). See [Naming Outputs](../README.md#naming-outputs-output_filename).
-- `output_filename_prefix` (string, optional): **Deprecated — prefer `output_filename`.** A prefix for the output WAV filename. Still accepted for backward compatibility.
+- `output_filename` (string, optional): Full base name for the output file, e.g. `greeting.wav`. The extension is forced to match `audio_encoding`. Takes precedence over `output_filename_prefix` (which only supplies a prefix). See [Naming Outputs](../README.md#naming-outputs-output_filename).
+- `output_filename_prefix` (string, optional): **Deprecated — prefer `output_filename`.** Still accepted for backward compatibility.
 
 ### `gemini_transcribe`
 
@@ -59,7 +76,9 @@ The plain transcript is always returned as the first text content item. When spe
 
 ### `list_gemini_voices`
 
-Lists the available single-speaker voices for use with the Gemini-TTS models.
+With no arguments, lists the 30 prebuilt voices, which are valid for every Gemini TTS model.
+
+With any of `search` (matches display name and description), `language_code` (prefix, e.g. `en-AU`), `accent` (substring of the accent label, e.g. `Dublin`, `Winchester`), `voice_types` (`prebuilt`, `prompted`, `replicated`) or `limit`, it queries the Vertex AI Voices API (`v1beta1`, `global`). That returns Extended Voice Library voices and voices designed or replicated in the project, with accent, gender, pitch and persona metadata. These IDs work only with Gemini 3.8 models. With user ADC credentials, the project in `GOOGLE_CLOUD_PROJECT` is sent as the quota project.
 
 ## Resources
 

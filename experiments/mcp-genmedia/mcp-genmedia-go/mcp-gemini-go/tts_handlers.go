@@ -379,6 +379,9 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	outputDir, _ := args["output_directory"].(string)
 
 	warnings := lintTTSInput(modelName, text, prompt, turns)
+	if len(turns) > 0 {
+		warnings = append(warnings, lintTTSSpeakers(speakers)...)
+	}
 
 	// --- 2. Call the TTS API ---
 	var audioBytes []byte

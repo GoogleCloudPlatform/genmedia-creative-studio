@@ -229,7 +229,21 @@ var (
 	reSpeakerPrefix   = regexp.MustCompile(`(?m)^\s*[A-Z][\w .'-]{0,24}:\s+\S`)
 	reSquareTag       = regexp.MustCompile(`\[([a-zA-Z][a-zA-Z \-]{1,30})\]`)
 	reAngleTag        = regexp.MustCompile(`<([a-zA-Z][a-zA-Z \-]{1,30})>`)
+	reAngleWhisper    = regexp.MustCompile(`(?i)<\s*whisper(s|ing)\s*>`)
 )
+
+// lintTTSSpeakers flags custom voices in two-speaker requests. The API accepts
+// them, but the docs recommend synthesizing designed/replicated voices one
+// turn at a time and concatenating.
+func lintTTSSpeakers(speakers []ttsSpeaker) []string {
+	for _, s := range speakers {
+		v := strings.ToLower(s.Voice)
+		if strings.HasPrefix(v, "voice_") || strings.HasPrefix(v, "voicekey_") {
+			return []string{"speakers use a designed/replicated voice; the request works, but the docs recommend synthesizing each custom-voice turn separately and concatenating the audio for best identity stability."}
+		}
+	}
+	return nil
+}
 
 // tts38VocalTags is the documented Gemini 3.8 inline vocal-tag vocabulary.
 var tts38VocalTags = map[string]bool{
@@ -294,6 +308,11 @@ func lintTTSInput(model, text, style string, turns []ttsTurn) []string {
 			if !tts38VocalTags[tag] {
 				unknownAngle = append(unknownAngle, "<"+tag+">")
 			}
+		}
+		// <whispers>/<whispering> are in the documented list, but a live probe
+		// heard the word "whispering" spoken in 2 of 3 runs. Prefer style.
+		if reAngleWhisper.MatchString(all) {
+			w = append(w, `<whispering>/<whispers> inline was sometimes spoken as a word in testing; for a whispered delivery set prompt (style) to "whispering" and split the turn where it starts.`)
 		}
 		if len(unknownAngle) > 0 {
 			w = append(w, "undocumented 3.8 tags "+strings.Join(unknownAngle, ", ")+"; use human vocal sounds and <short pause>/<long pause> inline, and put emotions in prompt (style).")

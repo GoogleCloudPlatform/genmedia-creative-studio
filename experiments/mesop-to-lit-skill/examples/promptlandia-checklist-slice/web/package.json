@@ -1,0 +1,27 @@
+{
+  "name": "promptlandia-lit-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@material/web": "2.5.0",
+    "@vaadin/router": "2.0.1",
+    "dompurify": "^3.2.3",
+    "lit": "3.3.3",
+    "marked": "^15.0.4"
+  },
+  "devDependencies": {
+    "@open-wc/testing-helpers": "^3.0.1",
+    "happy-dom": "^15.11.7",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

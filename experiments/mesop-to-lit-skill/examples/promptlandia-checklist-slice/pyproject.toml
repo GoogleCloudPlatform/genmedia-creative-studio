@@ -1,0 +1,22 @@
+[project]
+name = "promptlandia-lit"
+version = "0.1.0"
+description = "Promptlandia checklist slice converted to FastAPI + Lit (scratch proof)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "gunicorn",
+    "pydantic",
+    "google-genai",
+    "tenacity",
+    "python-dotenv",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "config*", "models*", "services*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

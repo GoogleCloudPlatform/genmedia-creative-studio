@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	cloud.google.com/go/texttospeech v1.23.0
 	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0-20261007233137-50a918cfba4d
-	github.com/mark3labs/mcp-go v1.1.1
+	github.com/mark3labs/mcp-go v1.2.0
 	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.42.0
 	google.golang.org/api v0.301.0
@@ -68,7 +68,7 @@ require (
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	google.golang.org/genai v1.72.0 // indirect
+	google.golang.org/genai v1.73.0 // indirect
 	google.golang.org/genproto v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc // indirect

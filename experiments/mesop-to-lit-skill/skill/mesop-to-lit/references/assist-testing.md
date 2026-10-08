@@ -64,12 +64,22 @@ Carry over the Mesop app's existing **parser/service unit tests** that apply to 
 ## Frontend: Vitest + `@open-wc/testing-helpers` (happy-dom)
 `vite.config.ts` carries the test env (`environment: 'happy-dom', globals: true`). Mount
 with `fixture`, `await el.updateComplete`, assert on the shadow root.
+
+### Testing with Web Awesome (Default)
+When using Web Awesome, import `element-internals-polyfill` in your test files or test setup:
 ```ts
-const el = await fixture<ChecklistResults>(
-  html`<checklist-results .data=${fixtureData}></checklist-results>`);
-await el.updateComplete;
-expect(el.shadowRoot!.textContent).toContain('Checklist found 1 issue');
+import 'element-internals-polyfill';
+import { describe, it, expect } from 'vitest';
+import { html, fixture } from '@open-wc/testing-helpers';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/details/details.js';
 ```
+With the polyfill, Web Awesome form controls and elements render and pass directly in happy-dom.
+
+### Testing with Material Web (Opt-in)
+Do **not** import `@material/web` from any unit test (or any module a test imports) — it throws
+`attachInternals is not a function` under happy-dom. Test MWC-free components; use bare
+`<md-icon>` tags and register MWC exclusively in `main.ts`.
 Cover per the design: `checklist-results` (issue + no-issue + parse-fallback),
 `prompt-input` (emits `value-changed`/`send`/`clear`, respects `disabled`), `app-accordion`
 (reflects `open`, emits `toggle`).

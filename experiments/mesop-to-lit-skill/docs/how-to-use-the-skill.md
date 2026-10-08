@@ -2,7 +2,7 @@
 
 An operator-facing, step-by-step guide to running the **`mesop-to-lit`** Agent Skill — the one
 that **assesses** whether a Mesop (Python) app is worth converting to the target stack and then
-**assists** the conversion to a **FastAPI** JSON backend + **Lit + Material 3 (Material Web)** SPA
+**assists** the conversion to a **FastAPI** JSON backend + **Lit + Web Awesome (default) / Material 3 (Material Web, opt-in)** SPA
 built with **Vite**.
 
 This guide is the operator manual. For the *method* behind it, see the companion playbook

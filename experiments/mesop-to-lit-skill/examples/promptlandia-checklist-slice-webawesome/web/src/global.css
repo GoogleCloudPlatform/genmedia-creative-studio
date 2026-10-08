@@ -1,0 +1,37 @@
+/* Global base styles + Material Symbols class. M3 color tokens are applied by
+   theme.ts onto <html data-theme=...>. */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: 'Roboto', system-ui, sans-serif;
+  background: var(--md-sys-color-background, #fff);
+  color: var(--md-sys-color-on-background, #1b1b1f);
+}
+
+.material-symbols-outlined,
+md-icon {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Brand gradient text (replaces Mesop _FANCY_TEXT_GRADIENT). */
+.brand-gradient {
+  background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

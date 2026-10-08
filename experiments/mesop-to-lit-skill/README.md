@@ -1,7 +1,7 @@
 # mesop-to-lit-skill
 
 An **Agent Skill** that assesses and assists converting a **Mesop** (Python) app to a **FastAPI**
-JSON backend + **Lit** web components + **Material 3 (Material Web)**, built with **Vite**. Point it
+JSON backend + **Lit** web components + **Web Awesome (default)** or **Material 3 (Material Web, opt-in)**, built with **Vite**. Point it
 at a Mesop app (or a repo root) and it runs a deterministic analyzer to inventory routes, state, the
 UI/logic seam, constructs, serve model, and hard topics, then applies a construct map and a
 stock/compose/custom component-decision framework to produce a conversion assessment — and, in its
@@ -9,7 +9,7 @@ ASSIST half, drives the scaffold → endpoints → components → tests of the a
 
 > **This is an Agent Skill**, not a runnable app. It is consumed by an agent (Claude Code), which
 > discovers it from `skill/mesop-to-lit/SKILL.md` and invokes it when asked to assess, plan, port,
-> migrate, or convert a Mesop app off Mesop to Lit/FastAPI/Material 3. The only executable is a
+> migrate, or convert a Mesop app off Mesop to Lit/FastAPI with Web Awesome or Material 3. The only executable is a
 > standard-library-only Python analyzer the agent runs via Bash.
 
 **Author:** ghchinoy

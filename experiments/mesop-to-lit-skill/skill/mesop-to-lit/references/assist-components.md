@@ -1,116 +1,104 @@
 # Assist: build the Lit components (order + recipes)
 
 The `component-decisions.md` framework decided *what* to build (stock / compose / custom).
-This is *how* — the build order and the concrete recipes for the components the conversion
-actually required, plus the Lit-under-test quirks that cost real time.
+This is *how* — the build order and concrete recipes for components using **Web Awesome (default)**
+or **Material Web (opt-in)**.
 
 ## Build order (dependencies first)
 Build leaves before the things that compose them so each is testable on arrival:
 ```
-theme.ts  →  md-markdown  →  prompt-input  →  app-accordion
-          →  checklist-results (bespoke)    →  app-header / app-sidenav
+theme.ts  →  md-markdown  →  prompt-input  →  app-accordion (WA: stock <wa-details>)
+          →  checklist-results (bespoke)    →  app-header / app-sidenav (WA: stock <wa-drawer>)
           →  pages (page-checklist)         →  app-root (shell + router)
 ```
-`theme.ts`, `md-markdown`, `prompt-input`, `app-accordion`, `checklist-results` have **no
-MWC dependency** and are unit-tested. `app-sidenav`/`app-header`/`app-root`/`main.ts` use
-stable MWC and are browser-only (see the MWC/happy-dom rule below).
 
-## Theming (`theme.ts`)
-Mesop's `theme_var`/`set_theme_mode` → M3 `--md-sys-color-*` custom properties set on
-`<html>`. Default to **system** (`matchMedia('(prefers-color-scheme: dark)')`), allow a
-persisted override (`localStorage`) + a toggle. Components read tokens via
-`var(--md-sys-color-*, <fallback>)` — the fallback keeps them rendering in tests where the
-theme is not applied.
+---
 
-## `md-markdown` — sanitize, always
-Replaces Mesop's `me.markdown` (×28). `marked.parse(text, { async: false })` →
-`DOMPurify.sanitize(...)` → `unsafeHTML(...)` inside a wrapper `<div class="md">`.
-DOMPurify is **mandatory** — we render model output; Trusted Types is not needed because
-we control rendering (drop Mesop's `dangerously_disable_trusted_types`). Keep the
-component MWC-free.
+## 1. Theming
 
-## `prompt-input` — the shared input (DRY promotion)
-The 4× copy-pasted `gemini_prompt_input` → one shared element. A native `<textarea>` with
-`.value=${this.value}` + `@input` gives real two-way binding, which **deletes the Mesop
-`on_blur` + `key++` remount hack**. Clear/send are native `<button aria-label=...>` with
-an `<md-icon>` glyph; emit `value-changed` / `send` / `clear` as
-`composed: true, bubbles: true` CustomEvents. Guard `send` on `disabled`.
+### Web Awesome (Default)
+Import the Web Awesome theme stylesheet in `main.ts` or `index.html`:
+```ts
+import '@awesome.me/webawesome/dist/styles/themes/default.css';
+```
+Web Awesome supports dark mode natively by adding `class="wa-theme-default-dark"` (or toggling `.dark` with CSS variables) to `<html>` or container elements.
 
-## `app-accordion` — custom over a native primitive
-MWC has no accordion (confirmed absent). Build on `<details>/<summary>` — a11y + open
-state for free. `@property({reflect:true}) open`, style `summary::after` with a Material
-Symbols chevron, and re-emit the native `toggle` as a CustomEvent carrying `{open}`.
-Prefer native primitives (`<details>`, `<dialog>`) over hand-built widgets for every MWC
-gap.
+### Material Web (Opt-in)
+Mesop's `theme_var`/`set_theme_mode` → M3 `--md-sys-color-*` custom properties set on `<html>`. Persisted via `localStorage` + system color-scheme detection.
 
-## `checklist-results` — the bespoke domain component (Q5)
-Consumes the typed `ChecklistResponse`. Renders two sections: a **grid of issue
-categories** (flag icon, humanized category + issue names, per-item detail via nested
-`md-markdown`, dividers, a category "explanation") and a **passed-checks list** (check
-icon). The parse-fallback branch (`categories:[]`, `raw` set) renders the raw text through
-`md-markdown`. A `humanize()` helper turns `snake_case` keys into `Title Case`.
+---
 
-This is the component that exercised every Lit-under-test quirk below — read them before
-writing any component whose template branches or loops.
+## 2. Markdown (`md-markdown`)
+Replaces Mesop's `me.markdown`. In Web Awesome, `<wa-markdown>` is available stock, or use the standard `marked` + `DOMPurify` helper:
+```ts
+DOMPurify.sanitize(marked.parse(text, { async: false }))
+```
+DOMPurify is **mandatory** when rendering model-generated text.
 
-## Lit-under-test quirks (happy-dom) — the expensive lessons
-These cost the most time in the conversion. They are **test-environment** quirks
-(happy-dom's HTML parser), not Lit bugs, but they dictate how you must write templates if
-you want component tests to pass.
+---
 
-### 1. MWC crashes happy-dom on import
-Importing any `@material/web` component under happy-dom throws
-`this.attachInternals is not a function`. **Keep every unit-tested component MWC-free** —
-use native elements + bare `<md-icon>glyph</md-icon>` tags (an unregistered `<md-icon>` is
-an inert unknown element in tests and the real font glyph in the browser). Register the
-stable MWC imports **only in `main.ts`**, which tests never import.
+## 3. Shared Prompt Input (`prompt-input`)
+The 4× copy-pasted `gemini_prompt_input` → one shared element.
+- **Web Awesome:** Use `<wa-textarea>` and `<wa-button>` or `<wa-icon-button>`. Two-way binding via `@wa-input` or native `@input` deletes the Mesop `on_blur` + `key++` remount hack.
+- **Material Web:** Native `<textarea>` or `<md-outlined-text-field type="textarea">` with clear/send buttons.
+
+---
+
+## 4. Accordion / Expansion Panels
+- **Web Awesome (Stock):**
+  Use `<wa-details summary="...">` or `<wa-accordion>` with `<wa-accordion-item>`.
+  ```html
+  <wa-details summary="Issues found (3)">
+    <div class="content">...</div>
+  </wa-details>
+  ```
+  Zero custom code required.
+- **Material Web (Custom):**
+  MWC has no accordion. Build custom `<app-accordion>` wrapping native `<details>/<summary>` with M3 token styling.
+
+---
+
+## 5. Navigation Drawer / Sidenav
+- **Web Awesome (Stock):**
+  Use `<wa-drawer placement="start" label="Menu">` with `<wa-button>` or navigation links. Light-dismiss, open/close animations, and focus management are built in.
+- **Material Web (Custom):**
+  MWC nav-drawer is labs-only. Build custom `<app-sidenav>` using CSS transitions over `<aside>` / `md-list`.
+
+---
+
+## 6. Tooltips & Copy Button
+- **Web Awesome (Stock):**
+  `<wa-tooltip content="Copy prompt"><wa-copy-button value=${text}></wa-copy-button></wa-tooltip>`
+- **Material Web (Custom):**
+  Custom Lit directive / HTML `title`, manual `navigator.clipboard.writeText(...)`.
+
+---
+
+## Lit-under-test quirks (happy-dom) — Key Lessons
+
+### 1. Element Internals in happy-dom
+- **Web Awesome:** Form-associated custom elements require `element-internals-polyfill`.
+  Import `import 'element-internals-polyfill';` in your test setup (`test/setup.ts` or top of tests).
+  Once imported, Web Awesome components render and test cleanly under happy-dom.
+- **Material Web:** MWC custom elements crash happy-dom if imported directly into unit tests (`attachInternals is not a function`).
+  When targeting MWC, keep unit-tested components MWC-free and register MWC exclusively in `main.ts`.
 
 ### 2. A nested template at the template ROOT mis-parses → renders as `<?>`
-This is the big one. A `TemplateResult` placed **directly at a template's root**, with no
-enclosing element, is mis-parsed by happy-dom and commits as the literal text `&lt;?&gt;`
-instead of the template — and it **shifts every binding after it**, so sibling `.prop`
-bindings receive the *wrong value* (we saw `md-markdown.text` get an object → `marked():
-input ... [object Object]`). Symptom: the component renders empty/garbled only in tests,
-fine in the browser.
-
-**Rule: every `html\`...\`` fragment must begin with a static element and must not place a
-bare `${nested-template-or-conditional}` as a root child.** Wrap the whole render body in a
-container:
+A `TemplateResult` placed directly at a template's root with no enclosing element commits as the literal text `<?>` under happy-dom and shifts sibling bindings.
+**Rule:** Every `html` fragment must begin with a static element:
 ```ts
-// BAD — root-level child parts (mis-parses under happy-dom):
-render() { return html`${a ? html`...` : nothing} ${b ? html`...` : nothing}`; }
-// GOOD — wrapped; child parts live inside a static element:
-render() { return html`<div class="results">
-  ${a ? html`...` : nothing} ${b ? html`...` : nothing}
-</div>`; }
+// GOOD — wrapped in a container:
+render() {
+  return html`<div class="results">${a ? html`...` : nothing}</div>`;
+}
 ```
-Apply it at **every** nesting level: a helper like `renderItem()` that returns
-`html\`<div>..</div> ${trailing}\`` should wrap its whole output in one element; a
-conditional sub-template that *starts* with `${x ? ... : nothing}` should start with a
-static element instead. Arrays from `.map()` are fine as long as they sit **inside** a
-container element (`<div class="grid">${items.map(...)}</div>`).
 
 ### 3. Interpolated adjacent expressions inject template whitespace
-`Checklist found ${n}\n  ${plural}` renders as `"Checklist found 1\n  issue"` — the
-template's own newline/indentation lands between the values, so a
-`textContent.includes("Checklist found 1 issue")` assertion fails on invisible whitespace.
-Build such phrases as a **single JS string** (`` `Checklist found ${n} ${plural}` ``) and
-interpolate once, or assert against normalized whitespace.
+Build multi-part phrases as a single JavaScript string template:
+```ts
+`Checklist found ${n} ${plural}`
+```
+instead of interpolating adjacent variables separated by template newlines.
 
-### 4. `@property({attribute: false})` for object/array props
-Pass structured data (`ChecklistResponse`) via a property binding (`.data=${obj}`) declared
-`@property({attribute: false})` — never an attribute. (The empty-render symptom here was
-actually quirk #2, not the property type, but object props must still be `attribute:false`.)
-
-## Pages + shell
-- `page-*`: own `@state() loading/result/error`; on send set `loading=true`, `await
-  client.<action>()`, render `checklist-results` on success, the envelope `code: message`
-  on error, a CSS spinner while loading. The generator-yield spinner → this `loading` flag.
-- `app-root`: `<app-sidenav>` + `<main>` outlet; `initRouter(outlet)` in `firstUpdated`;
-  track `vaadin-router-location-changed` to keep the active nav item in sync.
-- `main.ts`: the ONLY place that imports MWC registrations + calls `applyTheme()`.
-
-## Generalizing
-Build leaves→composites; keep anything you want to unit-test MWC-free; wrap every template
-body in a static container; build phrase strings in JS. These four rules make Lit
-components pass under happy-dom on the first run.
+### 4. Property binding for complex data
+Pass objects/arrays via `.data=${obj}` declared `@property({attribute: false})`.

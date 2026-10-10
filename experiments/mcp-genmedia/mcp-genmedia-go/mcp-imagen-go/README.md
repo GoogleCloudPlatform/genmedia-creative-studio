@@ -1,5 +1,24 @@
 # MCP Imagen Server
 
+> **⚠️ DEPRECATED.** The Imagen family of models reached its announced
+> sunset on **2026-06-30**, and `install.sh` / `deploy-cloudrun.sh` already
+> exclude `mcp-imagen-go` from the standard install loop. Do not enable
+> this server in new deployments.
+>
+> **For new image-generation work, use [`mcp-nanobanana-go`](../mcp-nanobanana-go/)
+> (Nano Banana / Gemini 3.1 Flash Image) or [`mcp-gemini-go`](../mcp-gemini-go/).**
+>
+> The directory is kept in-tree for reference while the core app's upscale
+> (`imagen-4.0-upscale-preview`) and Virtual Try-On (`virtual-try-on-001`)
+> surfaces still target Imagen-family models. Verified Nano Banana
+> approximations exist for both but are not drop-in replacements — see the
+> 2026-08-22 inventory and correction on
+> [issue #1588](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/1588).
+>
+> See [`DEPRECATION.md`](./DEPRECATION.md) for the full status, the audit
+> of remaining references across the repo, and the open decision on
+> whether to remove the directory entirely.
+
 This tool provides image generation capabilities using Google's Imagen models (via Vertex AI). It is one of the MCP tools for Google Cloud Genmedia services, functioning as an MCP server component to allow LLMs and other MCP clients to generate images from text prompts.
 
 ## MCP Tool Definition

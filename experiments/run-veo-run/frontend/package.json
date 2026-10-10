@@ -13,7 +13,7 @@
     "@material/web": "^2.4.1",
     "@tailwindcss/postcss": "^4.1.18",
     "autoprefixer": "^10.4.23",
-    "firebase": "^12.6.0",
+    "firebase": "^13.0.0",
     "lit": "^3.3.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18"

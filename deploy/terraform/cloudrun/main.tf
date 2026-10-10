@@ -150,6 +150,34 @@ locals {
     API_BASE_URL                          = var.api_base_url != "" ? var.api_base_url : (var.use_lb ? "https://${var.domain}" : "")
   }
 
+  # Vuln #4 S1 (audience) + S3 (gate-on) identity contract — NONPROD NATIVE
+  # CLOUD RUN ONLY (use_lb = false). These three env vars establish verified-
+  # identity enforcement for the native Cloud Run + native IAP topology:
+  #   - APP_ENV: a NON-local value so the app derives AUTH_MODE='iap' (the app's
+  #     local set is {"", dev, development, local, test}). We reuse the existing
+  #     deployed non-prod env label (var.environment, "staging" in nonprod.tfvars)
+  #     so the app env matches the deployed environment. AUTH_MODE itself is NOT
+  #     operator-set — it is derived by the app from APP_ENV.
+  #   - REQUIRE_AUTHENTICATED_USER: gate on "no verified identity" (fail closed).
+  #   - IAP_JWT_AUDIENCE: the native Cloud Run deterministic audience, built from
+  #     the project NUMBER (never a hardcoded literal), region, and the static
+  #     Cloud Run service name "creative-studio". The app FATALs at boot in iap
+  #     mode if this is unset, which is why this must be applied atomically with
+  #     the S2 image (see deploy docs).
+  # Local set that yields the app's local (mock-identity) AUTH_MODE. Kept here so
+  # the LOW-3 precondition and the intent above share one source of truth.
+  local_app_envs = ["", "dev", "development", "local", "test"]
+  nonprod_identity_env_vars = {
+    APP_ENV                    = var.environment
+    REQUIRE_AUTHENTICATED_USER = "true"
+    IAP_JWT_AUDIENCE           = "/projects/${data.google_project.project.number}/locations/${var.region}/services/creative-studio"
+  }
+  # Prod (use_lb = true) uses the load balancer; its IAP audience is the LB
+  # backend-service form (a separate, two-stage change held for Phase 5), so the
+  # native-Cloud-Run identity vars are merged for the nonprod path ONLY. Prod's
+  # rendered env map is therefore byte-for-byte unchanged by this PR.
+  cloud_run_env_vars = var.use_lb ? local.creative_studio_env_vars : merge(local.creative_studio_env_vars, local.nonprod_identity_env_vars)
+
   deployed_domain = var.use_lb ? ["https://${var.domain}"] : module.cloud-run-service.service_urls
   cors_domains    = concat(local.deployed_domain, var.allow_local_domain_cors_requests ? ["http://localhost:8080", "http://0.0.0.0:8080"] : [])
 }
@@ -159,7 +187,7 @@ module "cloud-run-service" {
   project_id         = var.project_id
   region             = var.region
   image              = var.initial_container_image
-  env_vars           = local.creative_studio_env_vars
+  env_vars           = local.cloud_run_env_vars
   secret_env         = var.secret_env
   runtime_sa_email   = module.iam.runtime_sa_email
   runtime_sa_name    = module.iam.runtime_sa_name
@@ -178,6 +206,24 @@ module "cloud-run-service" {
   launch_stage         = var.use_lb ? "GA" : "BETA"
 
   depends_on = [module.apis]
+}
+
+# Vuln #4 LOW-3: fail-closed APP_ENV misconfig guard for the DEPLOYED nonprod
+# native Cloud Run path. This root is only ever run for a deployed environment
+# (local/dev/test do not run this Terraform root), so on the nonprod path
+# (use_lb = false) APP_ENV MUST resolve to a NON-local value — otherwise the app
+# would derive AUTH_MODE='local' and serve a mock identity (fail OPEN). The
+# precondition FAILS the plan/apply in that case. Prod (use_lb = true) creates
+# zero instances of this resource, so prod is entirely unaffected.
+resource "terraform_data" "nonprod_app_env_guard" {
+  count = var.use_lb ? 0 : 1
+
+  lifecycle {
+    precondition {
+      condition     = !contains(local.local_app_envs, local.nonprod_identity_env_vars.APP_ENV)
+      error_message = "Vuln #4 LOW-3 misconfig: nonprod native Cloud Run (use_lb=false) resolved APP_ENV='${local.nonprod_identity_env_vars.APP_ENV}', which is in the app's LOCAL set {\"\", dev, development, local, test} and would derive AUTH_MODE='local' (mock identity, fail-open). Set var.environment to a non-local value (e.g. \"staging\") so AUTH_MODE derives to 'iap'."
+    }
+  }
 }
 
 /********************************************

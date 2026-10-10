@@ -80,6 +80,41 @@ func executeTrimMedia(ctx context.Context, localInput, tempOutput string, startS
 	return true, err
 }
 
+// Frame-extraction modes for buildExtractFrameArgs / executeExtractFrame.
+const (
+	// extractModeLastFrame keeps the exact final frame of the input clip.
+	extractModeLastFrame = "last_frame"
+	// extractModeAtTimestamp keeps the frame at a caller-specified timestamp.
+	extractModeAtTimestamp = "at_timestamp"
+)
+
+// buildExtractFrameArgs constructs the ffmpeg argument list for extracting a single
+// still image (PNG/JPEG) from a video, written via the image2 muxer. -update 1 forces
+// a single-image write, so no %d sequence pattern is needed, and -q:v 2 pins high
+// quality (relevant for JPEG; PNG is lossless regardless).
+//
+// For extractModeAtTimestamp the seek (-ss) is placed before -i for fast input
+// seeking and -frames:v 1 grabs exactly one frame at that point.
+//
+// For extractModeLastFrame (the default) -sseof -3 seeks to ~3s before end-of-file
+// and the tail is decoded; without -frames:v the last decoded frame is what gets
+// written, which is the true final frame. On clips shorter than the 3s window ffmpeg
+// clamps the seek to the start and decodes the whole file, so the last decoded frame
+// is still the real final frame — the very-short-clip case needs no special handling.
+func buildExtractFrameArgs(localInput, tempOutput, mode string, timestampSeconds float64) []string {
+	if mode == extractModeAtTimestamp {
+		return []string{"-y", "-ss", formatSeconds(timestampSeconds), "-i", localInput, "-update", "1", "-frames:v", "1", "-q:v", "2", tempOutput}
+	}
+	return []string{"-y", "-sseof", "-3", "-i", localInput, "-update", "1", "-q:v", "2", tempOutput}
+}
+
+// executeExtractFrame runs the single-frame extraction for the requested mode and
+// writes the still image to tempOutput.
+func executeExtractFrame(ctx context.Context, localInput, tempOutput, mode string, timestampSeconds float64) error {
+	_, err := runFFmpegCommand(ctx, buildExtractFrameArgs(localInput, tempOutput, mode, timestampSeconds)...)
+	return err
+}
+
 // Note: Specific ffmpeg command functions (like convertAudioToMP3, createGIF etc.) will be added here later.
 // For now, this file only contains the generic runFFmpegCommand.
 // The handlers in mcp_handlers.go will still call runFFmpegCommand directly in this phase.

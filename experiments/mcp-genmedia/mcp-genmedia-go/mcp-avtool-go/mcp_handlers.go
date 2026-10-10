@@ -1198,6 +1198,178 @@ func ffmpegTrimMediaHandler(ctx context.Context, request mcp.CallToolRequest, cf
 	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
 }
 
+// addExtractFrameTool defines and registers the 'ffmpeg_extract_frame' tool.
+// This tool extracts a single still image (PNG/JPEG) from a video, either the exact
+// last frame (default) or the frame at a given timestamp. The output is a plain image
+// path/URI suitable as a reference-image input for downstream conditioning (e.g.
+// mcp-omni-go's omni_video_generation, or Veo first/last / reference-image inputs).
+func addExtractFrameTool(s *server.MCPServer, cfg *common.Config) {
+	tool := mcp.NewTool("ffmpeg_extract_frame",
+		mcp.WithDescription("Extracts a single still frame from a video as a PNG or JPEG image. "+
+			"Use mode=last_frame (default) to capture the exact final frame of the clip, or mode=at_timestamp to capture the frame at a specific time offset. "+
+			"The output is a single image file (local path and/or GCS URI), directly usable as a reference-image input for downstream conditioning (e.g. chaining video segments by conditioning the next segment on the last frame of the previous one). "+
+			"PNG (default) is lossless and best for conditioning; JPEG is available via output_format or the output_filename extension. Fails if the input has no video stream."),
+		mcp.WithString("input_media_uri", mcp.Required(), mcp.Description("URI of the input video file (local path or gs://). Must contain a video stream.")),
+		mcp.WithString("mode", mcp.DefaultString(extractModeLastFrame), mcp.Enum(extractModeLastFrame, extractModeAtTimestamp), mcp.Description("Optional. 'last_frame' (default) extracts the exact final frame; 'at_timestamp' extracts the frame at 'timestamp' seconds.")),
+		mcp.WithNumber("timestamp", mcp.Description("Conditional. Time offset in seconds from the start of the video (e.g., 1.5). Required when mode=at_timestamp; must be >= 0 and less than the input's duration. Ignored when mode=last_frame.")),
+		mcp.WithString("output_format", mcp.DefaultString("png"), mcp.Enum("png", "jpg"), mcp.Description("Optional. Output image format: 'png' (default, lossless) or 'jpg'. An extension in output_filename overrides this.")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Desired name for the output file (e.g., 'frame.png'). The client-provided extension is honored, selects the output format, and overrides output_format. Takes precedence over the deprecated output_file_name. If omitted, a unique name is generated using output_format. An existing file of the same name is overwritten.")),
+		mcp.WithString("output_file_name", mcp.Description("Optional (deprecated; use output_filename). Desired name for the output file (e.g., 'frame.png').")),
+		mcp.WithString("output_local_dir", mcp.Description("Optional. Local directory to save the output file.")),
+		mcp.WithString("output_gcs_bucket", mcp.Description("Optional. GCS bucket to upload the output file to (uses GENMEDIA_BUCKET if set and this is empty).")),
+	)
+	s.AddTool(tool, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		return ffmpegExtractFrameHandler(ctx, request, cfg)
+	})
+}
+
+// ffmpegExtractFrameHandler is the handler for the 'ffmpeg_extract_frame' tool. It
+// prepares the input, verifies it has a video stream, resolves the extraction mode and
+// (for at_timestamp) validates the timestamp against the input's actual duration, then
+// extracts a single still image. The output format defaults to PNG unless overridden by
+// output_format or an extension on output_filename.
+func ffmpegExtractFrameHandler(ctx context.Context, request mcp.CallToolRequest, cfg *common.Config) (*mcp.CallToolResult, error) {
+	tr := otel.Tracer(serviceName)
+	ctx, span := tr.Start(ctx, "ffmpeg_extract_frame")
+	defer span.End()
+
+	startTime := time.Now()
+	argsMap, err := getArguments(request)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+	log.Printf("Handling %s request with arguments: %v", "ffmpeg_extract_frame", argsMap)
+
+	inputMediaURI, _ := argsMap["input_media_uri"].(string)
+	if strings.TrimSpace(inputMediaURI) == "" {
+		return mcp.NewToolResultError("Parameter 'input_media_uri' is required."), nil
+	}
+
+	mode, _ := argsMap["mode"].(string)
+	mode = strings.TrimSpace(mode)
+	if mode == "" {
+		mode = extractModeLastFrame
+	}
+	if mode != extractModeLastFrame && mode != extractModeAtTimestamp {
+		return mcp.NewToolResultError(fmt.Sprintf("Parameter 'mode' must be '%s' or '%s'.", extractModeLastFrame, extractModeAtTimestamp)), nil
+	}
+
+	timestampSeconds, hasTimestamp := argsMap["timestamp"].(float64)
+	if mode == extractModeAtTimestamp {
+		if !hasTimestamp {
+			return mcp.NewToolResultError("Parameter 'timestamp' is required (in seconds) when mode is 'at_timestamp'."), nil
+		}
+		if timestampSeconds < 0 {
+			return mcp.NewToolResultError("Parameter 'timestamp' must not be negative."), nil
+		}
+	}
+
+	// Resolve the output format: an extension on output_filename wins over output_format,
+	// which itself defaults to png.
+	outputFormat, _ := argsMap["output_format"].(string)
+	outputFormat = strings.ToLower(strings.TrimSpace(outputFormat))
+	if outputFormat == "" {
+		outputFormat = "png"
+	}
+	outputFileName := resolveAVToolOutputFilename(argsMap)
+	outputExt := outputFormat
+	if outputFileName != "" {
+		if userExt := strings.ToLower(strings.TrimPrefix(filepath.Ext(outputFileName), ".")); userExt != "" {
+			outputExt = userExt
+		}
+	}
+
+	outputLocalDir, _ := argsMap["output_local_dir"].(string)
+	outputGCSBucket, _ := argsMap["output_gcs_bucket"].(string)
+	outputGCSBucket = strings.TrimSpace(outputGCSBucket)
+
+	if outputGCSBucket == "" && cfg.GenmediaBucket != "" {
+		outputGCSBucket = cfg.GenmediaBucket
+		log.Printf("Handler ffmpeg_extract_frame: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", outputGCSBucket)
+	}
+	if outputGCSBucket != "" {
+		outputGCSBucket = strings.TrimPrefix(outputGCSBucket, "gs://")
+	}
+
+	span.SetAttributes(
+		attribute.String("input_media_uri", inputMediaURI),
+		attribute.String("mode", mode),
+		attribute.Float64("timestamp", timestampSeconds),
+		attribute.String("output_format", outputExt),
+		attribute.String("output_file_name", outputFileName),
+		attribute.String("output_local_dir", outputLocalDir),
+		attribute.String("output_gcs_bucket", outputGCSBucket),
+	)
+
+	localInputMedia, inputCleanup, err := common.PrepareInputFile(ctx, inputMediaURI, "extract_frame_input", cfg.ProjectID)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare input media: %v", err)), nil
+	}
+	defer inputCleanup()
+
+	streamInfo, err := probeMediaStreamInfo(ctx, localInputMedia)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to inspect input media: %v", err)), nil
+	}
+	if !streamInfo.HasVideo {
+		return mcp.NewToolResultError("The input has no video stream to extract a frame from."), nil
+	}
+
+	// For at_timestamp, validate the requested time against the file's actual duration
+	// when it can be determined. If the duration is unknown (some streams don't report
+	// one), skip validation and let ffmpeg handle it rather than rejecting a valid request.
+	if mode == extractModeAtTimestamp {
+		if mediaDuration, probeErr := probeMediaDurationSeconds(ctx, localInputMedia); probeErr != nil {
+			log.Printf("Handler ffmpeg_extract_frame: could not determine input duration, skipping timestamp validation: %v", probeErr)
+		} else if timestampSeconds >= mediaDuration {
+			return mcp.NewToolResultError(fmt.Sprintf("Parameter 'timestamp' (%.3fs) is at or beyond the input's duration (%.3fs).", timestampSeconds, mediaDuration)), nil
+		}
+	}
+
+	tempOutputFile, finalOutputFilename, outputCleanup, err := common.HandleOutputPreparation(outputFileName, outputExt)
+	if err != nil {
+		span.RecordError(err)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to prepare output file: %v", err)), nil
+	}
+	defer outputCleanup()
+
+	if ffmpegErr := executeExtractFrame(ctx, localInputMedia, tempOutputFile, mode, timestampSeconds); ffmpegErr != nil {
+		span.RecordError(ffmpegErr)
+		return mcp.NewToolResultError(fmt.Sprintf("FFMpeg frame extraction failed: %v", ffmpegErr)), nil
+	}
+
+	finalLocalPath, finalGCSPath, processErr := common.ProcessOutputAfterFFmpeg(ctx, tempOutputFile, finalOutputFilename, outputLocalDir, outputGCSBucket, cfg.ProjectID)
+	if processErr != nil {
+		span.RecordError(processErr)
+		return mcp.NewToolResultError(fmt.Sprintf("Failed to process FFMpeg output: %v", processErr)), nil
+	}
+
+	duration := time.Since(startTime)
+	span.SetAttributes(attribute.Float64("duration_ms", float64(duration.Milliseconds())))
+
+	var messageParts []string
+	switch mode {
+	case extractModeAtTimestamp:
+		messageParts = append(messageParts, fmt.Sprintf("Extracted frame at %.3fs as %s in %v.", timestampSeconds, strings.ToUpper(outputExt), duration))
+	default:
+		messageParts = append(messageParts, fmt.Sprintf("Extracted last frame as %s in %v.", strings.ToUpper(outputExt), duration))
+	}
+	if outputLocalDir != "" && finalLocalPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output saved locally to: %s.", finalLocalPath))
+	} else if finalLocalPath != "" && (outputGCSBucket == "" || finalGCSPath == "") {
+		messageParts = append(messageParts, fmt.Sprintf("Temporary output was at: %s (cleaned up if not moved/uploaded).", finalLocalPath))
+	}
+	if finalGCSPath != "" {
+		messageParts = append(messageParts, fmt.Sprintf("Output uploaded to GCS: %s.", finalGCSPath))
+	}
+	if len(messageParts) == 1 {
+		messageParts = append(messageParts, "No specific output location requested beyond temporary processing.")
+	}
+	return mcp.NewToolResultText(strings.Join(messageParts, " ")), nil
+}
+
 // addNormalizeLoudnessTool defines and registers the 'ffmpeg_normalize_loudness' tool.
 // It performs EBU R128 loudness normalization on any audio (or audio-containing video)
 // file using the accurate two-pass loudnorm method.

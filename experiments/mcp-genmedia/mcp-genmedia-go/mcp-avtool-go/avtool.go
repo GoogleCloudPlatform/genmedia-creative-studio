@@ -99,6 +99,7 @@ func main() {
 	addCreateGifTool(s, cfg)
 	addGetMediaInfoTool(s, cfg)
 	addTrimMediaTool(s, cfg)
+	addExtractFrameTool(s, cfg)
 	addNormalizeLoudnessTool(s, cfg)
 	addResizeReframeTool(s, cfg)
 

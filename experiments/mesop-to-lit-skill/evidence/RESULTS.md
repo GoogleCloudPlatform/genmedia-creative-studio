@@ -243,8 +243,29 @@ The CSP `frame-ancestors` header test (`test_csp_frame_ancestors_header`) still 
 (extended to also assert `base-uri 'self'`, `object-src 'none'`, and no wildcard `https:` in
 `img-src`).
 
+## 6. Web Awesome Spike & Skill Redesign (2026-10-08)
+
+To address the maintenance mode limitation of `@material/web` 2.5.0 and the persistent gaps (accordion/details, navigation drawer, tooltip, copy button), the skill was redesigned to **support and default to Web Awesome (`@awesome.me/webawesome` 3.14.0, MIT)** while retaining Material 3 as an explicit opt-in choice.
+
+### Spike Implementation & Verification
+A dedicated spike test slice was created at `examples/promptlandia-checklist-slice-webawesome/`:
+1. **Frontend dependencies:** Replaced `@material/web` 2.5.0 with `@awesome.me/webawesome` 3.14.0 and added `element-internals-polyfill` 1.3.11.
+2. **Stock components verified:** Demonstrated stock `<wa-details>` / `<wa-accordion>` replacing custom accordion logic; validated stock `<wa-drawer>`, `<wa-tooltip>`, `<wa-copy-button>`, and `<wa-button>`.
+3. **Happy-dom unit testing:** With `element-internals-polyfill`, Web Awesome custom elements render and test directly inside happy-dom without throwing `attachInternals` errors.
+4. **Verification gates (all green):**
+   - **Backend pytest:** 15 passed in 3.07s (all API, parser, and error-handling tests green).
+   - **Frontend Vitest:** 19 passed across 5 test suites (`checklist-results`, `prompt-input`, `app-accordion`, `wa-details`, `md-markdown`).
+   - **TypeScript typecheck:** `tsc --noEmit` clean, 0 errors.
+   - **Vite build:** `vite build` clean, 108 modules transformed, 82.27 kB gzipped production bundle.
+
+### Benefits over Material Web
+- **No missing essential components:** Accordion (`wa-details`/`wa-accordion`), drawer (`wa-drawer`), tooltip (`wa-tooltip`), and copy button (`wa-copy-button`) are off-the-shelf, eliminating 4 custom component implementations.
+- **Active open source maintenance:** Regular updates from the core web components team.
+- **Full backward compatibility:** Material 3 is preserved via `--target-ui material-web` in `analyze_mesop_app.py` and dedicated recipes in the skill references.
+
 ## 4. Where everything lives
-- Converted app: `scratch/promptlandia-lit/` (backend root + `web/`).
+- Converted app (M3 reference): `examples/promptlandia-checklist-slice/` (backend root + `web/`).
+- Converted app (Web Awesome spike): `examples/promptlandia-checklist-slice-webawesome/` (backend root + `web/`).
 - ASSIST skill refs: `skill/mesop-to-lit/references/assist-{scaffold,endpoints,components,testing}.md`
   + the filled ASSIST section in `skill/mesop-to-lit/SKILL.md`.
 - Project log: `project-log/conv-dev.md`.

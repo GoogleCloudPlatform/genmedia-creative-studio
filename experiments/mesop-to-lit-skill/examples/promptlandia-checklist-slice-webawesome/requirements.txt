@@ -1,0 +1,14 @@
+# Backend runtime deps for the converted checklist slice (Mesop -> FastAPI).
+# Python 3.11 target for the scratch proof (production targets 3.14 per design).
+# NO mesop.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+gunicorn==23.0.0
+pydantic==2.10.4
+google-genai==1.9.0
+tenacity==9.0.0
+python-dotenv==1.0.1
+# test-only
+pytest==8.3.4
+pytest-mock==3.14.0
+httpx==0.28.1

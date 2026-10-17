@@ -2,26 +2,29 @@
 name: mesop-to-lit
 description: >-
   Assess and convert/port a Mesop (Python) app to a FastAPI backend + Lit web
-  components + Material 3 (Material Web) + Vite build. Use when asked to assess,
-  plan, port, migrate, or convert a Mesop app (or a single Mesop page/feature) off
-  Mesop to Lit/FastAPI/Material 3 — including "is this Mesop app worth converting",
-  "what will the conversion involve", "map these Mesop constructs to Material Web",
+  components + Web Awesome (default) or Material 3 (Material Web, opt-in) + Vite build.
+  Use when asked to assess, plan, port, migrate, or convert a Mesop app (or a single
+  Mesop page/feature) off Mesop to Lit/FastAPI — including "is this Mesop app worth converting",
+  "what will the conversion involve", "map these Mesop constructs to Web Awesome or Material Web",
   or "scaffold the FastAPI+Lit target". Runs a deterministic analyzer over the app
   to inventory routes, state, the UI/logic seam, constructs, serve model, and hard
   topics (upload, IAP/auth, Firestore, Cloud Tasks), then applies a construct map
   and a stock/compose/custom component-decision framework to emit a conversion
-  assessment. Encodes fixed facts: @material/web is in maintenance mode (stable
-  components only, build custom Lit for tooltip/accordion/nav-drawer, never labs);
+  assessment. Encodes fixed facts: Web Awesome (@awesome.me/webawesome 3.14.0) is the default
+  UI component library with full stock coverage (accordion, drawer, tooltip, copy-button, dialog);
+  @material/web 2.5.0 is supported as an opt-in alternative when explicitly requested (in maintenance mode,
+  stable components only, build custom Lit for tooltip/accordion/nav-drawer);
   there is no LLM token streaming to port; two Mesop serve models exist (plain WSGI
   and FastAPI+Mesop hybrid).
 license: Apache-2.0
 allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/analyze_mesop_app.py *)
 ---
 
-# Mesop → FastAPI + Lit + Vite + Material 3
+# Mesop → FastAPI + Lit + Vite + Web Awesome (or Material 3)
 
-Convert a Mesop (Python) app to a **FastAPI** JSON backend + a **Lit + Material 3
-(Material Web)** SPA built with **Vite**. This skill has two halves:
+Convert a Mesop (Python) app to a **FastAPI** JSON backend + a **Lit** SPA built with **Vite** using
+**Web Awesome** (`@awesome.me/webawesome`, default) or **Material 3 (`@material/web`)** (opt-in if explicitly requested).
+This skill has two halves:
 
 - **ASSESS** (below, fully specified): analyze a Mesop app and produce a conversion
   assessment — scope, component plan, endpoint surface, state plan, serve/deploy delta.
@@ -29,12 +32,15 @@ Convert a Mesop (Python) app to a **FastAPI** JSON backend + a **Lit + Material 
   FastAPI + Vite/Lit target, derive the endpoints, build the components, stand up the tests.
 
 ## Fixed facts (do not re-derive)
-- **`@material/web` is in MAINTENANCE MODE** (v2.5.0 at time of writing). "Stock" means a
-  *stable* shipped component; **treat labs as absent** (they will not graduate). Build
-  **custom Lit** for the known gaps: **tooltip, accordion/expansion-panel, navigation-drawer**.
-- Baselines: **lit 3.3.3**, router **`@vaadin/router` 2.0.1** (stable). **Re-confirm the
-  Material Web stable set against live docs at conversion time** — maintenance mode means it
-  is unlikely to grow, but verify.
+- **Default UI library is Web Awesome (`@awesome.me/webawesome` 3.14.0, MIT).** It is actively maintained, built on
+  Lit, and ships **stable, off-the-shelf components** for the common gaps: **`<wa-details>` / `<wa-accordion>` (accordion),
+  `<wa-drawer>` (navigation drawer), `<wa-tooltip>` (tooltips), `<wa-copy-button>` (copy to clipboard)**, as well as `<wa-dialog>`,
+  `<wa-button>`, `<wa-input>`, `<wa-textarea>`, `<wa-select>`, `<wa-range>`, `<wa-tab-group>`.
+- **Material 3 (`@material/web` 2.5.0) is supported as an opt-in alternative ONLY when explicitly requested.**
+  In that mode: `@material/web` is in **MAINTENANCE MODE**. "Stock" means a *stable* shipped component;
+  **treat labs as absent** (they will not graduate). Build **custom Lit** for the known gaps:
+  **tooltip, accordion/expansion-panel, navigation-drawer**.
+- Baselines: **lit 3.3.3**, router **`@vaadin/router` 2.0.1** (stable).
 - **There is no LLM token streaming** to port in these apps — generator `yield`s are spinner
   updates, not token streams. **Do not add streaming** (it is a behavior addition, not a port).
 - **Two serve models exist:** plain Mesop WSGI (`app:me`/`main:me`) and FastAPI+Mesop hybrid
@@ -49,8 +55,9 @@ Deterministic, Python-3-stdlib-only, robust to large apps (handles ~28k-LOC repo
 crashing; never hard-fails on an unparseable file). Point it at the app directory (or a repo
 root):
 ```
-python3 ${CLAUDE_SKILL_DIR}/scripts/analyze_mesop_app.py <app_dir> --json out.json --md out.md
+python3 ${CLAUDE_SKILL_DIR}/scripts/analyze_mesop_app.py <app_dir> [--target-ui webawesome|material-web] --json out.json --md out.md
 ```
+- Defaults to `--target-ui webawesome`. If the user explicitly asks for Material Web 3, pass `--target-ui material-web`.
 - Pointed at a **repo root** that vendors several apps, it excludes `experiments/` and
   `archive/` by default (separate apps). Pass `--include-nested` to override.
 - With no `--json`/`--md`, it prints the markdown report to stdout.

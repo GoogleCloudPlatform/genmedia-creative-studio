@@ -204,7 +204,7 @@ watchfiles==1.2.0
     # via uvicorn
 websockets==17.1
     # via uvicorn
-werkzeug==3.1.8
+werkzeug==3.1.9
     # via
     #   babel-web (pyproject.toml)
     #   flask

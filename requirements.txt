@@ -370,7 +370,9 @@ pygments==2.21.0
     #   ipython-pygments-lexers
     #   pytest
 pyjwt==2.15.1
-    # via firebase-admin
+    # via
+    #   firebase-admin
+    #   genmedia-creative-studio
 pyopenssl==26.4.0
     # via genmedia-creative-studio
 pyparsing==3.3.2
@@ -459,7 +461,9 @@ typing-inspection==0.4.4
 tzdata==2026.3 ; sys_platform == 'emscripten' or sys_platform == 'win32'
     # via pandas
 urllib3==2.8.0
-    # via requests
+    # via
+    #   genmedia-creative-studio
+    #   requests
 uvicorn==0.52.4
     # via genmedia-creative-studio
 watchdog==6.0.0
@@ -471,4 +475,5 @@ websockets==16.1.1
 werkzeug==3.1.9
     # via
     #   flask
+    #   genmedia-creative-studio
     #   mesop

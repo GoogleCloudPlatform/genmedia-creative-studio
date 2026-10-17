@@ -33,6 +33,13 @@ dependencies = [
     "c2pa-python>=0.27.1",
     "pillow>=12.3.0",
     "pyOpenSSL",
+    # Security floors. These three are pulled in transitively (Werkzeug via
+    # flask/mesop, PyJWT and urllib3 via other deps). Declaring them here with a
+    # minimum stops a future re-resolve from silently moving them back below
+    # their patched versions. Raise the floor when a newer patch lands.
+    "Werkzeug>=3.1.9",
+    "PyJWT>=2.15.1",
+    "urllib3>=2.8.0",
 ]
 
 [tool.uv]

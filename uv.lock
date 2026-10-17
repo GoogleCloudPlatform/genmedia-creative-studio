@@ -496,6 +496,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pillow" },
     { name = "praat-parselmouth" },
+    { name = "pyjwt" },
     { name = "pyopenssl" },
     { name = "pytest" },
     { name = "ruff" },
@@ -503,7 +504,9 @@ dependencies = [
     { name = "scipy" },
     { name = "shortuuid" },
     { name = "tenacity" },
+    { name = "urllib3" },
     { name = "uvicorn" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -528,6 +531,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "praat-parselmouth", specifier = ">=0.4.6" },
+    { name = "pyjwt", specifier = ">=2.15.1" },
     { name = "pyopenssl" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "ruff", specifier = ">=0.1.0" },
@@ -535,7 +539,9 @@ requires-dist = [
     { name = "scipy" },
     { name = "shortuuid", specifier = ">=1.0.13" },
     { name = "tenacity", specifier = ">=9.0.0" },
+    { name = "urllib3", specifier = ">=2.8.0" },
     { name = "uvicorn", specifier = ">=0.34.2" },
+    { name = "werkzeug", specifier = ">=3.1.9" },
 ]
 
 [[package]]

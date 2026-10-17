@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@open-wc/testing-helpers": "^3.0.1",
-    "happy-dom": "^15.11.7",
+    "happy-dom": "^21.0.3",
     "typescript": "^5.7.2",
     "vite": "^8.3.3",
     "vitest": "^5.0.3"

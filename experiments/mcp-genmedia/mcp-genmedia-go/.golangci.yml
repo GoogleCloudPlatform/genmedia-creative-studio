@@ -1,13 +1,7 @@
 version: "2"
 
-linters-settings:
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
     - govet
@@ -16,9 +10,14 @@ linters:
     - unused
     - bodyclose
     - copyloopvar
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck

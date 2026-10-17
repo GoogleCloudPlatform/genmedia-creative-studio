@@ -36,7 +36,7 @@ jobs:
 
 
     - name: Install golangci-lint
-      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
+      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
 
     - name: Remove go.work for isolated module testing
       run: rm -f go.work go.work.sum
@@ -48,10 +48,20 @@ jobs:
       env:
         GOOGLE_CLOUD_PROJECT: test-project-id
       run: |
-        for dir in mcp-avtool-go mcp-chirp3-go mcp-common mcp-gemini-go mcp-imagen-go mcp-lyria-go mcp-veo-go mcp-nanobanana-go mcp-omni-go; do
+        for dir in mcp-avtool-go mcp-chirp3-go mcp-common mcp-gemini-go mcp-gemini-transcribe-go mcp-imagen-go mcp-lyria-go mcp-veo-go mcp-nanobanana-go mcp-omni-go; do
           echo "Processing $dir"
           cd $dir
-          
+
+          echo "-> Checking go.mod/go.sum tidiness in $dir"
+          go mod tidy || { echo "go mod tidy failed"; exit 1; }
+          git diff --exit-code -- go.mod go.sum || {
+            echo "go.mod/go.sum are not tidy in $dir - run 'go mod tidy' and commit the result";
+            exit 1;
+          }
+
+          echo "-> Verifying module checksums in $dir"
+          go mod verify || { echo "go mod verify failed"; exit 1; }
+
           echo "-> Running go test in $dir"
 
 
@@ -59,7 +69,10 @@ jobs:
           
           echo "-> Running go build in $dir"
           go build ./... || { echo "go build failed"; exit 1; }
-          
+
+          echo "-> Running golangci-lint in $dir"
+          golangci-lint run --config ../.golangci.yml ./... || { echo "golangci-lint failed"; exit 1; }
+
           if [ -f "verify.sh" ]; then
             echo "-> Running verify.sh in $dir"
             chmod +x verify.sh

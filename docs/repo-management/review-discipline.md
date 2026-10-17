@@ -103,5 +103,8 @@ neither a real failure.)
 
 The mindset here is the same one behind the [verification principle](./verification-principle.md):
 *don't trust the description — check the actual change.* One applies it to dependency resolvers, the
-other to human-authored code. For how a review like this gets sized and dispatched in the first
-place, see [extending-the-system.md](./extending-the-system.md).
+other to human-authored code. Once a review does find a wrong claim,
+[correcting assertions](./correcting-assertions.md) sets the standard for the fix: correct the
+property at every site that asserts it, not only the sentence the reviewer flagged. For how a review
+like this gets sized and dispatched in the first place, see
+[extending-the-system.md](./extending-the-system.md).

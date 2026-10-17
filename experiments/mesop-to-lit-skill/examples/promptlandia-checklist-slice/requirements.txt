@@ -7,7 +7,7 @@ gunicorn==23.0.0
 pydantic==2.10.4
 google-genai==1.9.0
 tenacity==9.0.0
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 # test-only
 pytest==8.3.4
 pytest-mock==3.14.0

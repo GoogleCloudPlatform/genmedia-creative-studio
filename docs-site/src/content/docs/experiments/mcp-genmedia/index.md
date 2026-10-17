@@ -52,7 +52,7 @@ The MCP servers can be run using different transport protocols. The default is `
 
 To start a server in Streamable HTTP mode, use the `--transport http` flag:
 ```bash
-mcp-imagen-go --transport http
+mcp-nanobanana-go --transport http
 ```
 
 ## Configuration

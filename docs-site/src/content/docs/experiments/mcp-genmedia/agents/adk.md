@@ -18,16 +18,13 @@ GOOGLE_CLOUD_LOCATION="your-location" #e.g. us-central1
 GOOGLE_GENAI_USE_VERTEXAI="True"
 ```
 
-## Start the Imagen MCP Server
+## MCP servers
 
-The agent example contains two MCP servers using STDIO (Veo, Chirp 3) and one using the SSE protocol (Imagen).
-
-Start the Imagen MCP Server in a separate terminal:
-
-```bash
-export PROJECT_ID=$(gcloud config get project)
-mcp-imagen-go --transport sse
-```
+The sample has since been reworked: the agent now wires four MCP toolsets
+(`nanobanana`, `chirp3`, `veo`, `avtool`), all invoked as binaries on your
+`PATH` over stdio — no separate server process needs to be started. See the
+[current in-tree README](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/blob/main/experiments/mcp-genmedia/sample-agents/adk/README.md)
+for the up-to-date setup and toolset table.
 
 
 ## Run the ADK Developer UI

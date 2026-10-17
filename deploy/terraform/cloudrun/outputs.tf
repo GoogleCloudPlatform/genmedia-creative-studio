@@ -19,6 +19,11 @@ output "load-balancer-ip" {
   description = "IP Address that should be used for DNS A record for the domain provided."
 }
 
+output "backend-service-generated-id" {
+  value       = var.use_lb ? module.networking-lb[0].backend_service_generated_id : null
+  description = "Numeric generated_id of the prod LB backend service (null unless use_lb). Exposed for verification/runbook cross-check of IAP_JWT_AUDIENCE; the service env derives the same id cycle-free via a data source."
+}
+
 output "assets-bucket" {
   value       = module.data.assets_bucket_name
   description = "Name of the GCS bucket where assets are stored."

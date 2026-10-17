@@ -468,7 +468,7 @@ wcwidth==0.8.3
     # via prompt-toolkit
 websockets==16.1.1
     # via google-genai
-werkzeug==3.1.8
+werkzeug==3.1.9
     # via
     #   flask
     #   mesop

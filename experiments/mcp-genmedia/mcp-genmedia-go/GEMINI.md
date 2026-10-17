@@ -161,9 +161,9 @@ For each test run, create a new directory named with the current date and time (
     *   Use Nano Banana (gemini-nano-banana-2.1)
 2.  Generate 1-4 images using `nanobanana_image_generation`
     *   Use Nano Banana Pro (gemini-3-pro-image)
-3.  Generate 1-4 videos from text using `veo_t2v` (using veo-2.0).
+3.  Generate 1-4 videos from text using `veo_t2v` (using veo-3.1-fast-generate-001).
     *   Use the `output_file_name` parameter to rename the output appropriately.
-4.  Generate 1-4 videos from a random image generated in step 1 using `veo_i2v` (using veo-2.0).
+4.  Generate 1-4 videos from a random image generated in step 1 using `veo_i2v` (using veo-3.1-fast-generate-001).
 5.  Generate 1-4 8-second videos from text using `veo_t2v` with `veo-3.0-generate-preview`.
     *   Use the `output_file_name` parameter to name the output `veo_t2v_veo3_test_video.mp4`.
 6.  Generate 1-4 videos from a random image generated in step 2 using `veo_i2v` with `veo-3.0-generate-preview`.

@@ -77,10 +77,6 @@ EDIT_MODE_OPTIONS = [
         label="Product showcase / Change the background.",
         value="EDIT_MODE_BGSWAP",
     ),
-    me.SelectOption(
-        label="Outpainting - Extend the image",
-        value="EDIT_MODE_OUTPAINT",
-    ),
     # me.SelectOption(
     #    label="Controlled editing",
     #    value="EDIT_MODE_CONTROLLED_EDITING",

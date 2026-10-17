@@ -222,7 +222,7 @@ gemini extensions install ./sample_extensions/google-genmedia
 ### Partial Extension Configurations
 
 If you only want a subset of the GenMedia tools, we have provided partial configurations:
-- **Images Only**: `gemini extensions install ./sample_extensions/google-genmedia-images` (Installs `nanobanana`)
+- **Images Only**: `gemini extensions install ./sample_extensions/google-genmedia-images` (Installs `nanobanana` and `gemini`)
 - **Video Only**: `gemini extensions install ./sample_extensions/google-genmedia-video` (Installs `veo` and `avtool`)
 
 ### 🛠️ Using Expert Agent Skills

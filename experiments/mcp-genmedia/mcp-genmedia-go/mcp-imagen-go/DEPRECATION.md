@@ -188,14 +188,14 @@ cd genmedia-creative-studio
 # Inside the MCP-genmedia tree (matches §3):
 grep -rln 'mcp-imagen-go\|imagen_t2i\|mcp_imagen' experiments/mcp-genmedia/ \
     --include='*.md' --include='*.json' --include='*.py' \
-    --include='*.js' --include='*.ts' --include='*.go' \
+    --include='*.js' --include='*.mjs' --include='*.ts' --include='*.go' \
     --include='*.sh' --include='*.yaml' --include='*.yml'
 
 # Repo-wide sweep (matches §3.1):
 grep -rln 'mcp-imagen-go\|imagen_t2i\|mcp_imagen' . \
     --exclude-dir=node_modules --exclude-dir=.git \
     --include='*.md' --include='*.json' --include='*.py' \
-    --include='*.js' --include='*.ts' --include='*.go' \
+    --include='*.js' --include='*.mjs' --include='*.ts' --include='*.go' \
     --include='*.sh' --include='*.yaml' --include='*.yml'
 ```
 

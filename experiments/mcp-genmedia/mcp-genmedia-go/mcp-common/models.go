@@ -259,39 +259,6 @@ type VeoModelInfo struct {
 
 // SupportedVeoModels is the single source of truth for all supported Veo models.
 var SupportedVeoModels = map[string]VeoModelInfo{
-	"veo-2.0-generate-001": {
-		CanonicalName:          "veo-2.0-generate-001",
-		Aliases:                []string{"Veo 2"},
-		DefaultDuration:        8,
-		SupportedDurations:     []int32{5, 6, 7, 8},
-		MaxVideos:              4,
-		SupportedAspectRatios:  []string{"16:9", "9:16"},
-		SupportsGenerateAudio:  false,
-		SupportsFirstLast:      false,
-		SupportsReferenceImage: false,
-	},
-	"veo-2.0-generate-exp": { // TODO: Deprecated, remove
-		CanonicalName:          "veo-2.0-generate-exp",
-		Aliases:                []string{"Veo 2 Exp"},
-		DefaultDuration:        8,
-		SupportedDurations:     []int32{5, 6, 7, 8},
-		MaxVideos:              4,
-		SupportedAspectRatios:  []string{"16:9", "9:16"},
-		SupportsGenerateAudio:  false,
-		SupportsFirstLast:      true,
-		SupportsReferenceImage: true,
-	},
-	"veo-2.0-generate-preview": {
-		CanonicalName:          "veo-2.0-generate-preview",
-		Aliases:                []string{"Veo 2 Preview"},
-		DefaultDuration:        8,
-		SupportedDurations:     []int32{5, 6, 7, 8},
-		MaxVideos:              4,
-		SupportedAspectRatios:  []string{"16:9", "9:16"},
-		SupportsGenerateAudio:  false,
-		SupportsFirstLast:      true,
-		SupportsReferenceImage: false,
-	},
 	"veo-3.0-generate-001": {
 		CanonicalName:          "veo-3.0-generate-001",
 		Aliases:                []string{"Veo 3.0"},

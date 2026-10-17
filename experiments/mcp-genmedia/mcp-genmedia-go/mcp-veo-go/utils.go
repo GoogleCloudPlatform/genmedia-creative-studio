@@ -43,7 +43,7 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	// Model
 	modelInput, ok := args["model"].(string)
 	if !ok || modelInput == "" {
-		modelInput = "veo-2.0-generate-001"
+		modelInput = "veo-3.1-fast-generate-001"
 	}
 	modelInfo, found := common.ResolveVeoModel(modelInput, appConfig.AllowUnsafeModels)
 	if !found {

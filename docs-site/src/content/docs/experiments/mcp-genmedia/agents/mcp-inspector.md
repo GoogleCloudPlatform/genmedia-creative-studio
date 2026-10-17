@@ -5,7 +5,7 @@ title: "MCP Inspector usage"
 You can use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) to test the Genmedia MCP servers.
 
 
-An example config file is provided where you can use veo-go, imagen-go, or chirp3-go as your server.
+An example config file is provided where you can use veo-go, nanobanana-go, or chirp3-go as your server.
 
 ```bash
 npx @modelcontextprotocol/inspector --config genmedia-config.json --server veo-go

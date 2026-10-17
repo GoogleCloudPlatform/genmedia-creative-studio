@@ -24,7 +24,7 @@ Prerequisites: **Python >= 3.12** and [Google Cloud CLI (`gcloud`)](https://clou
 # Navigate to the experiment directory
 cd experiments/veo-genetic-prompt-optimizer
 
-# Install dependencies using uv (recommended), poetry, or pip
+# Install dependencies using uv (recommended) or pip
 uv sync
 
 # Or with pip:

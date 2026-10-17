@@ -1,0 +1,65 @@
+{
+  "name": "google-genmedia-devcontainer",
+  "version": "3.0.0",
+  "mcpServers": {
+    "veo": {
+      "command": "mcp-veo-go",
+      "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000"
+      }
+    },
+    "imagen": {
+      "command": "mcp-imagen-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "chirp3-hd": {
+      "command": "mcp-chirp3-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "lyria": {
+      "command": "mcp-lyria-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "avtool": {
+      "command": "mcp-avtool-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "nanobanana": {
+      "command": "mcp-nanobanana-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    },
+    "gemini": {
+      "command": "mcp-gemini-go",
+      "env": {
+        "GEMINI_LOCATION": "${GEMINI_LOCATION}",
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "120000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000"
+      }
+    }
+  },
+  "settings": [
+    {
+      "name": "Google Cloud Project ID",
+      "description": "The GCP Project ID where Vertex AI is enabled.",
+      "envVar": "GOOGLE_CLOUD_PROJECT",
+      "sensitive": false
+    },
+    {
+      "name": "GenMedia GCS Bucket",
+      "description": "The GCS bucket URI (gs://your-bucket) to save generated media.",
+      "envVar": "GENMEDIA_BUCKET",
+      "sensitive": false
+    }
+  ]
+}

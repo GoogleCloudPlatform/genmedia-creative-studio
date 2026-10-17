@@ -172,6 +172,14 @@ locals {
     # GKE is always LB/ingress-fronted (managed cert on var.domain), so the base
     # URL follows the ingress domain — parity with the Cloud Run use_lb path.
     API_BASE_URL = var.api_base_url != "" ? var.api_base_url : (var.domain != "" ? "https://${var.domain}" : "")
+    # Vuln #4 INTERIM mitigation (deployed-envs only; env-config, no app code change).
+    # Parity with the Cloud Run root: restrict trusted identity headers to ONLY the
+    # IAP-set, priority-#1 header, removing the non-Goog plaintext passthrough
+    # impersonation vector (X-Email, X-Authenticated-User, X-Auth-Request-Email,
+    # X-Forwarded-Email). The app already honors AUTH_EMAIL_HEADERS
+    # (common/identity.py). Fixed Google header NAME, not a secret. Retired by the
+    # Vuln #4 app fix (design Phase 3). See vuln4-design.md §5/§6.
+    AUTH_EMAIL_HEADERS = "X-Goog-Authenticated-User-Email"
   }
 }
 

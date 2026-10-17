@@ -148,6 +148,14 @@ locals {
     EDIT_IMAGES_ENABLED                   = var.edit_images_enabled
     THUMBNAIL_QUEUE_ID                    = module.data.tasks_queue_name
     API_BASE_URL                          = var.api_base_url != "" ? var.api_base_url : (var.use_lb ? "https://${var.domain}" : "")
+    # Vuln #4 INTERIM mitigation (deployed-envs only; env-config, no app code change).
+    # Restrict the identity headers the app trusts to ONLY the IAP-set, priority-#1
+    # header, removing the non-Goog plaintext passthrough impersonation vector
+    # (X-Email, X-Authenticated-User, X-Auth-Request-Email, X-Forwarded-Email). The
+    # app already honors AUTH_EMAIL_HEADERS (common/identity.py). This is a fixed
+    # Google header NAME, not a secret. Retired by the Vuln #4 app fix (design
+    # Phase 3), which removes the plaintext path entirely. See vuln4-design.md §5/§6.
+    AUTH_EMAIL_HEADERS = "X-Goog-Authenticated-User-Email"
   }
 
   deployed_domain = var.use_lb ? ["https://${var.domain}"] : module.cloud-run-service.service_urls

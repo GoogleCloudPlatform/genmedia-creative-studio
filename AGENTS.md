@@ -1,10 +1,11 @@
-# Agent Guidelines for Vertex AI GenMedia Creative Studio
+# Agent Guidelines for GenMedia Creative Studio
 
-This document provides guidelines for AI agents working on the GenMedia Creative Studio codebase.
+This document provides guidelines for AI agents working on the GenMedia Creative Studio codebase (`GoogleCloudPlatform/genmedia-creative-studio`, formerly `vertex-ai-creative-studio`).
 
 ## Scope of Work
 
 - Do not modify code within the `experiments/` directory when refactoring or updating the main application. If a global change (like a model deprecation) impacts an experiment, add an inline `# TODO:` or `// TODO:` comment near the affected code in the experiment rather than attempting to refactor its logic.
+- **Repository & Module Naming:** The canonical GitHub repository is `GoogleCloudPlatform/genmedia-creative-studio`. All Go module paths and internal imports must use `github.com/GoogleCloudPlatform/genmedia-creative-studio/...` (never the legacy `vertex-ai-creative-studio` name).
 
 ## Styling
 
@@ -134,33 +135,6 @@ The automation is built on GitHub Actions using a "Router-Worker" pattern:
     - `gemini-invoke.yml`: Handles general Q&A.
 
 This system is powered by the [Gemini CLI](https://github.com/google-github-actions/run-gemini-cli) action.
-
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-- **SSH PASSPHRASE**: If a `git push` command hangs or fails asking for an SSH passphrase, ABORT the automated push attempt and explicitly instruct the user to execute the push manually.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker

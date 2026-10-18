@@ -4,19 +4,18 @@ This document provides common guidance for developing and testing the generative
 
 ## General Guidance
 
-### **CRITICAL: Versioning and Changelog**
+### **CRITICAL: Versioning, Releases, and Conventional Commits**
 
-After making **any** functional or logical code changes, you **must** update both the version number in the code and the `CHANGELOG.md` file. This is not an optional step.
+Releases of the MCP servers are automated via **`release-please`** and **GoReleaser** (see `RELEASING.md` for full details):
 
-1.  **Increment Version**: In the core MCP code file (e.g., `imagen.go`, `veo.go`), find the `version` constant. Increment it according to the significance of your changes and update the comment to reflect the changes made.
-
-2.  **Update Changelog**: Open the `CHANGELOG.md` file in the `mcp-genmedia-go` directory. Add a new entry for the current date and a bulleted list of the changes you made. Use the existing format and tags (e.g., `**Feat:**`, `**Fix:**`, `**Docs:**`) as a guide.
-
-3.  **Release Retries**: GitHub Action workflows triggered by tags use the workflow definition present at the time the tag was created. If a release fails due to a workflow configuration error (like a Go version mismatch), you must fix the workflow on `main` and create a **new tag** (e.g., incrementing the patch version) to trigger a successful release.
+1.  **Single Source of Truth (`VERSION`):** The version for all MCP servers lives in `experiments/mcp-genmedia/mcp-genmedia-go/VERSION` and is injected at build time via `-ldflags "-X main.version=<version>"`. **Never** hand-edit `var version = "dev"` in individual `.go` files, and do not manually bump `VERSION` on feature PRs (`release-please` bumps `VERSION` and updates `CHANGELOG.md` in its standing release PR).
+2.  **Conventional Commit PR Titles (Enforced by CI):** Because `release-please` derives SemVer bumps from squash-merged PR titles, every PR that modifies `experiments/mcp-genmedia/mcp-genmedia-go/**` **must** use a Conventional Commit PR title (`feat(mcp): ...` for minor, `fix(mcp): ...` for patch, `chore(mcp): ...` / `ci(mcp): ...` / `docs(mcp): ...` for non-releasing changes).
+3.  **In-Tree `mcp-common` Dependency Pin (`v0.0.0`):** Sibling server `go.mod` files must require `github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0` paired with `replace ... => ../mcp-common`. Never replace `v0.0.0` with a `v0.0.0-<timestamp>-<sha>` pseudo-version, which triggers Renovate digest churn on every commit.
+4.  **`.gitignore` Binary Rule (`**/mcp-*-go/mcp-*-go`):** Because the root `.gitignore` ignores compiled server binaries matching `**/mcp-*-go/mcp-*-go`, staging new or modified files inside `mcp-*-go/` requires `git add -f`, and searching with `rg` requires `rg --no-ignore` (or `git grep`).
 
 ### Architectural Pattern: Model-Specific Constraints
 
-For MCP tools that support different "models" (e.g., `Imagen 3` vs. `Imagen 4`, `Veo 2` vs. `Veo 3`), we use a centralized, configuration-driven approach to manage model-specific parameters and constraints.
+For MCP tools that support different "models" (e.g., `Nano Banana 2` vs. `Nano Banana Pro`, `Veo 3.0` vs. `Veo 3.1`), we use a centralized, configuration-driven approach to manage model-specific parameters and constraints.
 
 **The Single Source of Truth: `mcp-common/models.go`**
 
@@ -252,8 +251,20 @@ When containerizing or deploying MCP servers to Cloud Run, adhere to the followi
 
 ## CI and Workflow Management
 
+### **Isolated Module Gates (`MCP GenMedia Go CI`)**
+CI (`.github/workflows/mcp-genmedia-go.yml`) deletes `go.work` and `go.work.sum` and iterates through all 10 modules (`mcp-avtool-go`, `mcp-chirp3-go`, `mcp-common`, `mcp-gemini-go`, `mcp-gemini-transcribe-go`, `mcp-imagen-go`, `mcp-lyria-go`, `mcp-veo-go`, `mcp-nanobanana-go`, `mcp-omni-go`), running:
+1. `GOWORK=off go mod tidy` + `git diff --exit-code -- go.mod go.sum` + `go mod verify`
+2. `GOWORK=off go test -v -timeout 30s ./...`
+3. `GOWORK=off go build ./...`
+4. `GOWORK=off golangci-lint run --config ../.golangci.yml ./...` (v2 schema)
+5. `./verify.sh` (if present)
+
+Always run `GOWORK=off go mod tidy` (not `go work sync`) before committing dependency changes.
+
+### **Pre-Release Live Smoke & Eval Suites**
+Before cutting a release via the standing `release-please` PR:
+*   **Consolidated Live Smoke Test:** Run `./experiments/agent_tools/smoke_generate_and_verify.sh` (with `GOOGLE_CLOUD_PROJECT` set) to execute real `tools/call` generations across the MCP servers and verify non-empty output artifacts.
+*   **Gemini TTS Live Eval Harness:** Run `experiments/mcp-genmedia/evals/gemini-tts/run_eval.py` when modifying `gemini_audio_tts` or voice-director guidance.
+
 ### **Version Sync**
-When updating the Go version in `go.mod` or `go.work`, you **must** also search for and update the `go-version` in all relevant GitHub Action workflows (e.g., `.github/workflows/mcp-release.yml` and `mcp-genmedia-go.yml`) to ensure CI compatibility.
-l`) to ensure CI compatibility.
-l`) to ensure CI compatibility.
-l`) to ensure CI compatibility.
+When updating the Go version in `go.mod` or `go.work`, you **must** also search for and update the `go-version` in all relevant GitHub Action workflows (e.g., `.github/workflows/mcp-release.yml` and `.github/workflows/mcp-genmedia-go.yml`) to ensure CI compatibility.

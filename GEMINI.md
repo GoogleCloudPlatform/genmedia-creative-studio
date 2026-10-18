@@ -99,13 +99,15 @@ Instead, you MUST:
 If a Go application initializes network-dependent clients (like Google Cloud `genai.NewClient` or `texttospeech.NewClient`) on startup, it will hang indefinitely inside headless CI runners that lack ADC (Application Default Credentials). To allow tools like `mcptools` to verify the STDIO handshake in CI, you MUST make global client initialization non-fatal during `main()` and defer the strict credential check until the client is actually invoked inside the tool handler.
 
 **Monorepo Dependency Synchronization & Isolated CI:**
-When a shared internal library (e.g., `experiments/mcp-genmedia/mcp-common`) is updated in a multi-module repository, all dependent submodules must have their dependencies synchronized. 
-Even if local development runs successfully using `go.work`, CI pipelines often isolate modules by deleting `go.work` and running tests/linting within each module directory individually. 
-Therefore, you MUST run `go mod tidy` recursively across all submodules after any change to a shared internal package. Run a loop similar to this to ensure complete sync:
-```bash
-for d in mcp-*; do (cd "$d" && go mod tidy); done
-```
-This guarantees that every submodule's `go.sum` is fully updated and will compile cleanly in isolation under CI.
+When a shared internal library (e.g., `experiments/mcp-genmedia/mcp-genmedia-go/mcp-common`) is updated in a multi-module repository, all dependent submodules must have their dependencies synchronized.
+Even if local development runs successfully using `go.work`, CI pipelines isolate modules by deleting `go.work` and running `go mod tidy` + `git diff --exit-code -- go.mod go.sum` + `golangci-lint run --config ../.golangci.yml ./...` within each module directory individually.
+Therefore:
+1. **Always run `go mod tidy` with `GOWORK=off`** across all 10 submodules (never `go work sync`, which pushes workspace indirect versions into unrelated modules and fails the isolated CI tidiness gate):
+   ```bash
+   for d in mcp-*; do (cd "$d" && GOWORK=off go mod tidy && GOWORK=off go mod verify); done
+   ```
+2. **Pin `mcp-common` to `v0.0.0` (never a commit pseudo-version):** Every sibling `mcp-*-go/go.mod` must require `github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0` paired with `replace ... => ../mcp-common`. Do not commit a `v0.0.0-<timestamp>-<sha>` pseudo-version, as Renovate treats it as a git digest and opens a `fix(deps)` PR after every commit on `main`.
+3. **Watch out for the `.gitignore` `**/mcp-*-go/mcp-*-go` rule:** Because `.gitignore` ignores compiled server binaries whose names match their directory names (`mcp-*-go`), gitignore-aware searchers (`rg` / `ripgrep`) silently skip `experiments/mcp-genmedia/mcp-genmedia-go/mcp-*-go/` unless `--no-ignore` is passed (or use `git grep`), and staging files in those directories requires `git add -f`.
 
 ## 9. Linting and Code Quality
 

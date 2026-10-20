@@ -2,7 +2,7 @@
 #    uv export --format requirements-txt --no-hashes -o requirements.txt
 aiohappyeyeballs==2.7.1
     # via aiohttp
-aiohttp==3.14.3
+aiohttp==3.14.4
     # via
     #   google-adk
     #   google-cloud-aiplatform

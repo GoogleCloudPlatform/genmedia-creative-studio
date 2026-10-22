@@ -67,7 +67,7 @@ class JobStatus(BaseModel):
     results: Optional[dict] = None
     error: Optional[str] = None
 
-async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration: int, aspect_ratio: str, image_path: Optional[str]):
+async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration: int, aspect_ratio: str, image_path: Optional[str], video_model: Optional[str] = None):
     """Orchestrates variation generation, video generation, and analysis."""
     try:
         project_id = os.getenv("VEO_PROJECT_ID")
@@ -76,6 +76,7 @@ async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration
         eval_project = os.getenv("GOOGLE_CLOUD_PROJECT")
         eval_location = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
         eval_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+        target_video_model = video_model or os.getenv("VEO_MODEL", "gemini-omni-1.1-flash-preview")
         
         # 1. Generate Prompt Variations
         jobs[job_id]["status"] = "brainstorming_variations"
@@ -89,6 +90,7 @@ async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration
         
         # Pre-initialize the results list with the prompts
         jobs[job_id]["results"] = {
+            "model": target_video_model,
             "variations": [
                 {"id": i, "prompt": p, "status": "generating", "filename": None}
                 for i, p in enumerate(variation_prompts)
@@ -100,10 +102,10 @@ async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration
         
         async def process_one_variation(idx, v_prompt):
             try:
-                print(f"Variation {idx}: Generating video...")
+                print(f"Variation {idx}: Generating video with {target_video_model}...")
                 start_time = time.time()
                 filename = await generate_video(
-                    v_prompt, "veo-3.1-lite-generate-001", duration, 
+                    v_prompt, target_video_model, duration, 
                     project_id, location, bucket, VIDEO_DIR, 
                     image_path=image_path, aspect_ratio=aspect_ratio
                 )
@@ -160,6 +162,7 @@ async def create_variations(
     count: int = Form(4),
     duration: int = Form(4),
     aspect_ratio: str = Form("16:9"),
+    model: Optional[str] = Form(None),
     image: Optional[UploadFile] = File(None)
 ):
     job_id = str(uuid.uuid4())
@@ -173,7 +176,7 @@ async def create_variations(
         with open(image_path, "wb") as f:
             f.write(await image.read())
             
-    background_tasks.add_task(run_variation_benchmark, job_id, prompt, count, duration, aspect_ratio, image_path)
+    background_tasks.add_task(run_variation_benchmark, job_id, prompt, count, duration, aspect_ratio, image_path, model)
     return jobs[job_id]
 
 @app.get("/jobs/{job_id}", response_model=JobStatus)

@@ -19,6 +19,7 @@ import { customElement, state } from 'lit/decorators.js'
 
 import './components/concept-sidebar'
 import './components/variation-tile'
+import './components/niqe-modal'
 
 @customElement('variations-app')
 export class VariationsApp extends LitElement {
@@ -26,6 +27,8 @@ export class VariationsApp extends LitElement {
   @state() private jobId: string | null = null
   @state() private variations: any[] = []
   @state() private error: string | null = null
+  @state() private showNiqeModal: boolean = false
+  @state() private selectedNiqeVariation: any = null
 
   private get apiBase() {
     if (window.location.hostname === 'localhost' && window.location.port !== '8000') {
@@ -64,6 +67,12 @@ export class VariationsApp extends LitElement {
       align-items: center;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
     h1 {
       font-family: 'Manrope', sans-serif;
       font-weight: 800;
@@ -80,10 +89,32 @@ export class VariationsApp extends LitElement {
       padding: 4px 12px;
       border-radius: 20px;
     }
+
+    .niqe-info-btn {
+      background: #161616;
+      border: 1px solid #333;
+      color: #aaa;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+    }
+
+    .niqe-info-btn:hover {
+      border-color: #4285F4;
+      color: #fff;
+      background: rgba(66, 133, 244, 0.1);
+    }
   `
 
   async handleGenerate(e: CustomEvent) {
-    const { prompt, count, aspectRatio, image } = e.detail
+    const { prompt, count, aspectRatio, model, image } = e.detail
     this.status = 'initializing'
     this.error = null
     this.variations = Array.from({ length: count }, (_, i) => ({ id: i, status: 'generating', prompt: 'Preparing...' }))
@@ -92,6 +123,7 @@ export class VariationsApp extends LitElement {
     formData.append('prompt', prompt)
     formData.append('count', count.toString())
     formData.append('aspect_ratio', aspectRatio)
+    if (model) formData.append('model', model)
     if (image) formData.append('image', image)
 
     try {
@@ -135,14 +167,24 @@ export class VariationsApp extends LitElement {
     check()
   }
 
+  private openNiqeModal(variation: any = null) {
+    this.selectedNiqeVariation = variation
+    this.showNiqeModal = true
+  }
+
   render() {
     return html`
       <concept-sidebar @generate=${this.handleGenerate}></concept-sidebar>
       
-      <main>
+      <main @open-niqe=${(e: CustomEvent) => this.openNiqeModal(e.detail)}>
         <div class="header">
           <h1>Variations Canvas</h1>
-          ${this.status !== 'idle' ? html`<div class="status-tag">${this.status}</div>` : ''}
+          <div class="header-actions">
+            ${this.status !== 'idle' ? html`<div class="status-tag">${this.status}</div>` : ''}
+            <button class="niqe-info-btn" @click=${() => this.openNiqeModal(null)}>
+              <span style="color: #4285F4;">ⓘ</span> What is NIQE?
+            </button>
+          </div>
         </div>
 
         ${this.error ? html`<div style="color: #ea4335; background: rgba(234, 67, 53, 0.1); padding: 1rem; border-radius: 8px;">${this.error}</div>` : ''}
@@ -159,6 +201,12 @@ export class VariationsApp extends LitElement {
           ` : ''}
         </div>
       </main>
+
+      <niqe-modal
+        .open=${this.showNiqeModal}
+        .variation=${this.selectedNiqeVariation}
+        @close=${() => { this.showNiqeModal = false; this.selectedNiqeVariation = null; }}
+      ></niqe-modal>
     `
   }
 }

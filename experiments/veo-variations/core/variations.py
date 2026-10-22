@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 from google import genai
 from google.genai import types
 
@@ -38,13 +39,23 @@ async def generate_concept_variations(concept, count, project_id, location, mode
     
     prompt = VARIATION_PROMPT_TEMPLATE.format(concept=concept, count=count)
     
-    response = client.models.generate_content(
-        model=model_name,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json"
+    def _call(m):
+        return client.models.generate_content(
+            model=m,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json"
+            )
         )
-    )
+
+    try:
+        response = await asyncio.to_thread(_call, model_name)
+    except Exception as e:
+        if model_name != "gemini-3.5-flash-lite":
+            print(f"Model {model_name} failed ({e}), falling back to gemini-3.5-flash-lite...")
+            response = await asyncio.to_thread(_call, "gemini-3.5-flash-lite")
+        else:
+            raise
     
     try:
         variations = json.loads(response.text)

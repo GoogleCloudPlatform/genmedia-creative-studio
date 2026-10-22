@@ -17,10 +17,11 @@ __pycache__/
 
 # Output media & local artifacts
 videos/
-*.mp4
-*.png
-*.jpg
-*.jpeg
+/*.mp4
+/*.png
+/*.jpg
+/*.jpeg
+!ui/public/**
 
 # Secrets and environment overrides
 .env

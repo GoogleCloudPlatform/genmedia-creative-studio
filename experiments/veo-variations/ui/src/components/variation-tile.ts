@@ -79,6 +79,29 @@ export class VariationTile extends LitElement {
       font-size: 0.75rem;
       color: #666;
       font-weight: 600;
+      align-items: center;
+    }
+
+    .niqe-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      margin-left: -6px;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .niqe-trigger:hover {
+      background: rgba(66, 133, 244, 0.12);
+      color: #ccc;
+    }
+
+    .niqe-help-icon {
+      font-size: 0.7rem;
+      color: #4285F4;
+      opacity: 0.85;
     }
 
     .meta-row {
@@ -166,7 +189,14 @@ export class VariationTile extends LitElement {
           
           ${d.metrics ? html`
             <div class="stats-row">
-              <span>NIQE: <span style="color: #4285F4;">${d.metrics.avg_score.toFixed(2)}</span></span>
+              <span
+                class="niqe-trigger"
+                title="Click to learn about NIQE & view 5-frame breakdown"
+                @click=${() => this.dispatchEvent(new CustomEvent('open-niqe', { detail: d, bubbles: true, composed: true }))}
+              >
+                NIQE: <span style="color: #4285F4;">${d.metrics.avg_score.toFixed(2)}</span>
+                <span class="niqe-help-icon">ⓘ</span>
+              </span>
               <span>TIME: <span style="color: #4285F4;">${d.gen_time_sec ? d.gen_time_sec + 's' : '--'}</span></span>
             </div>
           ` : ''}

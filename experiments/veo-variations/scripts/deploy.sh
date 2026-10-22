@@ -110,7 +110,7 @@ gcloud beta run deploy "$SERVICE_NAME" \
   --timeout 3600 \
   --memory 8Gi \
   --cpu 4 \
-  --set-env-vars="VEO_PROJECT_ID=$PROJECT_ID,VEO_LOCATION=$REGION,VEO_BUCKET=gs://$BUCKET,VIDEO_DIR=/videos,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}" \
+  --set-env-vars="VEO_PROJECT_ID=$PROJECT_ID,VEO_LOCATION=$REGION,VEO_BUCKET=gs://$BUCKET,VIDEO_DIR=/videos,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite},VEO_MODEL=${VEO_MODEL:-gemini-omni-1.1-flash-preview},OMNI_RESOLUTION=${OMNI_RESOLUTION:-360p}" \
   --add-volume=name=video-storage,type=cloud-storage,bucket="$BUCKET" \
   --add-volume-mount=volume=video-storage,mount-path=/videos \
   "${AUTH_FLAGS[@]}" \

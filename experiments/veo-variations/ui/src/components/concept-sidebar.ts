@@ -22,11 +22,25 @@ const PRESETS = [
   }
 ];
 
+const VIDEO_MODELS = [
+  {
+    id: 'gemini-omni-1.1-flash-preview',
+    label: 'Gemini Omni 1.1 Flash (360p)',
+    badge: 'Fast · ~25s'
+  },
+  {
+    id: 'veo-3.1-lite-generate-001',
+    label: 'Veo 3.1 Lite (720p)',
+    badge: 'HD · ~55s'
+  }
+];
+
 @customElement('concept-sidebar')
 export class ConceptSidebar extends LitElement {
   @state() private prompt: string = ''
   @state() private variations: number = 4
   @state() private aspectRatio: string = '16:9'
+  @state() private videoModel: string = 'gemini-omni-1.1-flash-preview'
   @state() private imagePreview: string | null = null
   @state() private selectedFile: File | null = null
   @state() private activePresetIndex: number | null = null
@@ -187,6 +201,25 @@ export class ConceptSidebar extends LitElement {
 
     .toggle-btn.active { background: #333; color: #4285F4; border: 1px solid #444; }
 
+    .model-select {
+      width: 100%;
+      background-color: #1e1e1e;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .model-select:hover, .model-select:focus {
+      border-color: #4285F4;
+    }
+
     .generate-btn {
       margin-top: 1rem;
       padding: 1rem;
@@ -251,12 +284,14 @@ export class ConceptSidebar extends LitElement {
         prompt: this.prompt,
         count: this.variations,
         aspectRatio: this.aspectRatio,
+        model: this.videoModel,
         image: this.selectedFile
       }
     }))
   }
 
   render() {
+    const activeModel = VIDEO_MODELS.find(m => m.id === this.videoModel) || VIDEO_MODELS[0];
     return html`
       <div class="input-group">
         <div class="section-title">
@@ -297,6 +332,22 @@ export class ConceptSidebar extends LitElement {
           this.prompt = e.target.value;
           this.activePresetIndex = null; // Typing breaks the strict preset definition
         }}></textarea>
+      </div>
+
+      <div class="input-group">
+        <div class="slider-row">
+          <div class="section-title">Video Model</div>
+          <span class="val-badge" style="font-size: 0.75rem;">${activeModel.badge}</span>
+        </div>
+        <select
+          class="model-select"
+          .value=${this.videoModel}
+          @change=${(e: any) => this.videoModel = e.target.value}
+        >
+          ${VIDEO_MODELS.map(m => html`
+            <option value=${m.id} ?selected=${this.videoModel === m.id}>${m.label}</option>
+          `)}
+        </select>
       </div>
 
       <div class="input-group">

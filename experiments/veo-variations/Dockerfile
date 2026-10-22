@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     curl \
     git \
-    && curl -fSL https://github.com/ghchinoy/credentio-contributions/releases/download/v0.2.0/libcredentio_c-linux-amd64.so \
+    && curl -fSL https://github.com/ghchinoy/credentio-contributions/releases/download/v0.2.1/libcredentio_c-linux-amd64.so \
        -o /usr/local/lib/libcredentio_c.so \
     && chmod 755 /usr/local/lib/libcredentio_c.so \
     && ldconfig \
@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir \
     pyiqa \
     opencv-python-headless \
     cffi \
-    "credentio @ git+https://github.com/ghchinoy/credentio-contributions.git@v0.2.0#subdirectory=python" \
+    "credentio @ git+https://github.com/ghchinoy/credentio-contributions.git@v0.2.1#subdirectory=python" \
     requests \
     google-auth \
     python-multipart \

@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "cffi>=1.15.0",
-    "credentio @ git+https://github.com/ghchinoy/credentio-contributions.git@v0.2.0#subdirectory=python",
+    "credentio @ git+https://github.com/ghchinoy/credentio-contributions.git@v0.2.1#subdirectory=python",
     "fastapi>=0.135.3",
     "google-auth>=2.49.1",
     "google-cloud-storage>=3.10.1",

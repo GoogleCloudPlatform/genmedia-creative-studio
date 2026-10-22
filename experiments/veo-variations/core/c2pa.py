@@ -63,6 +63,8 @@ def get_c2pa_manifest(video_path: str) -> Dict[str, Any]:
             return {"error": "No C2PA manifest found in this file."}
 
         manifest_data = json.loads(report.raw_json)
+        active = report.active_manifest
+        sig = active.signature if active else None
         manifest_data["_credentio_meta"] = {
             "engine_id": report.engine_id,
             "engine_name": report.engine_name,
@@ -70,6 +72,10 @@ def get_c2pa_manifest(video_path: str) -> Dict[str, Any]:
             "core_seconds": report.core_seconds,
             "elapsed_seconds": report.elapsed_seconds,
             "media_type": report.media_type,
+            "claim_generator": active.claim_generator if active else None,
+            "signature_issuer": sig.issuer if sig else None,
+            "signature_algorithm": sig.algorithm if sig else None,
+            "signature_time": sig.time.isoformat() if (sig and sig.time) else None,
         }
         return manifest_data
     except CredentioError as e:
@@ -145,11 +151,11 @@ def summarize_c2pa(video_path: str) -> Dict[str, Any]:
     tsa_subject_dict = tsa_cert.get("subject", {}) if isinstance(tsa_cert.get("subject"), dict) else {}
 
     signer_subject = subject_dict.get("CN") or sig_dict.get("common_name")
-    signer_issuer = issuer_dict.get("CN") or sig_dict.get("issuer")
+    signer_issuer = meta.get("signature_issuer") or issuer_dict.get("CN") or sig_dict.get("issuer")
     signer_org = subject_dict.get("O") or issuer_dict.get("O")
-    signer_alg = sig_dict.get("algorithm") or sig_dict.get("alg")
+    signer_alg = meta.get("signature_algorithm") or sig_dict.get("algorithm") or sig_dict.get("alg")
     tsa_subject = tsa_subject_dict.get("CN")
-    timestamp = tsa_info.get("timestamp") or sig_dict.get("time")
+    timestamp = meta.get("signature_time") or tsa_info.get("timestamp") or sig_dict.get("time")
 
     # Extract validation results
     val_results = active_manifest.get("validationResults", {})

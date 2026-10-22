@@ -10,9 +10,15 @@ RUN npm run build
 FROM python:3.14-slim
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies and prebuilt Google Credentio C-ABI library
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    curl \
+    git \
+    && curl -fSL https://github.com/ghchinoy/credentio-contributions/releases/download/v0.2.0/libcredentio_c-linux-amd64.so \
+       -o /usr/local/lib/libcredentio_c.so \
+    && chmod 755 /usr/local/lib/libcredentio_c.so \
+    && ldconfig \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application files
@@ -31,7 +37,8 @@ RUN pip install --no-cache-dir \
     google-cloud-storage \
     pyiqa \
     opencv-python-headless \
-    c2pa-python \
+    cffi \
+    "credentio @ git+https://github.com/ghchinoy/credentio-contributions.git@v0.2.0#subdirectory=python" \
     requests \
     google-auth \
     python-multipart \

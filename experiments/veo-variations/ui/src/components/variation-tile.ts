@@ -137,23 +137,54 @@ export class VariationTile extends LitElement {
       position: absolute;
       bottom: 3rem;
       right: 1rem;
-      width: 240px;
-      background: #1e1e1e;
-      border: 1px solid #444;
+      width: 285px;
+      background: #1a1a1a;
+      border: 1px solid #3c4043;
       border-radius: 12px;
-      padding: 1rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      padding: 0.9rem 1rem;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.65);
       z-index: 100;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #ccc;
       pointer-events: none;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.45rem;
     }
 
-    .c2pa-header { font-weight: 700; color: #4285F4; text-transform: uppercase; font-size: 0.65rem; border-bottom: 1px solid #333; padding-bottom: 0.4rem; }
-    .action-item { display: flex; gap: 0.4rem; line-height: 1.2; }
+    .c2pa-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.4rem;
+    }
+    .c2pa-header { font-weight: 700; color: #4285F4; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.03em; }
+    .c2pa-pill {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(52, 168, 83, 0.15);
+      color: #34A853;
+      border: 1px solid rgba(52, 168, 83, 0.35);
+    }
+    .c2pa-meta-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.68rem;
+      color: #aaa;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.45rem 0.55rem;
+      border-radius: 6px;
+      border: 1px solid #2a2a2a;
+    }
+    .c2pa-meta-line { display: flex; justify-content: space-between; gap: 0.5rem; }
+    .c2pa-meta-label { color: #777; font-weight: 600; flex-shrink: 0; }
+    .c2pa-meta-val { color: #ddd; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .action-item { display: flex; gap: 0.4rem; line-height: 1.25; font-size: 0.7rem; }
     .action-bullet { color: #4285F4; }
 
     .error { color: #ea4335; font-size: 0.8rem; text-align: center; padding: 1rem; }
@@ -204,7 +235,7 @@ export class VariationTile extends LitElement {
           <div class="meta-row">
             <span class="badge">Variation ${d.id + 1}</span>
             
-            ${d.c2pa ? html`
+            ${d.c2pa && d.c2pa.has_credentials !== false && d.c2pa.status !== 'Error' ? html`
               <div class="c2pa-trigger" 
                    @mouseenter=${() => this.showC2PADetails = true} 
                    @mouseleave=${() => this.showC2PADetails = false}>
@@ -216,10 +247,44 @@ export class VariationTile extends LitElement {
 
         ${this.showC2PADetails && d.c2pa ? html`
           <div class="c2pa-flyover">
-            <div class="c2pa-header">C2PA Manifest Summary</div>
-            <div style="font-size: 0.7rem; color: #888;">${d.c2pa.generator}</div>
-            <div style="margin-top: 0.2rem;">
-              ${d.c2pa.actions.map((a: any) => html`
+            <div class="c2pa-header-row">
+              <div class="c2pa-header">Credentio C2PA</div>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                ${d.c2pa.core_ms !== undefined ? html`<span style="font-size: 0.62rem; color: #888;">${d.c2pa.core_ms}ms</span>` : ''}
+                <span class="c2pa-pill">${d.c2pa.badge || d.c2pa.status || 'SIGNED'}</span>
+              </div>
+            </div>
+            <div style="font-size: 0.7rem; color: #bbb; font-weight: 600;">${d.c2pa.generator}</div>
+            ${d.c2pa.signer?.subject || d.c2pa.validation ? html`
+              <div class="c2pa-meta-grid">
+                ${d.c2pa.signer?.subject ? html`
+                  <div class="c2pa-meta-line">
+                    <span class="c2pa-meta-label">Signer</span>
+                    <span class="c2pa-meta-val">${d.c2pa.signer.subject}</span>
+                  </div>
+                ` : ''}
+                ${d.c2pa.signer?.issuer ? html`
+                  <div class="c2pa-meta-line">
+                    <span class="c2pa-meta-label">Issuer</span>
+                    <span class="c2pa-meta-val">${d.c2pa.signer.issuer}</span>
+                  </div>
+                ` : ''}
+                ${d.c2pa.signer?.tsa_subject ? html`
+                  <div class="c2pa-meta-line">
+                    <span class="c2pa-meta-label">TSA</span>
+                    <span class="c2pa-meta-val">${d.c2pa.signer.tsa_subject}</span>
+                  </div>
+                ` : ''}
+                ${d.c2pa.validation ? html`
+                  <div class="c2pa-meta-line">
+                    <span class="c2pa-meta-label">Checks</span>
+                    <span class="c2pa-meta-val" style="color: #34A853;">✓ ${d.c2pa.validation.checks_passed} passed (BMFF SHA-256)</span>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+            <div style="margin-top: 0.1rem; display: flex; flex-direction: column; gap: 0.25rem;">
+              ${(d.c2pa.actions || []).map((a: any) => html`
                 <div class="action-item">
                   <span class="action-bullet">•</span>
                   <span>${a.detail}</span>

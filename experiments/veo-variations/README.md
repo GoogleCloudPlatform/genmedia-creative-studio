@@ -15,7 +15,7 @@ This application generates creative variations of a video concept and evaluates 
   - **generator.py**: Veo video generation using the GenAI SDK.
   - **variations.py**: Prompt variation generation using Gemini.
   - **metrics.py**: Technical quality evaluation (NIQE) using pyiqa.
-  - **c2pa.py**: C2PA manifest extraction and summarization.
+  - **c2pa.py**: C2PA manifest verification and summarization using [Credentio](https://github.com/ghchinoy/credentio-contributions).
 - **ui/**: Lit-based frontend (TypeScript).
 - **scripts/deploy.sh**: Deployment script for Google Cloud Run.
 - **Makefile**: Shortcut commands for local development and build.

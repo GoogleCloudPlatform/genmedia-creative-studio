@@ -5,7 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "c2pa-python>=0.30.0",
+    "cffi>=1.15.0",
+    "credentio @ git+https://github.com/ghchinoy/credentio-contributions.git@v0.2.0#subdirectory=python",
     "fastapi>=0.135.3",
     "google-auth>=2.49.1",
     "google-cloud-storage>=3.10.1",

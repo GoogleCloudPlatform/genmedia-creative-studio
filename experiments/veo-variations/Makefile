@@ -11,7 +11,13 @@ help:
 	@echo "  make build            Build frontend for production"
 
 install:
-	export UV_DEFAULT_INDEX=https://pypi.org/simple && uv add fastapi uvicorn google-genai google-cloud-storage python-dotenv python-multipart mcp requests google-auth pyiqa opencv-python c2pa-python marked
+	mkdir -p $(HOME)/.local/lib
+	@if [ "$$(uname -s)" = "Darwin" ] && [ ! -f "$(HOME)/.local/lib/libcredentio_c.dylib" ]; then \
+		curl -fSL https://github.com/ghchinoy/credentio-contributions/releases/download/v0.2.0/libcredentio_c-darwin-arm64.dylib -o $(HOME)/.local/lib/libcredentio_c.dylib && chmod 755 $(HOME)/.local/lib/libcredentio_c.dylib; \
+	elif [ "$$(uname -s)" = "Linux" ] && [ ! -f "$(HOME)/.local/lib/libcredentio_c.so" ]; then \
+		curl -fSL https://github.com/ghchinoy/credentio-contributions/releases/download/v0.2.0/libcredentio_c-linux-amd64.so -o $(HOME)/.local/lib/libcredentio_c.so && chmod 755 $(HOME)/.local/lib/libcredentio_c.so; \
+	fi
+	export UV_DEFAULT_INDEX=https://pypi.org/simple && uv sync
 	cd ui && npm install
 
 clean:

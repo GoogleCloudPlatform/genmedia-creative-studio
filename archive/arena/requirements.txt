@@ -72,7 +72,7 @@ pyasn1-modules==0.4.2
 pycparser==3.0 ; platform_python_implementation != 'PyPy'
 pydantic==2.13.5
 pydantic-core==2.48.0
-pyjwt==2.13.0
+pyjwt==2.15.0
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.3

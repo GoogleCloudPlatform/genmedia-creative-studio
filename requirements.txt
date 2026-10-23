@@ -13,7 +13,7 @@ anyio==4.15.1
     #   starlette
 asttokens==3.0.2
     # via stack-data
-black==26.5.1
+black==26.10.1
     # via genmedia-creative-studio
 blinker==1.9.0
     # via flask

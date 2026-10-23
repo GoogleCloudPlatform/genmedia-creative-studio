@@ -100,6 +100,72 @@ codesign_go_binary() {
 }
 
 #
+# Function to check and optionally enable required Google Cloud APIs.
+#
+check_gcp_services() {
+  local non_interactive="$1"
+  local required_apis=(
+    "aiplatform.googleapis.com"
+    "texttospeech.googleapis.com"
+    "storage.googleapis.com"
+  )
+
+  if ! command -v gcloud &> /dev/null; then
+    echo -e "${YELLOW}WARNING: gcloud CLI not found; skipping Google Cloud API enablement check.${NC}"
+    echo "Ensure these APIs are enabled in project ${GOOGLE_CLOUD_PROJECT}: ${required_apis[*]}"
+    return
+  fi
+
+  echo -e "${BLUE}Checking required Google Cloud APIs in project ${GOOGLE_CLOUD_PROJECT}...${NC}"
+  local enabled_apis
+  if ! enabled_apis=$(gcloud services list --enabled --project="${GOOGLE_CLOUD_PROJECT}" --format="value(config.name)" 2>/dev/null); then
+    echo -e "${YELLOW}WARNING: Could not query enabled Google Cloud APIs for project ${GOOGLE_CLOUD_PROJECT}.${NC}"
+    echo -e "To enable required services manually, run:"
+    echo -e "  ${BLUE}gcloud services enable ${required_apis[*]} --project=${GOOGLE_CLOUD_PROJECT}${NC}"
+    return
+  fi
+
+  local missing_apis=()
+  for api in "${required_apis[@]}"; do
+    if ! printf '%s\n' "$enabled_apis" | grep -Fxq "$api"; then
+      missing_apis+=("$api")
+    fi
+  done
+
+  if [ "${#missing_apis[@]}" -eq 0 ]; then
+    echo -e "${GREEN}All required Google Cloud APIs are enabled (${required_apis[*]}).${NC}"
+    return
+  fi
+
+  echo -e "${YELLOW}The following required Google Cloud APIs are not enabled in project ${GOOGLE_CLOUD_PROJECT}:${NC}"
+  for api in "${missing_apis[@]}"; do
+    echo "  - $api"
+  done
+
+  if [[ "$non_interactive" -eq 1 ]]; then
+    echo -e "${YELLOW}Enable them by running:${NC}"
+    echo -e "  ${BLUE}gcloud services enable ${missing_apis[*]} --project=${GOOGLE_CLOUD_PROJECT}${NC}"
+    return
+  fi
+
+  read -p "Would you like to enable these Google Cloud APIs now? (y/N): " enable_reply
+  case "$enable_reply" in
+    [yY]|[yY][eE][sS])
+      if gcloud services enable "${missing_apis[@]}" --project="${GOOGLE_CLOUD_PROJECT}"; then
+        echo -e "${GREEN}Successfully enabled required Google Cloud APIs.${NC}"
+      else
+        echo -e "${YELLOW}WARNING: Failed to enable one or more APIs. You can enable them manually with:${NC}"
+        echo -e "  ${BLUE}gcloud services enable ${missing_apis[*]} --project=${GOOGLE_CLOUD_PROJECT}${NC}"
+      fi
+      ;;
+    *)
+      echo -e "${YELLOW}Skipping API enablement. You can enable them later with:${NC}"
+      echo -e "  ${BLUE}gcloud services enable ${missing_apis[*]} --project=${GOOGLE_CLOUD_PROJECT}${NC}"
+      ;;
+  esac
+}
+
+#
 # Function to setup Agent Skills.
 #
 setup_agent_skills() {
@@ -247,6 +313,7 @@ main() {
 
   check_go_installation
   check_path
+  check_gcp_services "$install_all_flag"
 
   # Non-interactive path: --all installs everything and exits.
   if [[ "$install_all_flag" -eq 1 ]]; then

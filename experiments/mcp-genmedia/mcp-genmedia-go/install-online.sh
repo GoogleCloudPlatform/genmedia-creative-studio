@@ -172,3 +172,50 @@ if [[ ! ":$PATH:" == *":$INSTALL_DIR:"* ]]; then
     echo "To run these servers, please add the following to your shell configuration file (~/.bashrc, ~/.zshrc, etc.):"
     echo "  export PATH=\"\$PATH:$INSTALL_DIR\""
 fi
+
+# Check and optionally enable required Google Cloud APIs
+REQUIRED_APIS=("aiplatform.googleapis.com" "texttospeech.googleapis.com" "storage.googleapis.com")
+GCP_PROJECT="${GOOGLE_CLOUD_PROJECT:-${PROJECT_ID:-}}"
+if [[ -z "$GCP_PROJECT" ]] && command -v gcloud >/dev/null 2>&1; then
+    GCP_PROJECT=$(gcloud config get-value project 2>/dev/null || true)
+fi
+
+if [[ -n "$GCP_PROJECT" ]] && command -v gcloud >/dev/null 2>&1; then
+    echo ""
+    echo_info "Checking required Google Cloud APIs in project ${GCP_PROJECT}..."
+    if ENABLED_APIS=$(gcloud services list --enabled --project="$GCP_PROJECT" --format="value(config.name)" 2>/dev/null); then
+        MISSING_APIS=()
+        for api in "${REQUIRED_APIS[@]}"; do
+            if ! printf '%s\n' "$ENABLED_APIS" | grep -Fxq "$api"; then
+                MISSING_APIS+=("$api")
+            fi
+        done
+        if [[ "${#MISSING_APIS[@]}" -eq 0 ]]; then
+            echo_success "All required Google Cloud APIs are enabled (${REQUIRED_APIS[*]})."
+        else
+            echo -e "\033[1;33mWARNING: The following required Google Cloud APIs are not enabled in ${GCP_PROJECT}:\033[0m"
+            for api in "${MISSING_APIS[@]}"; do
+                echo "  - $api"
+            done
+            if [[ -t 0 ]]; then
+                read -p "Would you like to enable these Google Cloud APIs now? (y/N): " enable_apis
+                case "$enable_apis" in
+                    [yY]|[yY][eE][sS])
+                        gcloud services enable "${MISSING_APIS[@]}" --project="$GCP_PROJECT" && echo_success "Enabled required Google Cloud APIs."
+                        ;;
+                    *)
+                        echo_info "Run manually: gcloud services enable ${MISSING_APIS[*]} --project=${GCP_PROJECT}"
+                        ;;
+                esac
+            else
+                echo_info "Run manually: gcloud services enable ${MISSING_APIS[*]} --project=${GCP_PROJECT}"
+            fi
+        fi
+    else
+        echo_info "Ensure required Google Cloud APIs are enabled: gcloud services enable ${REQUIRED_APIS[*]} --project=${GCP_PROJECT}"
+    fi
+else
+    echo ""
+    echo_info "Ensure required Google Cloud APIs are enabled in your GCP project:"
+    echo "  gcloud services enable ${REQUIRED_APIS[*]}"
+fi

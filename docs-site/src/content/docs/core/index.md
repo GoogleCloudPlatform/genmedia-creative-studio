@@ -97,7 +97,6 @@ Here's a glimpse of what you'll find:
 
 - **Virtual Try-On:** A notebook for virtually trying on outfits at scale.
 - **Imagen Product Recontextualization:** Tools for large-scale product image recontextualization.
-- **Arena:** A visual arena for rating and comparing images from different models.
 
 **Audio & Video**
 

@@ -59,7 +59,6 @@ export default defineConfig({
 							label: 'Image Generation',
 							items: [
 								{ label: 'Product Recontextualization', slug: 'experiments/imagen_product_recontext' },
-								{ label: 'Arena & Leaderboard', slug: 'experiments/arena' },
 								{ label: 'Virtual Try-On', slug: 'experiments/vto' },
 								{ label: 'Brand Consistency', slug: 'experiments/brand_consistency' }
 							]

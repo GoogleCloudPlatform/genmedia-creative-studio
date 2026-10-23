@@ -464,11 +464,6 @@ def home() -> RedirectResponse:
 
 # Use this to mount the static files for the Mesop app
 app.mount(
-    "/__web-components-module__",
-    StaticFiles(directory="."),
-    name="web_components",
-)
-app.mount(
     "/static",
     StaticFiles(
         directory=os.path.join(

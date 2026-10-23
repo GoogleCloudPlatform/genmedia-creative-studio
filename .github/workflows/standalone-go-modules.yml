@@ -1,0 +1,70 @@
+name: Standalone Go Modules CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "experiments/babel/*.go"
+      - "experiments/babel/go.mod"
+      - "experiments/babel/go.sum"
+      - "experiments/run-veo-run/server/**"
+      - "experiments/mcp-genmedia/sample-agents/genkit-go/**"
+      - ".github/workflows/standalone-go-modules.yml"
+  pull_request:
+    paths:
+      - "experiments/babel/*.go"
+      - "experiments/babel/go.mod"
+      - "experiments/babel/go.sum"
+      - "experiments/run-veo-run/server/**"
+      - "experiments/mcp-genmedia/sample-agents/genkit-go/**"
+      - ".github/workflows/standalone-go-modules.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.module.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - name: babel
+            dir: experiments/babel
+            go-version: "1.27"
+          - name: run-veo-run-server
+            dir: experiments/run-veo-run/server
+            go-version: "1.27"
+          - name: genkit-go
+            dir: experiments/mcp-genmedia/sample-agents/genkit-go
+            go-version: "1.27"
+    defaults:
+      run:
+        working-directory: ${{ matrix.module.dir }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: ${{ matrix.module.go-version }}
+          cache-dependency-path: ${{ matrix.module.dir }}/go.sum
+
+      - name: Check go.mod/go.sum tidiness
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum || {
+            echo "go.mod/go.sum are not tidy in ${{ matrix.module.dir }} - run 'go mod tidy' and commit the result";
+            exit 1;
+          }
+
+      - name: Verify module checksums
+        run: go mod verify
+
+      - name: Build module
+        run: go build ./...
+
+      - name: Test module
+        run: go test -v -timeout 60s ./...

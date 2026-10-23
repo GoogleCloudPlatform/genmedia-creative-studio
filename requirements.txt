@@ -272,7 +272,7 @@ numpy==2.5.3
     #   tifffile
 opencv-python==5.0.0.93
     # via genmedia-creative-studio
-opentelemetry-api==1.44.0
+opentelemetry-api==1.45.1
     # via
     #   google-api-core
     #   google-cloud-logging

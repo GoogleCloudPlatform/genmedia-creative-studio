@@ -13,7 +13,7 @@ anyio==4.15.1
     #   starlette
 asttokens==3.0.2
     # via stack-data
-black==26.5.1
+black==26.10.1
     # via genmedia-creative-studio
 blinker==1.9.0
     # via flask
@@ -21,8 +21,9 @@ c2pa-python==0.37.10
     # via genmedia-creative-studio
 cachecontrol==0.14.4
     # via firebase-admin
-certifi==2026.7.22
+certifi==2026.10.19
     # via
+    #   genmedia-creative-studio
     #   google-cloud-aiplatform
     #   httpcore
     #   httpx
@@ -272,8 +273,9 @@ numpy==2.5.3
     #   tifffile
 opencv-python==5.0.0.93
     # via genmedia-creative-studio
-opentelemetry-api==1.44.0
+opentelemetry-api==1.45.1
     # via
+    #   genmedia-creative-studio
     #   google-api-core
     #   google-cloud-logging
 orderly-set==5.5.0
@@ -296,7 +298,7 @@ pathspec==1.1.1
     # via black
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via ipython
-pillow==12.3.0
+pillow==13.0.0
     # via
     #   genmedia-creative-studio
     #   imageio

@@ -13,7 +13,7 @@
   "dependencies": {
     "@material/web": "2.5.0",
     "@vaadin/router": "2.0.1",
-    "dompurify": "^3.2.3",
+    "dompurify": "^3.4.17",
     "lit": "3.3.3",
     "marked": "^15.0.4"
   },

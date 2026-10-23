@@ -8,6 +8,17 @@ dependencies = [
     "google-genai>=1.63.0",
     "moviepy>=2.2.1",
     "yt-dlp>=2026.7.4",
+    "certifi>=2026.10.19",
+    "pillow>=13.0.0",
+    "pyasn1>=0.6.4",
+    "requests>=2.33.0",
+    "urllib3>=2.8.0",
+]
+
+[tool.uv]
+# MoviePy 2.2.1 caps Pillow below 12, which is vulnerable.
+override-dependencies = [
+    "pillow>=13.0.0",
 ]
 
 [tool.setuptools]

@@ -10,13 +10,22 @@ requires-python = ">=3.12"
 dependencies = [
     "google-genai (>=2.31.0,<2.32.0)",
     "google-cloud-aiplatform[evaluation] (>=2.5.0,<2.6.0)",
-    "black>=25.1.0,<27.0.0",
+    "black>=26.10.1,<27.0.0",
     "pandas (>=3.0.4,<3.1.0)",
-    "pillow>=11.2.1,<13.0.0",
+    "pillow>=13.0.0,<14.0.0",
     "python-dotenv (>=1.1.1,<2.0.0)",
     "pytest>=8.0.0",
+    "aiohttp>=3.14.4",
+    "certifi>=2026.10.19",
+    "litellm>=1.88.6",
 ]
 
+[tool.uv]
+# google-cloud-aiplatform[evaluation] 2.5.0 caps litellm<1.86.0 on Python <3.14,
+# which is affected by PYSEC-2026-4066.
+override-dependencies = [
+    "litellm>=1.88.6",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

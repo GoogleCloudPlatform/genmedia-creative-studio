@@ -55,20 +55,28 @@ type InteractionsClient interface {
 	Create(ctx context.Context, req *InteractionRequest) (*InteractionResponse, error)
 }
 
-// InteractionRequest models the Vertex Interactions request envelope. It is
-// deliberately minimal for the current phase (no generation_config / streaming /
-// background); those fields are added when the wire is confirmed to accept them.
+// InteractionRequest models the Vertex Interactions request envelope.
 type InteractionRequest struct {
 	Model string `json:"model"`
 	// ResponseModalities MUST be lowercase on the live wire, e.g. ["text","video"]
 	// (findings §3). Callers are responsible for lowercasing.
 	ResponseModalities []string    `json:"response_modalities,omitempty"`
+	ResponseFormat     any         `json:"response_format,omitempty"`
 	Input              []InputItem `json:"input"`
 	Store              bool        `json:"store"`
 	// GenerationConfig carries sampling controls (temperature/top_p). It is only
 	// sent when non-nil; the Omni Interactions endpoint parses and validates these
 	// (empirically confirmed: temperature is range-checked to [0.0, 2.0]).
 	GenerationConfig *GenerationConfig `json:"generation_config,omitempty"`
+}
+
+// OmniVideoResponseFormat models an entry in the Interactions API response_format
+// array for Omni video output (e.g. [{"type":"video","resolution":"720p"}]).
+type OmniVideoResponseFormat struct {
+	Type        string `json:"type"`
+	Resolution  string `json:"resolution,omitempty"`
+	AspectRatio string `json:"aspect_ratio,omitempty"`
+	Duration    string `json:"duration,omitempty"`
 }
 
 // GenerationConfig models the subset of generation_config the suite sends. Fields
@@ -238,6 +246,7 @@ func toLibRequest(req *InteractionRequest) *interactions.InteractionRequest {
 	libReq := &interactions.InteractionRequest{
 		Model:              req.Model,
 		ResponseModalities: req.ResponseModalities,
+		ResponseFormat:     req.ResponseFormat,
 		Input:              contents,
 		Store:              &store,
 	}

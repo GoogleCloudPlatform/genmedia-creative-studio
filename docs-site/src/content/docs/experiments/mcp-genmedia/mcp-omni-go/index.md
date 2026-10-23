@@ -16,15 +16,32 @@ The server exposes the following tool:
 *   **Handler**: `omniVideoGenerationHandler`
 *   **Parameters**:
     *   `prompt` (string, required): The text prompt describing the video to generate.
-    *   `model` (string, optional): Model to use. Can be the canonical model ID (`gemini-omni-1.1-flash-preview`) or a common alias (e.g. `Omni`, `Gemini Omni 1.1 Flash`). The prior `gemini-omni-flash-preview` remains selectable via its ID or the `Gemini Omni Flash` alias. See `mcp-common/models.go` for the supported list. Defaults to `gemini-omni-1.1-flash-preview`.
-    *   `images` (array of string, optional): Up to 10 input images to condition generation on. Each entry is a local file path or a `gs://` URI. The MIME type is inferred from the file extension: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/heic`, `image/heif`.
-    *   `videos` (array of string, optional): Input videos to reference or edit. Each entry is a local file path or a `gs://` URI (e.g. `video/mp4`, `video/webm`, `video/quicktime`).
+    *   `model` (string, optional): Model to use. Can be the canonical model ID (`gemini-omni-1.1-flash-preview`) or a common alias (e.g. `Omni`, `Omni 1.1`, `Gemini Omni 1.1 Flash`). The prior `gemini-omni-flash-preview` remains selectable via its ID or the `Gemini Omni Flash` alias. See `mcp-common/models.go` for the supported list. Defaults to `gemini-omni-1.1-flash-preview`.
+    *   `resolution` (string, optional): Video output resolution: `360p`, `720p`, `1080p`, or `4k` (`gemini-omni-1.1-flash-preview` supports all four; `gemini-omni-flash-preview` supports `720p`). Sent in `response_format`.
+    *   `aspect_ratio` (string, optional): Video output aspect ratio: `16:9` or `9:16`. Sent in `response_format`.
+    *   `duration_seconds` (number, optional): Video output duration in seconds (`3`-`10`, maximum `10` seconds with or without audio). Sent in `response_format`.
+    *   `images` (array of string, optional): Up to 10 input images to condition generation on (first/last frames, character/style references, or starting frame). Each entry is a local file path (up to 20 MB) or a `gs://` URI (up to 30 MB). The MIME type is inferred from the file extension: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/heic`, `image/heif`.
+    *   `videos` (array of string, optional): Up to 3 input videos to reference, edit, or extend. Each entry is a local file path (up to 20 MB) or a `gs://` URI (`video/mp4`, `video/webm`, `video/quicktime`, `video/mpeg`, `video/x-flv`, `video/wmv`, `video/3gpp`).
     *   `sample_count` (number, optional): Number of videos to generate (1-3, default 1). Clamped to the model maximum of 3.
-    *   `temperature` (number, optional): Sampling temperature, `0.0`-`2.0` (higher = more varied). Sent in `generation_config`.
-    *   `top_p` (number, optional): Nucleus sampling probability mass, `0.0`-`1.0`. Sent in `generation_config`.
+    *   `temperature` (number, optional): Sampling temperature, `0.0`-`2.0` (default `1.0`; higher = more varied). Sent in `generation_config`.
+    *   `top_p` (number, optional): Nucleus sampling probability mass, `0.0`-`1.0` (default `0.95`). Sent in `generation_config`.
     *   `output_directory` (string, optional): Local directory to save the generated video(s) to. Filenames (`omni_<timestamp>_<n>.mp4`) are generated automatically unless `output_filename` is set.
     *   `output_filename` (string, optional): Base name for the output(s), e.g. `clip.mp4`. The extension is forced to the true video type and, when more than one video is generated, a `_1..n` suffix is inserted before the extension. Applied identically to local files and GCS objects. See [Naming Outputs](../index.md#naming-outputs-output_filename).
     *   `gcs_bucket_uri` (string, optional): GCS URI prefix to store generated video(s) (e.g., `your-bucket/outputs/`). If not provided and `GENMEDIA_BUCKET` is set, `gs://<GENMEDIA_BUCKET>/omni_outputs/` is used. For each uploaded video a best-effort V4 signed HTTPS URL is also returned (see `OMNI_SIGNED_URL_EXPIRY_HOURS`).
+
+## Model Specifications (`gemini-omni-1.1-flash-preview`)
+
+Per the [Google Cloud Gemini Omni 1.1 Flash documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/omni-1-1-flash):
+
+| Specification | Details |
+| :--- | :--- |
+| **Model ID** | `gemini-omni-1.1-flash-preview` (default) |
+| **API & Endpoint** | Vertex Interactions API (`global` location) |
+| **Modalities** | Text (input & output), Image (input only), Video (input & output, with embedded speech, music, and sound effects) |
+| **Token Limits** | Max input: `131,072` tokens · Max output: `57,920` tokens |
+| **Supported Capabilities** | Thinking, Text-to-Video, Image-to-Video, Reference-to-Video, First/Last Frame Video, Sound Generation (speech, music, SFX), Video Editing, Video Extension, Content Credentials (C2PA) |
+| **Video Output Specs** | Max length: `10s` (with or without audio) · Aspect ratios: `16:9`, `9:16` · Resolutions: `360p`, `720p`, `1080p`, `4k` |
+| **Input Limits** | Up to `10` images per prompt (`<=20 MB` inline / `<=30 MB` GCS) · Up to `3` videos per prompt |
 
 ## Authentication
 

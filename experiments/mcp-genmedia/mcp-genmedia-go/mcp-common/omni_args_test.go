@@ -272,6 +272,9 @@ func TestParseOmniToolArgsHappyPath(t *testing.T) {
 	args := map[string]interface{}{
 		"prompt":           "  a cat surfing  ",
 		"images":           []interface{}{"gs://bucket/cat.png"},
+		"resolution":       "4K",
+		"aspect_ratio":     "9:16",
+		"duration_seconds": float64(8),
 		"sample_count":     float64(2),
 		"temperature":      float64(1),
 		"top_p":            float64(0.5),
@@ -287,6 +290,15 @@ func TestParseOmniToolArgsHappyPath(t *testing.T) {
 	}
 	if parsed.Params.Model != DefaultOmniModel {
 		t.Errorf("Model = %q, want default %q", parsed.Params.Model, DefaultOmniModel)
+	}
+	if parsed.Params.Resolution != "4k" {
+		t.Errorf("Resolution = %q, want normalized canonical '4k'", parsed.Params.Resolution)
+	}
+	if parsed.Params.AspectRatio != "9:16" {
+		t.Errorf("AspectRatio = %q, want '9:16'", parsed.Params.AspectRatio)
+	}
+	if parsed.Params.DurationSeconds != 8 {
+		t.Errorf("DurationSeconds = %d, want 8", parsed.Params.DurationSeconds)
 	}
 	if len(parsed.Params.Images) != 1 || parsed.Params.Images[0].URI != "gs://bucket/cat.png" {
 		t.Errorf("Images = %+v, want one gs:// image ref", parsed.Params.Images)
@@ -366,6 +378,29 @@ func TestParseOmniToolArgsValidationErrors(t *testing.T) {
 				"images": make([]interface{}, maxOmniImages+1),
 			},
 			wantSub: "too many images",
+		},
+		"too many videos": {
+			args: map[string]interface{}{
+				"prompt": "hi",
+				"videos": make([]interface{}, maxOmniVideos+1),
+			},
+			wantSub: "too many videos",
+		},
+		"unsupported resolution": {
+			args:    map[string]interface{}{"prompt": "hi", "resolution": "8k"},
+			wantSub: "unsupported resolution",
+		},
+		"unsupported resolution on legacy model": {
+			args:    map[string]interface{}{"prompt": "hi", "model": "gemini-omni-flash-preview", "resolution": "4k"},
+			wantSub: "unsupported resolution",
+		},
+		"unsupported aspect_ratio": {
+			args:    map[string]interface{}{"prompt": "hi", "aspect_ratio": "1:1"},
+			wantSub: "unsupported aspect_ratio",
+		},
+		"duration_seconds out of range": {
+			args:    map[string]interface{}{"prompt": "hi", "duration_seconds": float64(15)},
+			wantSub: "duration_seconds must be in the range",
 		},
 		"non-integer sample_count": {
 			args:    map[string]interface{}{"prompt": "hi", "sample_count": float64(2.5)},

@@ -40,6 +40,9 @@ import (
 // maxOmniImages is the per-prompt image input limit (findings §1).
 const maxOmniImages = 10
 
+// maxOmniVideos is the default per-prompt video input limit (up to 3 videos per prompt).
+const maxOmniVideos = 3
+
 // maxInlineMediaBytes caps the size of a local media file that will be read into
 // memory and base64-inlined into the interaction request. Larger files must be
 // referenced by a gs:// URI instead (base64 inflates payloads ~33%, and the
@@ -100,17 +103,24 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 
 	// Model resolution (honors an optional "model" arg / alias).
 	modelArg, _ := args["model"].(string)
-	model := DefaultOmniModel
-	if resolved, found := ResolveOmniModel(modelArg, cfg.AllowUnsafeModels); found {
-		model = resolved.CanonicalName
-	} else if strings.TrimSpace(modelArg) != "" {
+	allowUnsafe := cfg != nil && cfg.AllowUnsafeModels
+	modelInfo, found := ResolveOmniModel(modelArg, allowUnsafe)
+	if !found {
 		return out, fmt.Errorf("unsupported model %q (set ALLOW_UNSAFE_MODELS=true to bypass)", modelArg)
 	}
+	model := modelInfo.CanonicalName
 
 	// Image / video inputs (local paths -> inline bytes; gs:// -> URI).
-	// Enforce the image-count limit BEFORE parseMediaRefs reads any file into memory.
+	// Enforce the image-count and video-count limits BEFORE parseMediaRefs reads any file into memory.
 	if imgs, ok := args["images"].([]interface{}); ok && len(imgs) > maxOmniImages {
 		return out, fmt.Errorf("too many images: %d provided, the model accepts at most %d", len(imgs), maxOmniImages)
+	}
+	maxVids := modelInfo.MaxVideos
+	if maxVids <= 0 {
+		maxVids = maxOmniVideos
+	}
+	if vids, ok := args["videos"].([]interface{}); ok && len(vids) > maxVids {
+		return out, fmt.Errorf("too many videos: %d provided, the model accepts at most %d", len(vids), maxVids)
 	}
 	images, err := parseMediaRefs(args["images"], "image")
 	if err != nil {
@@ -119,6 +129,69 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 	videos, err := parseMediaRefs(args["videos"], "video")
 	if err != nil {
 		return out, err
+	}
+
+	// resolution (optional; validated case-insensitively against modelInfo.SupportedResolutions).
+	resolution := ""
+	if rawRes, ok := args["resolution"].(string); ok && strings.TrimSpace(rawRes) != "" {
+		resTrim := strings.TrimSpace(rawRes)
+		if len(modelInfo.SupportedResolutions) > 0 {
+			var matched string
+			for _, allowed := range modelInfo.SupportedResolutions {
+				if strings.EqualFold(resTrim, allowed) {
+					matched = allowed
+					break
+				}
+			}
+			if matched == "" {
+				return out, fmt.Errorf("unsupported resolution %q for model %q (supported: %s)", resTrim, model, strings.Join(modelInfo.SupportedResolutions, ", "))
+			}
+			resolution = matched
+		} else {
+			resolution = strings.ToLower(resTrim)
+		}
+	}
+
+	// aspect_ratio (optional; validated against modelInfo.SupportedAspectRatios).
+	aspectRatio := ""
+	if rawAR, ok := args["aspect_ratio"].(string); ok && strings.TrimSpace(rawAR) != "" {
+		arTrim := strings.TrimSpace(rawAR)
+		if len(modelInfo.SupportedAspectRatios) > 0 {
+			var matched string
+			for _, allowed := range modelInfo.SupportedAspectRatios {
+				if strings.EqualFold(arTrim, allowed) {
+					matched = allowed
+					break
+				}
+			}
+			if matched == "" {
+				return out, fmt.Errorf("unsupported aspect_ratio %q for model %q (supported: %s)", arTrim, model, strings.Join(modelInfo.SupportedAspectRatios, ", "))
+			}
+			aspectRatio = matched
+		} else {
+			aspectRatio = arTrim
+		}
+	}
+
+	// duration_seconds (optional; validated against modelInfo.MinDurationSeconds..MaxDurationSeconds).
+	durationSeconds := 0
+	if rawDur, present := args["duration_seconds"]; present && rawDur != nil {
+		d, convErr := toInt(rawDur)
+		if convErr != nil {
+			return out, fmt.Errorf("duration_seconds must be an integer: %v", convErr)
+		}
+		minDur := modelInfo.MinDurationSeconds
+		if minDur <= 0 {
+			minDur = 3
+		}
+		maxDur := modelInfo.MaxDurationSeconds
+		if maxDur <= 0 {
+			maxDur = 10
+		}
+		if d < minDur || d > maxDur {
+			return out, fmt.Errorf("duration_seconds must be in the range [%d, %d], got %d", minDur, maxDur, d)
+		}
+		durationSeconds = d
 	}
 
 	// sample_count (default 1, clamped to the model max by the shared helper).
@@ -144,13 +217,16 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 	}
 
 	out.Params = OmniParams{
-		Prompt:      prompt,
-		Model:       model,
-		Images:      images,
-		Videos:      videos,
-		SampleCount: sampleCount,
-		Temperature: temperature,
-		TopP:        topP,
+		Prompt:          prompt,
+		Model:           model,
+		Images:          images,
+		Videos:          videos,
+		SampleCount:     sampleCount,
+		Temperature:     temperature,
+		TopP:            topP,
+		Resolution:      resolution,
+		AspectRatio:     aspectRatio,
+		DurationSeconds: durationSeconds,
 	}
 	out.OutputDir = outputDir
 	out.GCSBucketURI = gcsBucketURI
@@ -346,7 +422,7 @@ func inferMediaMimeType(path string) string {
 		return "video/quicktime"
 	case ".webm":
 		return "video/webm"
-	case ".mpeg", ".mpg":
+	case ".mpeg", ".mpg", ".mpegs":
 		return "video/mpeg"
 	case ".flv":
 		return "video/x-flv"

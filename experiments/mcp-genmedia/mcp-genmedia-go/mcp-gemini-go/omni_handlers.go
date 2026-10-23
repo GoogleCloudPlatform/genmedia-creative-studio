@@ -56,6 +56,9 @@ func omniVideoGenerationHandler(ctx context.Context, request mcp.CallToolRequest
 	span.SetAttributes(
 		attribute.String("prompt", parsed.Params.Prompt),
 		attribute.String("model", parsed.Params.Model),
+		attribute.String("resolution", parsed.Params.Resolution),
+		attribute.String("aspect_ratio", parsed.Params.AspectRatio),
+		attribute.Int("duration_seconds", parsed.Params.DurationSeconds),
 		attribute.String("output_directory", parsed.OutputDir),
 		attribute.String("gcs_bucket_uri", parsed.GCSBucketURI),
 		attribute.Int("images", len(parsed.Params.Images)),
@@ -64,7 +67,7 @@ func omniVideoGenerationHandler(ctx context.Context, request mcp.CallToolRequest
 	)
 
 	// --- Shared Omni call ---
-	log.Printf("Calling GenerateOmniVideo Model=%s sample_count=%d images=%d videos=%d", parsed.Params.Model, parsed.Params.SampleCount, len(parsed.Params.Images), len(parsed.Params.Videos))
+	log.Printf("Calling GenerateOmniVideo Model=%s resolution=%q aspect_ratio=%q duration=%ds sample_count=%d images=%d videos=%d", parsed.Params.Model, parsed.Params.Resolution, parsed.Params.AspectRatio, parsed.Params.DurationSeconds, parsed.Params.SampleCount, len(parsed.Params.Images), len(parsed.Params.Videos))
 	startTime := time.Now()
 
 	result, err := common.GenerateOmniVideo(ctx, appConfig, parsed.Params)

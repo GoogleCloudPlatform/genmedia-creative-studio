@@ -64,6 +64,15 @@ type OmniParams struct {
 	// TopP is the optional nucleus-sampling top_p (0.0-1.0). Sent in
 	// generation_config only when non-nil (Q1: empirically accepted).
 	TopP *float32
+	// Resolution is the optional output video resolution (e.g. "360p", "720p",
+	// "1080p", "4k"). Sent in response_format when non-empty.
+	Resolution string
+	// AspectRatio is the optional output video aspect ratio (e.g. "16:9", "9:16").
+	// Sent in response_format when non-empty.
+	AspectRatio string
+	// DurationSeconds is the optional video duration in seconds (up to 10s).
+	// Sent in response_format as "<N>s" when > 0.
+	DurationSeconds int
 }
 
 // OmniResult is the mapped output of a Gemini Omni video generation call.
@@ -187,6 +196,18 @@ func buildOmniRequest(model string, p OmniParams) (*InteractionRequest, error) {
 
 	if p.Temperature != nil || p.TopP != nil {
 		req.GenerationConfig = &GenerationConfig{Temperature: p.Temperature, TopP: p.TopP}
+	}
+
+	if p.Resolution != "" || p.AspectRatio != "" || p.DurationSeconds > 0 {
+		rf := OmniVideoResponseFormat{
+			Type:        "video",
+			Resolution:  p.Resolution,
+			AspectRatio: p.AspectRatio,
+		}
+		if p.DurationSeconds > 0 {
+			rf.Duration = fmt.Sprintf("%ds", p.DurationSeconds)
+		}
+		req.ResponseFormat = []OmniVideoResponseFormat{rf}
 	}
 
 	return req, nil

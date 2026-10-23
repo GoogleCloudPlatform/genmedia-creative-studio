@@ -134,12 +134,15 @@ func TestBuildOmniRequest(t *testing.T) {
 func TestBuildOmniRequestWithInputsAndSampling(t *testing.T) {
 	temp := float32(0.7)
 	topP := float32(0.9)
-	req, err := buildOmniRequest("gemini-omni-flash-preview", OmniParams{
-		Prompt:      "animate this",
-		Images:      []OmniMediaRef{{Data: []byte("PNGDATA"), MimeType: "image/png"}},
-		Videos:      []OmniMediaRef{{URI: "gs://bucket/clip.mp4", MimeType: "video/mp4"}},
-		Temperature: &temp,
-		TopP:        &topP,
+	req, err := buildOmniRequest("gemini-omni-1.1-flash-preview", OmniParams{
+		Prompt:          "animate this",
+		Images:          []OmniMediaRef{{Data: []byte("PNGDATA"), MimeType: "image/png"}},
+		Videos:          []OmniMediaRef{{URI: "gs://bucket/clip.mp4", MimeType: "video/mp4"}},
+		Temperature:     &temp,
+		TopP:            &topP,
+		Resolution:      "1080p",
+		AspectRatio:     "9:16",
+		DurationSeconds: 6,
 	})
 	if err != nil {
 		t.Fatalf("buildOmniRequest returned error: %v", err)
@@ -169,6 +172,13 @@ func TestBuildOmniRequestWithInputsAndSampling(t *testing.T) {
 	}
 	if req.GenerationConfig.TopP == nil || *req.GenerationConfig.TopP != 0.9 {
 		t.Errorf("GenerationConfig.TopP not set correctly: %+v", req.GenerationConfig)
+	}
+	rf, ok := req.ResponseFormat.([]OmniVideoResponseFormat)
+	if !ok || len(rf) != 1 {
+		t.Fatalf("ResponseFormat = %#v, want []OmniVideoResponseFormat of len 1", req.ResponseFormat)
+	}
+	if rf[0].Type != "video" || rf[0].Resolution != "1080p" || rf[0].AspectRatio != "9:16" || rf[0].Duration != "6s" {
+		t.Errorf("ResponseFormat[0] = %+v, want video/1080p/9:16/6s", rf[0])
 	}
 }
 

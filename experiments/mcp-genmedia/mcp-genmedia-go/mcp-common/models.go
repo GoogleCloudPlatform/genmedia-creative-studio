@@ -472,26 +472,40 @@ type OmniModelInfo struct {
 	CanonicalName string
 	Aliases       []string
 	// SupportedResolutions lists the video output resolutions the model can emit
-	// (mirrors GeminiImageModelInfo.SupportedImageSizes). This is capability
-	// metadata surfaced in the tool description; the resolution request parameter
-	// itself is not yet wired into the tool (see follow-up).
+	// (e.g. "360p", "720p", "1080p", "4k"). Validated in ParseOmniToolArgs and
+	// forwarded via the Interactions API response_format.
 	SupportedResolutions []string
-	Description          string
+	// SupportedAspectRatios lists the supported video aspect ratios (e.g. "16:9", "9:16").
+	SupportedAspectRatios []string
+	// MinDurationSeconds and MaxDurationSeconds bound the supported video length in seconds.
+	MinDurationSeconds int
+	MaxDurationSeconds int
+	// MaxVideos is the maximum number of input videos per prompt.
+	MaxVideos   int
+	Description string
 }
 
 // SupportedOmniModels is the single source of truth for all supported Omni models.
 var SupportedOmniModels = map[string]OmniModelInfo{
 	"gemini-omni-1.1-flash-preview": {
-		CanonicalName:        "gemini-omni-1.1-flash-preview",
-		Aliases:              []string{"Gemini Omni 1.1 Flash", "Omni 1.1", "Omni"},
-		SupportedResolutions: []string{"360p", "720p", "1080p", "4k"},
-		Description:          "Gemini Omni 1.1 Flash (Preview): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output.",
+		CanonicalName:         "gemini-omni-1.1-flash-preview",
+		Aliases:               []string{"Gemini Omni 1.1 Flash", "Omni 1.1", "Omni"},
+		SupportedResolutions:  []string{"360p", "720p", "1080p", "4k"},
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		MinDurationSeconds:    3,
+		MaxDurationSeconds:    10,
+		MaxVideos:             3,
+		Description:           "Gemini Omni 1.1 Flash (Preview): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, up to 10s duration, up to 10 input images, and up to 3 input videos.",
 	},
 	"gemini-omni-flash-preview": {
-		CanonicalName:        "gemini-omni-flash-preview",
-		Aliases:              []string{"Gemini Omni Flash"},
-		SupportedResolutions: []string{"720p"},
-		Description:          "Gemini Omni Flash (Preview): text/image/video in, text+video out, via the Vertex Interactions API (global only).",
+		CanonicalName:         "gemini-omni-flash-preview",
+		Aliases:               []string{"Gemini Omni Flash"},
+		SupportedResolutions:  []string{"720p"},
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		MinDurationSeconds:    3,
+		MaxDurationSeconds:    10,
+		MaxVideos:             3,
+		Description:           "Gemini Omni Flash (Preview): text/image/video in, text+video out, via the Vertex Interactions API (global only).",
 	},
 }
 
@@ -516,7 +530,14 @@ func ResolveOmniModel(modelInput string, allowUnsafe bool) (OmniModelInfo, bool)
 
 	if allowUnsafe && modelInput != "" {
 		// Return a permissive fallback struct for experimental models.
-		return OmniModelInfo{CanonicalName: modelInput}, true
+		return OmniModelInfo{
+			CanonicalName:         modelInput,
+			SupportedResolutions:  []string{"360p", "720p", "1080p", "4k"},
+			SupportedAspectRatios: []string{"16:9", "9:16"},
+			MinDurationSeconds:    1,
+			MaxDurationSeconds:    30,
+			MaxVideos:             10,
+		}, true
 	}
 
 	return OmniModelInfo{}, false
@@ -545,6 +566,9 @@ func BuildOmniModelDescription() string {
 		}
 		if len(info.SupportedResolutions) > 0 {
 			fmt.Fprintf(&sb, " Supported resolutions: %s.", strings.Join(info.SupportedResolutions, ", "))
+		}
+		if len(info.SupportedAspectRatios) > 0 {
+			fmt.Fprintf(&sb, " Aspect ratios: %s.", strings.Join(info.SupportedAspectRatios, ", "))
 		}
 		sb.WriteString("\n")
 	}

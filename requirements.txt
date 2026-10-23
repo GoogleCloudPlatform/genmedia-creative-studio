@@ -296,7 +296,7 @@ pathspec==1.1.1
     # via black
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
     # via ipython
-pillow==12.3.0
+pillow==13.0.0
     # via
     #   genmedia-creative-studio
     #   imageio

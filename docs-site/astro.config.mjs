@@ -29,6 +29,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Local Setup', slug: 'core/installation/local_setup' },
 								{ label: 'Deployment Guide', slug: 'core/installation/deploy' },
+								{ label: 'GKE (Self-Service)', slug: 'core/installation/gke' },
 								{ label: 'Terraform', slug: 'core/installation/terraform' },
 								{ label: 'Environment Variables', slug: 'core/installation/environment_variables' },
                                                                 { label: 'Cost Tracking Analytics', slug: 'core/installation/cost_tracking' },

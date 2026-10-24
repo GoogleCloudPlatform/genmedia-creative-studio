@@ -18,3 +18,16 @@ output "load_balancer_ip" {
   description = "External IP address of the load balancer (for the DNS A record)."
   value       = module.lb-http.external_ip
 }
+
+# Server-assigned NUMERIC id (generated_id) of the LB backend service. This is the
+# id the IAP JWT audience needs for the LB topology
+# (/projects/<number>/global/backendServices/<NUMERIC_ID>) — NOT .id (a resource
+# path built from the NAME) and NOT .name. Only the numeric id is exposed here:
+# module.lb-http.backend_services is marked sensitive (it carries iap_config), so
+# the single non-secret field is unwrapped with nonsensitive() rather than
+# surfacing the whole object. Consumed by the cloudrun root for verification /
+# runbook cross-check of IAP_JWT_AUDIENCE.
+output "backend_service_generated_id" {
+  description = "Numeric server-assigned generated_id of the LB backend service (for the IAP JWT audience). Numeric id only; the sensitive backend_services object is never exposed."
+  value       = nonsensitive(module.lb-http.backend_services["default"].generated_id)
+}

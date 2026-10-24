@@ -202,6 +202,28 @@ If the updates include changes to the Terraform configuration (e.g., new environ
    terraform apply
    ```
 
+### Trusted identity headers (Vuln #4 interim mitigation)
+
+The deployed Terraform roots (`deploy/terraform/cloudrun` for Cloud Run nonprod +
+prod, and `deploy/terraform/gke`) set the application env var
+`AUTH_EMAIL_HEADERS = "X-Goog-Authenticated-User-Email"` on the running container.
+This restricts the identity headers the app trusts to **only** the IAP-set,
+priority-#1 header, removing the non-Goog plaintext passthrough impersonation
+vector (`X-Email`, `X-Authenticated-User`, `X-Auth-Request-Email`,
+`X-Forwarded-Email`).
+
+- **Env-config only** — no application code change (the app already honors
+  `AUTH_EMAIL_HEADERS`, see `common/identity.py`). `X-Goog-Authenticated-User-Email`
+  is a fixed Google header **name**, not a secret.
+- **Deployed-envs only** — it is set exclusively in the Terraform deploy roots
+  above. Local/dev/test do not run these Terraform paths, so they are unaffected.
+- **Partial, interim** — it does not verify the IAP JWT assertion, so it does not
+  help IAP-bypassed paths. It is **retired** by the Vuln #4 app fix (design
+  Phase 3), which removes the plaintext identity path entirely.
+
+> This mitigation is **not applied until an owner go/no-go**; the Terraform change
+> ships as a reviewed-ready, unapplied config change.
+
 ### Artifact Registry retention (cleanup policies)
 
 The `artifact-registry` module defines two cleanup policies on the `creative-studio`

@@ -2,7 +2,7 @@ module github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-g
 
 go 1.25.0
 
-require github.com/firebase/genkit/go v1.13.1
+require github.com/firebase/genkit/go v1.14.0
 
 require (
 	cloud.google.com/go v0.120.0 // indirect

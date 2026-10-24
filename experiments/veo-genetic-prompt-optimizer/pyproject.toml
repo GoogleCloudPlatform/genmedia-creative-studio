@@ -8,10 +8,10 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "google-genai (>=2.31.0,<2.32.0)",
-    "google-cloud-aiplatform[evaluation] (>=2.5.0,<2.6.0)",
+    "google-genai (>=2.33.0,<2.34.0)",
+    "google-cloud-aiplatform[evaluation] (>=2.6.0,<2.7.0)",
     "black>=26.10.1,<27.0.0",
-    "pandas (>=3.0.4,<3.1.0)",
+    "pandas (>=3.1.0,<3.2.0)",
     "pillow>=13.0.0,<14.0.0",
     "python-dotenv (>=1.1.1,<2.0.0)",
     "pytest>=8.0.0",

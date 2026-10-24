@@ -3,12 +3,12 @@ module github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-g
 go 1.26.0
 
 require (
-	cloud.google.com/go/texttospeech v1.23.0
+	cloud.google.com/go/texttospeech v1.24.0
 	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0
 	github.com/mark3labs/mcp-go v1.3.0
 	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.43.0
-	google.golang.org/api v0.304.0
+	google.golang.org/api v0.308.0
 )
 
 require (
@@ -71,7 +71,7 @@ require (
 	google.golang.org/genai v1.75.0 // indirect
 	google.golang.org/genproto v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )

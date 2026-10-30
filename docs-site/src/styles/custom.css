@@ -36,13 +36,24 @@
 
 /* Native <dialog> Lightbox for Architectural Diagrams & Screenshots */
 dialog.sl-image-lightbox {
+	position: fixed;
+	inset: 0;
+	margin: auto;
 	padding: 0;
 	border: none;
 	border-radius: 0.75rem;
 	background: transparent;
-	max-width: 96vw;
-	max-height: 94vh;
-	overflow: visible;
+	width: 100vw;
+	height: 100vh;
+	max-width: 100vw;
+	max-height: 100vh;
+	overflow: hidden;
+}
+
+dialog.sl-image-lightbox[open] {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 dialog.sl-image-lightbox::backdrop {

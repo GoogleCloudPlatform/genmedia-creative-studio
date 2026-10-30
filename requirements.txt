@@ -239,7 +239,7 @@ mesop==1.3.5
     # via genmedia-creative-studio
 moviepy==2.2.1
     # via genmedia-creative-studio
-msgpack==1.2.2
+msgpack==1.2.3
     # via
     #   cachecontrol
     #   librosa

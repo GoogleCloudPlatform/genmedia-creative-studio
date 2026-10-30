@@ -48,7 +48,7 @@ tiers consume without changes:
 
 ```
 genkit-go/
-  go.mod                 module .../sample-agents/genkit-go ; go 1.25.0 ; genkit/go v1.13.1
+  go.mod                 module .../sample-agents/genkit-go ; go 1.25.0 ; genkit/go v1.14.0
   bin/genmedia-launch    pinned, SHA-256-verifying download-on-launch script (copy of agent_tools')
   internal/
     genmedia/            the shared fan-out interface
@@ -266,11 +266,12 @@ asserts every required tool is present before the flow runs.
 
 > ### ⚠️ PREVIEW — experimental APIs, not stable
 > Tier 3 is a **PREVIEW capstone**. It uses the **experimental Genkit `.../exp`
-> packages** (`genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`,
-> `plugins/middleware/exp`) behind **`genkit.WithExperimental()`**. That API is
-> **not stable**, is **pinned to `genkit/go v1.13.1`**, and **may break on
+> packages** (`genkit/exp`, `ai/exp`, `ai/exp/localstore`,
+> `plugins/middleware/exp`) behind **`genkit.WithExperimental()`** alongside the
+> graduated **`ai/tool`** and **`genkit.DefineResumableTool`** APIs. The `.../exp`
+> surface is **not stable**, is **pinned to `genkit/go v1.14.0`**, and **may break on
 > upgrade**. Tier 3 is **additive and self-contained**: nothing in Tiers 0–2
-> depends on it, and the dependency floor is unchanged (`genkit/go v1.13.1` +
+> depends on it, and the dependency floor is unchanged (`genkit/go v1.14.0` +
 > `mcp-go v0.33.0`, no `replace` directives). Treat it as a flourish that shows
 > where Genkit Go is going — not as the series' foundation.
 
@@ -323,10 +324,11 @@ go run ./tier3-preview -reject    # reject path: image -> (reject) -> STOP, no v
   approval tool. The middleware injects one `delegate_to_<name>` tool per
   sub-agent and lists them in the orchestrator's system prompt; each specialist
   owns exactly one genmedia step.
-- **Human-in-the-loop (tool interrupt).** `approve_video_render` is an
-  interruptible tool: it **pauses** with a typed payload (the still URI + motion
-  prompt), and the client resumes it with an approve/reject decision.
-- **The honest adaptation.** In `v1.13.1`, a **sub-agent cannot itself hold an
+- **Human-in-the-loop (tool interrupt).** `approve_video_render` is a
+  resumable tool (`genkit.DefineResumableTool` + `ai/tool.Interrupt`): it
+  **pauses** with a typed payload (the still URI + motion prompt), and the
+  client resumes it with an approve/reject decision.
+- **The honest adaptation.** In `v1.14.0`, a **sub-agent cannot itself hold an
   interactive interrupt** — the Agents middleware turns a sub-agent interrupt
   into a plain tool response ("Interactive sub-agent interrupts are not currently
   supported"). So the interrupt lives on the **orchestrator**, and the Veo render
@@ -334,7 +336,7 @@ go run ./tier3-preview -reject    # reject path: image -> (reject) -> STOP, no v
   `veo_render` **refuses** until approval has opened the gate. This guarantees —
   provably, by listing — that **Veo only ever runs after approval**. The
   top-of-file comment in `tier3-preview/main.go` records the full list of
-  experimental-API corrections found against the real `v1.13.1` source.
+  experimental-API corrections found against the real `v1.14.0` source.
 
 Tier 3 keeps the series' discipline intact: it reuses `internal/genmedia` and
 `internal/verify`, carries the same [footguns](#the-resource_link-rule) (bare
@@ -391,13 +393,13 @@ download bridge — `StdioConfig.Command` resolves it directly.
 
 | Thing | Pin | Where |
 |-------|-----|-------|
-| Genkit Go | `github.com/firebase/genkit/go v1.13.1` | `go.mod` |
+| Genkit Go | `github.com/firebase/genkit/go v1.14.0` | `go.mod` |
 | Go | `go 1.25.0` | `go.mod` |
 | genmedia release | `v3.18.0` | `internal/genmedia` `DefaultReleaseTag` + `bin/genmedia-launch` `PINNED_TAG` |
 | Orchestrating model | `vertexai/gemini-3.5-flash` (runs at `GEMINI_LOCATION`, default `global`) | `tier{0,1,2}-*/main.go` `modelName`; `tier3-preview/main.go` `defaultModel` |
 | Veo model (Tiers 1-3) | `veo-3.1-fast-generate-001` | `tier{1,2}-*/main.go` + `tier3-preview/main.go` `veoModel` |
 | Lyria model (Tiers 2-3) | `lyria-3-clip-preview` | `tier2-producer/main.go` + `tier3-preview/main.go` `lyriaModel` |
-| **Tier 3 (PREVIEW) experimental APIs** | `genkit/exp`, `ai/exp`, `ai/exp/localstore`, `ai/exp/tool`, `plugins/middleware/exp` behind `WithExperimental()` — **pinned to `genkit/go v1.13.1`, may break on upgrade** | `tier3-preview/main.go` |
+| **Tier 3 (PREVIEW) experimental APIs** | `genkit/exp`, `ai/exp`, `ai/exp/localstore`, `plugins/middleware/exp` behind `WithExperimental()` (plus graduated `ai/tool` & `genkit.DefineResumableTool`) — **pinned to `genkit/go v1.14.0`, may break on upgrade** | `tier3-preview/main.go` |
 
 ## Contributing
 

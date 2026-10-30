@@ -15,7 +15,7 @@
 // ============================================================================
 // PREVIEW — Tier 3 uses EXPERIMENTAL Genkit `.../exp` packages behind
 // genkit.WithExperimental(). The API is NOT stable, is pinned to
-// github.com/firebase/genkit/go v1.13.1, and MAY BREAK on upgrade. This tier is
+// github.com/firebase/genkit/go v1.14.0, and MAY BREAK on upgrade. This tier is
 // additive and self-contained: NOTHING in Tiers 0-2 depends on it. It is a
 // flourish, not the series' foundation.
 // ============================================================================
@@ -37,7 +37,7 @@
 //	  └─ delegate_to_av-agent      -> av-agent    : combine_av (avtool mux)
 //
 // THREE EXPERIMENTAL-API / INTEGRATION CORRECTIONS vs the design (verified
-// against the real v1.13.1 source and proven by the live run; see
+// against the real v1.14.0 source and proven by the live run; see
 // tier3-dev-notes.md for the full list):
 //
 //  1. FileSessionStore is constructed with
@@ -45,12 +45,12 @@
 //     github.com/firebase/genkit/go/ai/exp/localstore — not a bare struct
 //     literal. The store is generic over the agent's session-state type.
 //
-//  2. INTERACTIVE SUB-AGENT INTERRUPTS ARE NOT SUPPORTED in v1.13.1. The Agents
+//  2. INTERACTIVE SUB-AGENT INTERRUPTS ARE NOT SUPPORTED in v1.14.0. The Agents
 //     middleware turns a sub-agent's interrupt into a plain tool response to the
 //     orchestrator ("Interactive sub-agent interrupts are not currently
 //     supported" — plugins/middleware/exp/agents.go). So the human-in-the-loop
 //     interrupt CANNOT live inside the video sub-agent. It lives on the
-//     ORCHESTRATOR as an interruptible tool (approve_video_render), which is
+//     ORCHESTRATOR as a resumable tool (approve_video_render), which is
 //     where interrupts DO surface to the client. The Veo render is then made
 //     impossible-without-approval by a process-level gate the approval flips
 //     (see renderGate): the video-agent's veo_render tool refuses until the gate
@@ -64,7 +64,7 @@
 //     passed directly, but an exp sub-agent resolves its tools by NAME from the
 //     registry, so a delegated agent reports the MCP tool "not found" (observed
 //     live on the first run). The fix used here: wrap each genmedia MCP tool in
-//     a REGISTERED genkitx.DefineTool that invokes the underlying MCP tool via
+//     a REGISTERED genkit.DefineTool that invokes the underlying MCP tool via
 //     ai.Tool.RunRaw with footgun-correct arguments, then verifies the output by
 //     LISTING it. The wrappers are what the sub-agents call; this also moves the
 //     Tier 2 footguns from fragile prompt text into code (the honest place for
@@ -102,7 +102,7 @@ import (
 	"github.com/firebase/genkit/go/ai"
 	aix "github.com/firebase/genkit/go/ai/exp"
 	"github.com/firebase/genkit/go/ai/exp/localstore"
-	"github.com/firebase/genkit/go/ai/exp/tool"
+	"github.com/firebase/genkit/go/ai/tool"
 	"github.com/firebase/genkit/go/genkit"
 	genkitx "github.com/firebase/genkit/go/genkit/exp"
 	"github.com/firebase/genkit/go/plugins/googlegenai"
@@ -147,7 +147,7 @@ var requiredTools = []string{
 // renderGate is the process-level approval gate that makes the Veo render
 // impossible without human approval. The orchestrator's approve_video_render
 // interrupt flips it open; the video-agent's veo_render tool refuses until it
-// is. This compensates for the v1.13.1 limitation that a sub-agent cannot itself
+// is. This compensates for the v1.14.0 limitation that a sub-agent cannot itself
 // hold an interactive interrupt (see the package banner, correction #2).
 type renderGate struct {
 	mu       sync.Mutex
@@ -270,9 +270,8 @@ func run(ctx context.Context, reject bool, subject string) error {
 	finalURI := "gs://" + bucket + "/" + finalName    // where avtool writes
 
 	// EXPERIMENTAL: genkit.WithExperimental() is REQUIRED for the exp agent APIs
-	// (genkitx.DefineAgent / DefineTool / DefineInterruptibleTool, the
-	// Agents/Artifacts middleware). Registering the middleware plugin keeps the
-	// Dev-UI reflection tidy.
+	// (genkitx.DefineAgent and the Agents/Artifacts middleware). Registering the
+	// middleware plugin keeps the Dev-UI reflection tidy.
 	g := genkit.Init(ctx,
 		genkit.WithPlugins(
 			&googlegenai.VertexAI{ProjectID: project, Location: orchestratorLocation},
@@ -315,9 +314,9 @@ func run(ctx context.Context, reject bool, subject string) error {
 	// the output by LISTING it and returns the confirmed leaf gs:// URI.
 
 	// generate_image: nanobanana still -> fixed imageDest (bucket+prefix OK).
-	generateImageTool := genkitx.DefineTool(g, "generate_image",
+	generateImageTool := genkit.DefineTool(g, "generate_image",
 		"Generate ONE still image from a text prompt and return its confirmed gs:// URI (verified by listing).",
-		func(ctx context.Context, in ImageInput) (URIOutput, error) {
+		func(ctx *ai.ToolContext, in ImageInput) (URIOutput, error) {
 			log.Printf("generate_image: nanobanana -> %s", imageDest)
 			args := map[string]any{
 				"prompt":          in.Prompt,
@@ -337,11 +336,11 @@ func run(ctx context.Context, reject bool, subject string) error {
 	// veo_render: GATED Veo 3 render -> fixed videoDest. Refuses until a human has
 	// approved via approve_video_render. This is what guarantees the render only
 	// runs post-approval even though the interrupt itself lives on the
-	// orchestrator (v1.13.1 limitation, correction #2).
-	renderTool := genkitx.DefineTool(g, "veo_render",
+	// orchestrator (v1.14.0 limitation, correction #2).
+	renderTool := genkit.DefineTool(g, "veo_render",
 		"Render a short video clip from an input still using Veo 3. REQUIRES prior human approval; "+
 			"it refuses if the render has not been approved. Returns the confirmed gs:// URI of the clip.",
-		func(ctx context.Context, in RenderInput) (URIOutput, error) {
+		func(ctx *ai.ToolContext, in RenderInput) (URIOutput, error) {
 			if !gate.isOpen() {
 				return URIOutput{}, fmt.Errorf("veo_render refused: the human has not approved this render. " +
 					"The orchestrator must call approve_video_render and receive approval first")
@@ -369,9 +368,9 @@ func run(ctx context.Context, reject bool, subject string) error {
 
 	// compose_music: lyria score -> fixed BARE bucket + musicName (ext forced by
 	// server; model_id must be the clip-preview to route through global).
-	composeMusicTool := genkitx.DefineTool(g, "compose_music",
+	composeMusicTool := genkit.DefineTool(g, "compose_music",
 		"Compose ONE short instrumental music score from a text prompt and return its confirmed gs:// URI (verified by listing).",
-		func(ctx context.Context, in MusicInput) (URIOutput, error) {
+		func(ctx *ai.ToolContext, in MusicInput) (URIOutput, error) {
 			log.Printf("compose_music: lyria -> gs://%s/%s.*", bucket, musicName)
 			args := map[string]any{
 				"prompt":            in.Prompt,
@@ -390,9 +389,9 @@ func run(ctx context.Context, reject bool, subject string) error {
 		})
 
 	// combine_av: avtool mux of the clip + score -> fixed BARE bucket + finalName.
-	combineTool := genkitx.DefineTool(g, "combine_av",
+	combineTool := genkit.DefineTool(g, "combine_av",
 		"Mux a video clip and a music score into ONE scored video and return its confirmed gs:// URI (verified by listing).",
-		func(ctx context.Context, in CombineInput) (URIOutput, error) {
+		func(ctx *ai.ToolContext, in CombineInput) (URIOutput, error) {
 			log.Printf("combine_av: avtool %s + %s -> %s", in.VideoURI, in.AudioURI, finalURI)
 			args := map[string]any{
 				"input_video_uri":   in.VideoURI,
@@ -410,18 +409,18 @@ func run(ctx context.Context, reject bool, subject string) error {
 			return URIOutput{URI: uri}, nil
 		})
 
-	// approve_video_render: the ORCHESTRATOR's interruptible tool. On the first
+	// approve_video_render: the ORCHESTRATOR's resumable tool. On the first
 	// call (res==nil) it PAUSES with a typed RenderApproval payload; the client
 	// resolves the interrupt with an ApprovalDecision. On approval it OPENS the
 	// gate; on rejection it leaves it shut. This is the human-in-the-loop step,
 	// on the orchestrator because that is where interrupts surface.
-	approveTool := genkitx.DefineInterruptibleTool(g, "approve_video_render",
+	approveTool := genkit.DefineResumableTool(g, "approve_video_render",
 		"Ask a human to approve the expensive Veo video render before it runs. Call this AFTER the still "+
 			"is ready and BEFORE delegating to the video agent. Pass the still URI and the motion prompt.",
 		func(ctx context.Context, in ApproveInput, res *ApprovalDecision) (ApproveOutput, error) {
 			if res == nil {
 				log.Printf("approve_video_render: PAUSING for human approval (image=%s)", in.ImageURI)
-				return ApproveOutput{}, tool.Interrupt(RenderApproval{
+				return ApproveOutput{}, tool.Interrupt(ctx, RenderApproval{
 					ImageURI:    in.ImageURI,
 					VideoPrompt: in.VideoPrompt,
 					Model:       veoModel,
@@ -641,7 +640,7 @@ video agent before approval.`
 // approve/reject decision (the stand-in for a human at the Dev UI). It loops
 // because a resumed turn can interrupt again. This mirrors what the Dev UI does
 // interactively; here it is headless so the live run needs no CLI installed.
-func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.InterruptibleTool[ApproveInput, ApproveOutput, ApprovalDecision], task string, approve bool) (*aix.AgentOutput[any], error) {
+func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *ai.ResumableToolAction[ApproveInput, ApproveOutput, ApprovalDecision], task string, approve bool) (*aix.AgentOutput[any], error) {
 	conn, err := a.Connect(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to orchestrator: %w", err)
@@ -684,15 +683,15 @@ func driveOrchestrator(ctx context.Context, a *aix.Agent[any], approveTool *aix.
 		// Resolve every interrupt with the approve/reject decision.
 		resume := &aix.ToolResume{}
 		for _, ip := range interrupts {
-			if meta, ok := tool.InterruptAs[RenderApproval](ip); ok {
+			if meta, ok := ai.InterruptAs[RenderApproval](ip); ok {
 				log.Printf("[human] approval requested: render %s (%s); deciding: %s",
 					meta.ImageURI, meta.Model, decisionWord(approve))
 			}
-			part, perr := approveTool.Resume(ip, ApprovalDecision{Approved: approve})
-			if perr != nil {
-				return nil, fmt.Errorf("building resume part: %w", perr)
+			call, ok := approveTool.Interrupted(ip)
+			if !ok {
+				return nil, fmt.Errorf("building resume part: unexpected interrupt %q", ip.ToolRequest.Name)
 			}
-			resume.Restart = append(resume.Restart, part)
+			resume.Restart = append(resume.Restart, call.Restart(ApprovalDecision{Approved: approve}))
 		}
 		if err := conn.SendResume(resume); err != nil {
 			return nil, fmt.Errorf("sending resume: %w", err)

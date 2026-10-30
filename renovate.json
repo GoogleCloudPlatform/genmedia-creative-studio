@@ -31,11 +31,6 @@
       "allowedVersions": "<3.15.0"
     },
     {
-      "description": "Pin github.com/firebase/genkit/go below v1.14.0 until sample-agents/genkit-go/tier3-preview is migrated off removed package github.com/firebase/genkit/go/ai/exp/tool.",
-      "matchPackageNames": ["github.com/firebase/genkit/go"],
-      "allowedVersions": "<1.14.0"
-    },
-    {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true
     }

@@ -4,7 +4,7 @@ This document provides guidelines for AI agents working on the GenMedia Creative
 
 ## Scope of Work
 
-- Do not modify code within the `experiments/` directory when refactoring or updating the main application. If a global change (like a model deprecation) impacts an experiment, add an inline `# TODO:` or `// TODO:` comment near the affected code in the experiment rather than attempting to refactor its logic.
+- When refactoring or updating the Core Mesop application, do not modify unrelated code within the `experiments/` directory; if a global change (like a model deprecation) impacts an unmaintained experiment, add an inline `# TODO:` or `// TODO:` comment near the affected code. Conversely, when a task, Renovate PR, or CI gate explicitly targets `experiments/mcp-genmedia` or the standalone Go modules (`experiments/babel`, `experiments/run-veo-run/server`, `experiments/mcp-genmedia/sample-agents/genkit-go`), modify and test those directories directly.
 - **Repository & Module Naming:** The canonical GitHub repository is `GoogleCloudPlatform/genmedia-creative-studio`. All Go module paths and internal imports must use `github.com/GoogleCloudPlatform/genmedia-creative-studio/...` (never the legacy `vertex-ai-creative-studio` name).
 
 ## Styling
@@ -56,22 +56,7 @@ This document provides guidelines for AI agents working on the GenMedia Creative
 
 ## Code Quality
 
-- Use `ruff` for code formatting and linting. Ensure code is formatted (`ruff format .`) and linted (`ruff check --fix .`) before submitting changes.
-
-## Issue Tracking
-
-This project uses **bd (beads)** for issue tracking.
-Run `bd prime` for workflow context, or install hooks (`bd hooks install`) for auto-injection.
-
-**Quick reference:**
-- `bd ready` - Find unblocked work
-- `bd create "Title" --type task --priority 2` - Create issue
-- `bd close <id>` - Complete work
-- `bd dolt push` - Sync with git (run at session end)
-
-For full workflow details: `bd prime`
-
-
+- Use `ruff` for code formatting and linting. Run `ruff format <path/to/file.py>` and `ruff check --fix <path/to/file.py>` **only on the files you have modified** (never globally on `.`, which can strip load-bearing Mesop `@me.page` route imports).
 
 ## Issue Tracking with Beads (`bd`)
 
@@ -136,6 +121,15 @@ The automation is built on GitHub Actions using a "Router-Worker" pattern:
 
 This system is powered by the [Gemini CLI](https://github.com/google-github-actions/run-gemini-cli) action.
 
+## GitHub Actions Security Gates & PR Workflow
+
+- **Action SHA Pinning (`check_action_pins.py`):** Every `uses:` reference in `.github/workflows/*.yml` must be pinned to a full 40-character commit SHA with a trailing version comment (e.g., `google-github-actions/run-gemini-cli@e0f8fb259ec8dfe2daff8e6b4fd9eb9fb8fc7ffe # v0.4.0`). Tag references fail the `GitHub Actions Scan/check_action_pins` CI check.
+- **Explicit Secrets in Reusable Workflows (`zizmor`):** Never use `secrets: inherit` in `.github/workflows/gemini-dispatch.yml` or other reusable workflow callers (`zizmor` fails with `secrets-inherit`). Pass explicit secrets matching the callee's `on.workflow_call.secrets` block (`GEMINI_API_KEY`, `GOOGLE_API_KEY`, `APP_PRIVATE_KEY`).
+- **Fork vs. Upstream Topology & `gh` Flags:** Local `origin` is `ghchinoy/genmedia-creative-studio` and `upstream` is `GoogleCloudPlatform/genmedia-creative-studio`. Always pass `-R GoogleCloudPlatform/genmedia-creative-studio` to `gh` CLI commands, and sync `main` via `git fetch upstream --prune && git merge --ff-only upstream/main && git push origin main` (omit `--tags` when fetching `upstream` as legacy alpha tags differ).
+- **Merging Workflow PRs vs. `release-please` PRs:**
+  - PRs that modify `.github/workflows/*` fail via `gh pr merge` if the GitHub token lacks the `workflow` OAuth scope; instruct the user to merge workflow-touching PRs in the GitHub web UI.
+  - `release-please` PRs are authored under the maintainer's account and cannot self-approve (`gh pr review --approve`); once checks pass, merge them via `gh pr merge <id> -R GoogleCloudPlatform/genmedia-creative-studio --admin --squash --delete-branch`.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 
@@ -165,12 +159,15 @@ bd close <id>         # Complete work
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **PUSH TO REMOTE** - This is MANDATORY when shipping changes:
    ```bash
-   git pull --rebase
+   # Feature branch PR workflow (main on upstream is branch-protected):
+   git push -u origin <feature-branch>
    bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
+   # After PR merges into upstream (GoogleCloudPlatform/genmedia-creative-studio):
+   git checkout main
+   git fetch upstream --prune && git merge --ff-only upstream/main && git push origin main
+   git status -sb  # MUST show "## main...upstream/main" with no ahead/behind
    ```
 5. **Clean up** - Clear stashes, prune remote branches
 6. **Verify** - All changes committed AND pushed

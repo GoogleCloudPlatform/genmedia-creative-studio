@@ -34,11 +34,13 @@ from config.default import Default
 from models.image_models import generate_virtual_models
 from models.virtual_model_generator import VirtualModelGenerator, DEFAULT_PROMPT
 from models.vto import generate_vto_image
+from models.vto_critique import run_vto_critique_workflow
 from common.utils import create_display_url
 from state.state import AppState
 from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
 from components.edit_button.edit_button import edit_button
+from components.snackbar import snackbar
 from components.veo_button.veo_button import veo_button
 
 config = Default()
@@ -83,6 +85,10 @@ class PageState:
     safety_filter_level: str = "block_only_high"
     is_loading: bool = False
     is_generating_person_image: bool = False
+    is_analyzing: bool = False
+    critique_results_json: str = "{}"
+    show_snackbar: bool = False
+    snackbar_message: str = ""
     error_dialog_open: bool = False
     error_message: str = ""
 
@@ -181,14 +187,26 @@ def on_click_generate_person(e: me.ClickEvent):
         yield
 
 
+def show_snackbar(state: PageState, message: str):
+    """Displays an auto-dismissing snackbar message."""
+    state.snackbar_message = message
+    state.show_snackbar = True
+    yield
+    time.sleep(3)
+    state.show_snackbar = False
+    yield
+
+
 @track_click(element_id="vto_generate_button")
 def on_generate(e: me.ClickEvent):
     """Generate VTO handler."""
     app_state = me.state(AppState)
     state = me.state(PageState)
     state.is_loading = True
+    state.critique_results_json = "{}"
     yield
 
+    result_gcs_uris: list[str] = []
     try:
         start_time = time.time()
         result_gcs_uris = generate_vto_image(
@@ -219,6 +237,31 @@ def on_generate(e: me.ClickEvent):
     finally:
         state.is_loading = False
         yield
+
+    if result_gcs_uris and state.product_image_gcs:
+        state.is_analyzing = True
+        yield
+        critique_map: dict[str, dict[str, str | bool]] = {}
+        critique_error: str = ""
+        try:
+            for uri in result_gcs_uris:
+                critique_data = run_vto_critique_workflow(
+                    apparel_image_gcs=state.product_image_gcs,
+                    result_image_gcs=uri,
+                )
+                critique_map[uri] = critique_data
+                state.critique_results_json = json.dumps(
+                    critique_map, default=str
+                )
+                yield
+        except Exception as err:
+            critique_error = str(err)
+        finally:
+            state.is_analyzing = False
+            yield
+
+        if critique_error:
+            yield from show_snackbar(state, f"VTO critique error: {critique_error}")
     yield
 
 
@@ -259,6 +302,8 @@ def on_clear(e: me.ClickEvent):
     state.product_image_display_url = ""
     state.result_gcs_uris = []
     state.result_display_urls = []
+    state.critique_results_json = "{}"
+    state.is_analyzing = False
     yield
 
 def open_info_dialog(e: me.ClickEvent):
@@ -470,6 +515,27 @@ def page():
                 ):
                     me.progress_spinner()
 
+            if state.is_analyzing:
+                with me.box(
+                    style=me.Style(
+                        display="flex",
+                        flex_direction="row",
+                        gap=12,
+                        align_items="center",
+                        justify_content="center",
+                        margin=me.Margin(top=16),
+                    )
+                ):
+                    me.progress_spinner()
+                    me.text("Analyzing garment placement with Gemini...")
+
+            critique_map: dict[str, dict[str, str | bool]] = {}
+            if state.critique_results_json:
+                try:
+                    critique_map = json.loads(state.critique_results_json)
+                except json.JSONDecodeError:
+                    critique_map = {}
+
             if state.result_display_urls:
                 print(f"Images: {state.result_display_urls}")
                 with me.box(
@@ -483,10 +549,76 @@ def page():
                 ):
                     for i, display_url in enumerate(state.result_display_urls):
                         gcs_uri = state.result_gcs_uris[i]
-                        with me.box(style=me.Style(display="flex", flex_direction="column", gap=8)):
-                            me.image(
-                                src=display_url, style=me.Style(width="400px", border_radius=12)
+                        critique = critique_map.get(gcs_uri)
+                        with me.box(
+                            style=me.Style(
+                                display="flex",
+                                flex_direction="column",
+                                gap=8,
+                                width="400px",
                             )
-                            with me.box(style=me.Style(display="flex", flex_direction="row", gap=8, justify_content="center")):
+                        ):
+                            me.image(
+                                src=display_url,
+                                style=me.Style(width="400px", border_radius=12),
+                            )
+                            with me.box(
+                                style=me.Style(
+                                    display="flex",
+                                    flex_direction="row",
+                                    gap=8,
+                                    justify_content="center",
+                                )
+                            ):
                                 edit_button(gcs_uri=gcs_uri)
                                 veo_button(gcs_uri=gcs_uri)
+                            if critique:
+                                is_accurate = bool(critique.get("accurate", True))
+                                with me.box(
+                                    style=me.Style(
+                                        background=me.theme_var(
+                                            "surface-container-low"
+                                        ),
+                                        padding=me.Padding.all(12),
+                                        border_radius=12,
+                                        display="flex",
+                                        flex_direction="column",
+                                        gap=6,
+                                    )
+                                ):
+                                    with me.box(
+                                        style=me.Style(
+                                            display="flex",
+                                            flex_direction="row",
+                                            gap=6,
+                                            align_items="center",
+                                        )
+                                    ):
+                                        me.icon(
+                                            "verified"
+                                            if is_accurate
+                                            else "info",
+                                            style=me.Style(
+                                                color=me.theme_var("primary")
+                                                if is_accurate
+                                                else me.theme_var("error"),
+                                                font_size=18,
+                                            ),
+                                        )
+                                        me.text(
+                                            "Placement Critique",
+                                            style=me.Style(
+                                                font_weight="bold",
+                                                font_size=14,
+                                            ),
+                                        )
+                                    me.markdown(
+                                        str(
+                                            critique.get(
+                                                "placement_analysis",
+                                                "Critique not available.",
+                                            )
+                                        )
+                                    )
+
+            snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)

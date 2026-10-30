@@ -79,3 +79,10 @@ audio track. Return ONLY the raw lyrics, no introductory text.
 
 Musical Concept: {user_prompt}
 """
+
+VTO_PLACEMENT_CRITIQUE_PROMPT = """You are an expert fashion critic and virtual try-on evaluator. Analyze the two provided images:
+1. The first image is the source apparel/garment item.
+2. The second image is the virtual try-on result showing that garment worn by a model.
+
+Evaluate whether the garment is accurately and naturally placed on the model (fit, drape, proportions, alignment, and absence of visual artifacts). Provide a boolean accuracy judgment, a concise one-sentence placement critique for the UI card, and brief supporting reasoning."""
+

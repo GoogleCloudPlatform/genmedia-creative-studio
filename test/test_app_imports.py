@@ -48,9 +48,14 @@ def test_import_pages_and_models():
     import models.upscale  # noqa: F401
     import models.veo  # noqa: F401
     import models.vto  # noqa: F401
+    import models.vto_critique  # noqa: F401
 
     # Verify re-exports expected by pages
-    from models.veo import APIReferenceImage, VideoGenerationRequest, generate_video  # noqa: F401
+    from models.veo import (  # noqa: F401
+        APIReferenceImage,
+        VideoGenerationRequest,
+        generate_video,
+    )
 
     assert APIReferenceImage is not None
     assert VideoGenerationRequest is not None
@@ -82,3 +87,58 @@ def test_import_main():
             pytest.fail(f"ImportError during main import: {e}")
         # Soft-skip other runtime initialization errors if external services are unreachable
         pytest.skip(f"main import runtime skip: {e}")
+
+
+def test_vto_critique_workflow_structured_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verify run_vto_critique_workflow uses GEMINI_CRITIQUE_MODEL_ID and returns structured placement data (#1730)."""
+    from models import vto_critique
+
+    captured_calls: list[dict[str, object]] = []
+
+    class FakeModels:
+        def generate_content(
+            self,
+            *,
+            model: str,
+            contents: list[object],
+            config: object,
+        ) -> object:
+            captured_calls.append(
+                {"model": model, "contents": contents, "config": config},
+            )
+            resp = MagicMock()
+            resp.text = (
+                '{"accurate": true, '
+                '"placement_analysis": "The jacket drapes naturally across the shoulders.", '
+                '"reasoning": "Collar alignment and sleeve length match the source garment."}'
+            )
+            return resp
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setattr(
+        vto_critique.GeminiModelSetup,
+        "init",
+        lambda **_kwargs: FakeClient(),
+    )
+
+    result = vto_critique.run_vto_critique_workflow(
+        apparel_image_gcs="gs://bucket/jacket.png",
+        result_image_gcs="gs://bucket/tryon_1.png",
+    )
+
+    assert len(captured_calls) == 1
+    assert captured_calls[0]["model"] == vto_critique.cfg.GEMINI_CRITIQUE_MODEL_ID
+    assert result["accurate"] is True
+    assert (
+        result["placement_analysis"]
+        == "The jacket drapes naturally across the shoulders."
+    )
+    assert (
+        result["reasoning"]
+        == "Collar alignment and sleeve length match the source garment."
+    )
+    assert result["result_image_gcs"] == "gs://bucket/tryon_1.png"

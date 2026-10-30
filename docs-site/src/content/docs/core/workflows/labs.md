@@ -9,17 +9,56 @@ The **Labs** workspace (`/labs`, implemented in `pages/test_index.py` and `main.
 Labs workflows are functional prototypes designed for rapid iteration and customer experimentation. Once a workflow stabilizes its prompt schemas, model adapters, and UI ergonomics, it graduates into a primary [Creative Workflow](/genmedia-creative-studio/core/workflows/) with dedicated navigation and architectural diagrams.
 :::
 
+## Quick Reference Matrix
+
+| Workflow | Route | Models Orchestrated |
+| :--- | :--- | :--- |
+| **[Retro Games](#retro-games)** | `/retro_games` | Gemini + Nano Banana + Veo (`16:9` / `9:16`) |
+| **[Brand Adherence](#brand-adherence)** | `/brand_adherence` | Gemini (`BrandBrief` PDF parser & `EvaluationResult` critic) + Nano Banana |
+| **[Character Asset Sheet](#character-asset-sheet)** | `/character_sheet` | Nano Banana (`gemini-2.5-flash-image` / `gemini-3.1-flash-image-preview`) |
+| **[Guideline Analysis](#guideline-analysis)** | `/guideline-analysis` | Gemini (`GUIDELINE_CRITERIA_TEMPLATE` multimodal QA rubric) |
+| **[Object Rotation](#object-rotation)** | `/object-rotation` | Veo (360° product showcase video) |
+| **[Banana Studio](#banana-studio)** | `/banana-studio` | Nano Banana + `config/banana_presets.json` |
+| **[VTO Composite Card Generator](#vto-composite-card-generator)** | `/test_vto_prompt_generator` | `VirtualModelGenerator` (Imagen / Nano Banana) |
+
+---
+
 ## Incubating Creative & Evaluation Workflows
 
-| Workflow | Route | Source Files | Capabilities & Models Orchestrated |
-| :--- | :--- | :--- | :--- |
-| **Retro Games** | `/retro_games` | `pages/retro_games.py`, `models/retro_games.py`, `config/retro_styles.py` | Generates 8-bit/16-bit pixel-art video game character cards, sprite sheets, and playable retro arcade intro animations by chaining **Gemini** character concept expansion, **Nano Banana** pixel-art image synthesis, and **Veo** retro gameplay video generation (`16:9` / `9:16`). |
-| **Brand Adherence** | `/brand_adherence` | `pages/brand_adherence.py`, `state/brand_adherence_state.py`, `components/brand_adherence/` | Upload a **Brand Guidelines PDF** (`application/pdf`) + optional product reference image. **Gemini** extracts a structured `BrandBrief` (`color_palette`, `typography_style`, `photography_direction`, `logo_usage_rules`, `brand_voice`), synthesizes a brand-aligned prompt, generates candidate campaign imagery with **Nano Banana**, and scores each generated image with a multimodal **Brand Critic (`EvaluationResult`)** across color, typography, composition, and brand voice criteria (`0–10` rubric). |
-| **Character Asset Sheet** | `/character_sheet` | `pages/character_sheet.py`, `state/character_sheet_state.py`, `components/character_sheet/` | Converts a single character description or reference image into a comprehensive production **Turnaround & Expression Asset Sheet** using **Nano Banana (`gemini-2.5-flash-image` / `gemini-3.1-flash-image-preview`)**: multi-angle orthographic views (*Front*, *Left Profile*, *Right Profile*, *Back*) plus a grid of emotional facial expressions (*Happy*, *Angry*, *Surprised*, *Thoughtful*) for downstream animation and 3D modeling. |
-| **Guideline Analysis** | `/guideline-analysis` | `pages/guideline_analysis.py` | Multimodal creative QA auditor (`GUIDELINE_CRITERIA_TEMPLATE`). Evaluates existing or generated images against custom creative, safety, and brand guideline checklists using **Gemini** structured rubrics. |
-| **Object Rotation** | `/object-rotation` | `pages/object_rotation.py` | Generates 360-degree rotating product showcase videos from a single e-commerce product photograph using **Veo**. |
-| **Banana Studio** | `/banana-studio` | `pages/banana_studio.py` | Preset-driven quick-launch gallery for **Nano Banana** (`config/banana_presets.json`), allowing users to apply curated visual transformations and multi-image composition recipes in one click. |
-| **VTO Composite Card Generator** | `/test_vto_prompt_generator` | `pages/test_vto_prompt_generator.py` | Batch utility that uses `VirtualModelGenerator` to synthesize multi-pose fashion model composite cards for Virtual Try-On testing. |
+### Retro Games (`/retro_games`)
+* **Source Files:** `pages/retro_games.py`, `models/retro_games.py`, `config/retro_styles.py`
+* **Capabilities:** Generates 8-bit and 16-bit pixel-art video game character cards, sprite sheets, and playable retro arcade intro animations by chaining **Gemini** character concept expansion, **Nano Banana** pixel-art image synthesis, and **Veo** retro gameplay video generation (`16:9` or `9:16`).
+
+### Brand Adherence (`/brand_adherence`)
+* **Source Files:** `pages/brand_adherence.py`, `state/brand_adherence_state.py`, `components/brand_adherence/`
+* **Capabilities:** Users upload a **Brand Guidelines PDF** (`application/pdf`) and an optional product reference image:
+  1. **Gemini** extracts a structured `BrandBrief` (`color_palette`, `typography_style`, `photography_direction`, `logo_usage_rules`, `brand_voice`).
+  2. Synthesizes a brand-aligned campaign prompt and generates candidate imagery with **Nano Banana**.
+  3. Scores each generated image with a multimodal **Brand Critic (`EvaluationResult`)** across color, typography, composition, and brand voice criteria (`0–10` rubric).
+
+### Character Asset Sheet (`/character_sheet`)
+* **Source Files:** `pages/character_sheet.py`, `state/character_sheet_state.py`, `components/character_sheet/`
+* **Capabilities:** Converts a single character description or reference image into a comprehensive production **Turnaround & Expression Asset Sheet** using **Nano Banana**:
+  * **Multi-angle orthographic views:** *Front*, *Left Profile*, *Right Profile*, and *Back*.
+  * **Facial expression grid:** *Happy*, *Angry*, *Surprised*, and *Thoughtful* character portraits for downstream animation and 3D modeling.
+
+### Guideline Analysis (`/guideline-analysis`)
+* **Source Files:** `pages/guideline_analysis.py`
+* **Capabilities:** Multimodal creative QA auditor (`GUIDELINE_CRITERIA_TEMPLATE`) that evaluates existing or generated images against custom creative, safety, and brand guideline checklists using **Gemini** structured rubrics.
+
+### Object Rotation (`/object-rotation`)
+* **Source Files:** `pages/object_rotation.py`
+* **Capabilities:** Generates 360-degree rotating product showcase videos from a single e-commerce product photograph using **Veo**.
+
+### Banana Studio (`/banana-studio`)
+* **Source Files:** `pages/banana_studio.py`, `config/banana_presets.json`
+* **Capabilities:** Preset-driven quick-launch gallery for **Nano Banana**, allowing users to apply curated visual transformations and multi-image composition recipes in one click.
+
+### VTO Composite Card Generator (`/test_vto_prompt_generator`)
+* **Source Files:** `pages/test_vto_prompt_generator.py`, `models/virtual_model_generator.py`
+* **Capabilities:** Batch utility that uses `VirtualModelGenerator` to synthesize multi-pose fashion model composite cards for Virtual Try-On testing.
+
+---
 
 ## UI & Infrastructure Test Harnesses (`/labs`)
 

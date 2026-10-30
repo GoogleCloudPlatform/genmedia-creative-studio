@@ -11,6 +11,82 @@ export default defineConfig({
 		starlight({
 			title: 'GenMedia Creative Studio',
 			favicon: '/favicon.ico',
+			customCss: ['./src/styles/custom.css'],
+			head: [
+				{
+					tag: 'script',
+					content: `
+						function initDiagramLightbox() {
+							let dialog = document.querySelector('dialog.sl-image-lightbox');
+							if (!dialog) {
+								dialog = document.createElement('dialog');
+								dialog.className = 'sl-image-lightbox';
+								dialog.innerHTML = \`
+									<div class="sl-lightbox-container">
+										<div class="sl-lightbox-viewport">
+											<img alt="" />
+										</div>
+										<div class="sl-lightbox-bar">
+											<span class="sl-lightbox-caption"></span>
+											<div class="sl-lightbox-actions">
+												<button type="button" class="sl-lightbox-btn" data-action="zoom">1:1 Zoom</button>
+												<button type="button" class="sl-lightbox-btn" data-action="close">Close (Esc)</button>
+											</div>
+										</div>
+									</div>
+								\`;
+								document.body.appendChild(dialog);
+
+								const viewport = dialog.querySelector('.sl-lightbox-viewport');
+								const modalImg = viewport.querySelector('img');
+								const zoomBtn = dialog.querySelector('[data-action="zoom"]');
+								const closeBtn = dialog.querySelector('[data-action="close"]');
+
+								function toggleZoom() {
+									const zoomed = viewport.classList.toggle('is-zoomed');
+									zoomBtn.textContent = zoomed ? 'Fit to Screen' : '1:1 Zoom';
+								}
+
+								modalImg.addEventListener('click', (e) => {
+									e.stopPropagation();
+									toggleZoom();
+								});
+								zoomBtn.addEventListener('click', (e) => {
+									e.stopPropagation();
+									toggleZoom();
+								});
+								closeBtn.addEventListener('click', () => dialog.close());
+								dialog.addEventListener('click', (e) => {
+									if (e.target === dialog || e.target.classList.contains('sl-lightbox-container')) {
+										dialog.close();
+									}
+								});
+							}
+
+							const viewport = dialog.querySelector('.sl-lightbox-viewport');
+							const modalImg = viewport.querySelector('img');
+							const caption = dialog.querySelector('.sl-lightbox-caption');
+							const zoomBtn = dialog.querySelector('[data-action="zoom"]');
+
+							document.querySelectorAll('.sl-markdown-content img').forEach((img) => {
+								if (img.dataset.lightboxBound === 'true') return;
+								img.dataset.lightboxBound = 'true';
+								img.title = img.title || 'Click to enlarge diagram';
+								img.addEventListener('click', () => {
+									viewport.classList.remove('is-zoomed');
+									zoomBtn.textContent = '1:1 Zoom';
+									modalImg.src = img.currentSrc || img.src;
+									modalImg.alt = img.alt || '';
+									caption.textContent = img.alt || 'Architecture Diagram (click image to toggle 1:1 zoom)';
+									dialog.showModal();
+								});
+							});
+						}
+						document.addEventListener('DOMContentLoaded', initDiagramLightbox);
+						document.addEventListener('astro:page-load', initDiagramLightbox);
+					`,
+				},
+			],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/GoogleCloudPlatform/genmedia-creative-studio' }],
 			// Bright Catppuccin theme: Latte (light) forward, with Mocha for dark mode.
 			plugins: [catppuccin({

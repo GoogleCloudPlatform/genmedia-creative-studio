@@ -1,0 +1,33 @@
+// Chirp 3 HD speech synthesis workspace.
+digraph foundation_chirp_3hd {
+  label = "Chirp 3 HD · multi-locale high-definition speech";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_controls {
+    label = "Voice & prosody controls (pages/chirp_3hd.py)";
+    text   [label="Input text\n& custom pauses"];
+    locale [label="Locale & HD voice\n(en-US, es-ES, etc.)"];
+    pron   [label="Custom pronunciations\nIPA / X-SAMPA + pace", class="code muted"];
+  }
+
+  subgraph cluster_tts {
+    label = "Cloud Text-to-Speech API (models/chirp_3hd.py)";
+    class = "accent";
+    synth [label="SynthesizeSpeech\nChirp3-HD-*", class="primary code"];
+  }
+
+  gcs       [label="gs://GENMEDIA_BUCKET\nchirp3_audio/", class="store code"];
+  firestore [label="Firestore\nMediaItem", class="store code"];
+  player    [label="Audio player &\nLibrary export", class="positive terminal"];
+
+  user -> {text locale pron};
+  {text locale} -> synth [class="primary"];
+  pron -> synth [label="CustomPronunciations", class="muted"];
+  synth -> gcs  [label="WAV / MP3", class="async"];
+  synth -> firestore [class="async"];
+  gcs   -> player [class="positive"];
+}

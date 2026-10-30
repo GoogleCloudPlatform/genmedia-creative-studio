@@ -1,0 +1,43 @@
+// Veo foundation workspace: 4 generation modes, video extension, and async LRO polling.
+digraph foundation_veo {
+  label = "Veo · multi-mode video generation & extension";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.35;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_modes {
+    label = "Generation modes (pages/veo.py)";
+    t2v    [label="Text-to-Video\nprompt + seed", class="agent-blue"];
+    i2v    [label="Image-to-Video\nstart frame", class="agent-teal"];
+    interp [label="Interpolation\nfirst + last frame", class="agent-violet"];
+    r2v    [label="Reference-to-Video\nasset & style refs", class="agent-orange"];
+    ext    [label="Video Extend\nsource MP4 clip", class="agent-pink"];
+  }
+
+  subgraph cluster_engine {
+    label = "Veo service (models/veo.py)";
+    class = "accent";
+    req  [label="VideoGenerationRequest\nmodels/requests.py", class="code"];
+    call [label="generate_videos\nVeo 3.1 / Fast / Lite", class="primary code"];
+    poll [label="LRO poller\nveo_router.py", class="emphasis"];
+    rai  [label="RAI filter check", class="decision"];
+  }
+
+  gcs       [label="gs://VIDEO_BUCKET", class="store code"];
+  firestore [label="Firestore\nMediaItem", class="store code"];
+  out       [label="Video player &\nExtend / GIF actions", class="positive terminal"];
+  warn      [label="Filtered reason\ndialog", class="warning terminal"];
+
+  user -> {t2v i2v interp r2v ext};
+  {t2v i2v interp r2v ext} -> req;
+  req  -> call [class="primary"];
+  call -> poll [label="operation name", class="async"];
+  poll -> rai  [label="done"];
+  rai  -> gcs  [label="pass", class="positive"];
+  rai  -> warn [label="filtered", class="warning"];
+  gcs  -> firestore [class="async"];
+  gcs  -> out  [label="signed / proxy URL", class="positive"];
+  out  -> ext  [label="extend clip", class="weak", constraint=false];
+}

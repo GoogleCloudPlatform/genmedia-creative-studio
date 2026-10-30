@@ -1,0 +1,34 @@
+// Gemini Writers Workshop prompt ideation and template library.
+digraph foundation_writers_workshop {
+  label = "Gemini Writers Workshop · multimodal prompt ideation";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "Workshop workspace";
+    draft [label="Draft prompt &\nsystem instructions"];
+    media [label="Optional media\nimage · video · audio", class="muted"];
+    tpl   [label="PromptTemplate\nselector", class="agent-teal"];
+  }
+
+  subgraph cluster_gemini {
+    label = "Gemini ideation engine";
+    class = "accent";
+    gemini [label="generate_content\nGemini 3.5 Flash / Pro", class="primary code"];
+    refine [label="Structured critique &\nexpanded prompt", class="emphasis"];
+  }
+
+  firestore [label="Firestore\nprompt_templates", class="store code"];
+  out       [label="Refined prompt ready\nfor Veo / Nano Banana", class="positive terminal"];
+
+  user -> {draft media tpl};
+  firestore -> tpl [label="load saved", class="muted"];
+  {draft tpl} -> gemini [class="primary"];
+  media -> gemini [class="muted"];
+  gemini -> refine [class="primary"];
+  refine -> out    [class="positive"];
+  refine -> firestore [label="save template", class="async"];
+}

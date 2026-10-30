@@ -1,0 +1,48 @@
+// Storyboarder workflow: narrative JSON -> scene frames -> Veo clips -> MoviePy assembly.
+digraph workflow_storyboarder {
+  label = "Storyboarder · multi-scene narrative video workflow";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.35;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_setup {
+    label = "1. Story & character setup";
+    concept [label="Story concept &\nscene count"];
+    charref [label="Character reference\nimage (optional)", class="muted"];
+  }
+
+  subgraph cluster_narrative {
+    label = "2. Narrative planning";
+    class = "accent";
+    desc [label="describe_image\ncharacter traits", class="agent-teal code"];
+    arc  [label="generate_storyboard_narrative\nGemini 3.5 Flash JSON", class="primary code"];
+  }
+
+  subgraph cluster_scenes {
+    label = "3. Per-scene generation";
+    frames [label="Scene keyframes\nNano Banana", class="agent-blue"];
+    clips  [label="Inline scene video\nVeo 3.1 I2V", class="agent-violet"];
+  }
+
+  subgraph cluster_post {
+    label = "4. Assembly & storage";
+    stitch    [label="process_videos\nMoviePy / FFmpeg", class="emphasis code"];
+    gcs       [label="gs://VIDEO_BUCKET", class="store code"];
+    firestore [label="Firestore\nMediaItem", class="store code"];
+    final     [label="Stitched storyboard\nvideo", class="positive terminal"];
+  }
+
+  user -> {concept charref};
+  charref -> desc [class="muted"];
+  desc -> arc     [class="muted"];
+  concept -> arc  [class="primary"];
+  arc -> frames   [label="scene prompts", class="primary"];
+  charref -> frames [label="ref conditioning", class="muted"];
+  frames -> clips [label="approved frames", class="primary"];
+  clips -> stitch [label="scene MP4s", class="primary"];
+  stitch -> gcs   [class="async"];
+  stitch -> firestore [class="async"];
+  stitch -> final [class="positive"];
+}

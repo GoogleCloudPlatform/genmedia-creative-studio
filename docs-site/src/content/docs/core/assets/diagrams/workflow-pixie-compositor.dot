@@ -1,0 +1,36 @@
+// Pixie Compositor post-production studio tool.
+digraph workflow_pixie_compositor {
+  label = "Pixie Compositor · multi-clip transitions & audio-video layering";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  lib [label="Studio Library\nMedia Chooser", class="store"];
+
+  subgraph cluster_tab1 {
+    label = "Tab 1 · Video + Video stitching";
+    clips [label="2+ video clips\nVeo / Omni MP4s"];
+    trans [label="Transition selector\nconcat · crossfade · swipe", class="agent-teal"];
+    proc  [label="process_videos\nMoviePy / FFmpeg", class="primary code"];
+  }
+
+  subgraph cluster_tab2 {
+    label = "Tab 2 · Video + Audio layering";
+    class = "accent";
+    vid   [label="Target video clip\nMP4"];
+    aud   [label="Generated audio\nLyria · Gemini TTS · Chirp 3"];
+    layer [label="layer_audio_on_video\nFFmpeg muxer", class="emphasis code"];
+  }
+
+  gif       [label="convert_mp4_to_gif\n(optional)", class="code muted"];
+  firestore [label="GCS & Firestore\nMediaItem", class="store code"];
+  out       [label="Composited MP4 &\nanimated GIF", class="positive terminal"];
+
+  lib -> {clips vid aud};
+  {clips trans} -> proc [class="primary"];
+  {vid aud} -> layer    [class="primary"];
+  {proc layer} -> firestore [class="async"];
+  {proc layer} -> out   [class="positive"];
+  proc -> gif           [class="muted"];
+  gif  -> out           [class="muted"];
+}

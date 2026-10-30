@@ -1,0 +1,39 @@
+// Gemini Omni multi-turn video generation and editing workspace.
+digraph foundation_gemini_omni {
+  label = "Gemini Omni · multi-turn video workspace";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "Multimodal turn inputs";
+    prompt [label="Text prompt &\nresolution (360p–4K)"];
+    refs   [label="Reference media\nimage · video · audio"];
+  }
+
+  subgraph cluster_omni {
+    label = "Omni adapter (models/omni.py)";
+    class = "accent";
+    state  [label="Conversation turns\nstate/omni_state.py", class="code"];
+    client [label="interactions.create\ngemini-omni-1.1-flash", class="primary code"];
+    parse  [label="Step parser\nthoughts · text · video", class="emphasis"];
+  }
+
+  subgraph cluster_storage {
+    label = "Outputs & state";
+    gcs       [label="gs://GENMEDIA_BUCKET\nomni_outputs/", class="store code"];
+    firestore [label="Firestore\nMediaItem", class="store code"];
+    player    [label="Multi-turn chat\nvideo player", class="positive terminal"];
+  }
+
+  user -> {prompt refs};
+  {prompt refs} -> state;
+  state -> client [label="turn history + response_format", class="primary"];
+  client -> parse [label="model_output steps", class="primary"];
+  parse -> gcs    [label="MP4 bitstream", class="async"];
+  parse -> firestore [label="metadata + thoughts", class="async"];
+  parse -> player [label="render turn", class="positive"];
+  player -> state [label="follow-up edit turn", class="weak", constraint=false];
+}

@@ -1,0 +1,33 @@
+// Gemini TTS synthesis and Praat/Librosa acoustic analysis pipeline.
+digraph foundation_gemini_tts {
+  label = "Gemini TTS · expressive speech & acoustic telemetry";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "Speech controls (pages/gemini_tts.py)";
+    text  [label="Transcript text &\ninline vocal tags"];
+    style [label="Style prompt &\nvoice selector (Kore, etc.)"];
+  }
+
+  subgraph cluster_synth {
+    label = "Synthesis & analysis";
+    class = "accent";
+    tts     [label="Gemini TTS API\ngenerate_speech", class="primary code"];
+    metrics [label="Acoustic analyzer\nPraat & Librosa", class="emphasis"];
+  }
+
+  gcs       [label="gs://GENMEDIA_BUCKET\ngemini_tts/", class="store code"];
+  firestore [label="Firestore\nMediaItem + metrics", class="store code"];
+  out       [label="WAV player & telemetry\njitter · shimmer · HNR · pitch", class="positive terminal"];
+
+  user -> {text style};
+  {text style} -> tts [class="primary"];
+  tts -> metrics   [label="24kHz WAV bytes", class="primary"];
+  tts -> gcs       [label="store WAV", class="async"];
+  metrics -> firestore [label="acoustic stats", class="async"];
+  metrics -> out   [class="positive"];
+}

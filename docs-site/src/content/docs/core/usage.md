@@ -2,44 +2,43 @@
 title: "Using GenMedia Creative Studio"
 ---
 
-GenMedia Creative Studio provides a centralized interface for experimenting with Google Cloud's generative media models. The application is organized into three primary areas: Foundation models, Creative Workflows, and Studio management tools.
+GenMedia Creative Studio provides a centralized interface for experimenting with Google Cloud's generative media models. The application is organized into three primary areas: [Foundation Model Workspaces](/genmedia-creative-studio/core/foundation-models/), [Creative Workflows](/genmedia-creative-studio/core/workflows/), and Studio management tools.
 
 ## 1. Navigating the Studio
 
-*   **The Library:** A centralized repository to browse, manage, and download all your generated media.
-*   **Settings & Configuration:** Manage your application settings, API configurations, and experimental feature flags.
+*   **The Library (`/library`):** A centralized repository to browse, filter by media type, inspect C2PA Content Credentials, and download or reuse all your generated media.
+*   **Settings & Configuration (`/config`):** Manage your application settings, API configurations, and experimental feature flags.
 
 ## 2. Foundation Models (Direct Generation)
 
-Interact directly with the raw generative models to create single-modality outputs.
+Interact directly with the underlying generative media models to test prompts, compare model variants, and create single- or interleaved-modality outputs. See the **[Foundation Model Workspaces Overview](/genmedia-creative-studio/core/foundation-models/)** for the shared request lifecycle diagram.
 
-*   **Image Generation:** 
-    *   **Gemini Image Generation:** Generate high-quality images from text prompts using Gemini (Nano Banana), including Gemini 3.1 Flash-Lite for rapid creation and iteration at 1K resolution.
-    *   **Imagen (deprecated):** Imagen image generation, editing, and upscaling — all Imagen models — were shut down across Google, including Vertex AI, around August 17, 2026. Use **Gemini Image Generation (Nano Banana, `gemini-nano-banana-2.1`)** instead. See the [Imagen models migration guide](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev) for the model replacement mapping.
-*   **Video Generation:** 
-    *   **Gemini Omni:** Create, animate, reference, and iteratively edit video in a multi-turn chat workspace using Gemini Omni Flash.
-    *   **Veo:** Create high-fidelity videos from text or image prompts using Veo 3 and Veo 3.1.
-*   **Audio & Speech Generation:** 
-    *   **Lyria:** Generate complex music tracks and thematic scores from text prompts.
-    *   **Gemini TTS:** Synthesize expressive and highly-controllable text-to-speech.
-    *   **Chirp 3 HD:** Generate high-definition speech from text.
-*   **Text & Ideation:** 
-    *   **Gemini (Writer's Workshop):** Collaborate with Gemini to brainstorm, refine, and structure your creative prompts.
+*   **Image Generation:**
+    *   **[Gemini Image Generation (Nano Banana)](/genmedia-creative-studio/core/foundation-models/nano-banana/):** Generate and conversationally edit high-resolution (`1K`–`4K`) images with up to 14 reference images and Google Search grounding using Nano Banana 2 (`gemini-3.1-flash-image-preview`), Nano Banana 2 Lite (`gemini-3.1-flash-image-lite-preview`), and Nano Banana Pro (`gemini-3-pro-image-preview`).
+    *   **Imagen (Deprecated):** Legacy Imagen 3 and Imagen 4 models are being deprecated across Vertex AI. Use **[Gemini Image Generation (Nano Banana)](/genmedia-creative-studio/core/foundation-models/nano-banana/)** instead. See the [Imagen models migration guide](https://firebase.google.com/docs/ai-logic/imagen-models-migration?api=dev) for the replacement mapping.
+*   **Multimodal & Video Generation:**
+    *   **[Gemini Omni](/genmedia-creative-studio/core/foundation-models/gemini-omni/):** Generate interleaved text, image, and audio turns in a single workspace using `gemini-omni-1.1-flash-preview` via the Vertex AI Interactions API.
+    *   **[Veo Video Generation](/genmedia-creative-studio/core/foundation-models/veo/):** Create high-fidelity videos across Text-to-Video, Image-to-Video, First/Last Frame Interpolation, Reference-to-Video (`ASSET` & `STYLE`), and Video Extension using Veo 3.1, Veo 3, and Veo 2.
+*   **Audio, Music & Speech Generation:**
+    *   **[Lyria Music Generation](/genmedia-creative-studio/core/foundation-models/lyria/):** Generate instrumental and vocal music tracks from text prompts, custom lyrics, and reference images using Lyria 2 (`lyria-002`) and Lyria 3 (`lyria-3-clip-preview`, `lyria-3-pro-preview`) with C2PA provenance preservation.
+    *   **[Gemini TTS](/genmedia-creative-studio/core/foundation-models/gemini-tts/):** Synthesize expressive single- and multi-speaker speech with natural-language style direction, inline vocal tags, and integrated Praat/Librosa acoustic telemetry (`gemini-3.8-flash-tts`, `gemini-2.5-flash-tts`).
+    *   **[Chirp 3 HD](/genmedia-creative-studio/core/foundation-models/chirp-3hd/):** Generate high-definition speech across 30+ locales with speaking rate controls and custom `IPA` / `X-SAMPA` phonetic pronunciations.
+*   **Text & Prompt Ideation:**
+    *   **[Gemini Writers Workshop](/genmedia-creative-studio/core/foundation-models/writers-workshop/):** Collaborate with Gemini on multimodal prompts, customize system instructions, and save reusable `PromptTemplate` records to Firestore.
 
 ## 3. Creative Workflows
 
-Workflows are opinionated pipelines that chain multiple generative models together to accomplish specific, complex tasks.
+Creative Workflows are opinionated, multi-step pipelines that chain Gemini reasoning, Nano Banana image generation, Virtual Try-On, Veo video synthesis, and MoviePy post-processing. See the **[Creative Workflows Overview](/genmedia-creative-studio/core/workflows/)** for a full comparison matrix.
 
-*   **Virtual Try-On:** A dedicated interface for virtually trying on clothing items across different generated models.
-*   **Character Consistency:** Maintain character identity across multiple video generations and image prompts.
-*   **Shop the Look:** Generate shoppable product imagery by combining product extraction and generated lifestyle scenes.
-*   **Starter Pack:** Quickly generate a cohesive visual moodboard (a "starter pack") from a single central concept.
-*   **Interior Design:** Re-imagine interior spaces by generating 3D views from basic floor plans.
-*   **Motion Portraits:** Create animated, breathing portraits from a single still image.
-*   **Object Rotation:** Create 360-degree product videos from a single image.
-*   **Storyboarder:** Create coherent multi-scene narrative storyboards using Gemini 3.5 Flash to write the narrative, Gemini to generate scene frames, and Veo to animate the sequence inline.
+*   **[Storyboarder](/genmedia-creative-studio/core/workflows/storyboarder/):** Expand a story concept and character reference into a multi-scene script with Gemini, synthesize character-consistent keyframes with Nano Banana, animate every scene with Veo, and stitch a master MP4 movie.
+*   **[Shop the Look](/genmedia-creative-studio/core/workflows/shop-the-look/):** Dress a fashion model sequentially across multiple apparel items using Vertex AI Virtual Try-On, verify every step with a Gemini visual critic (`select_best_image` & `final_image_critic`), and generate a Veo runway clip.
+*   **[Character Consistency](/genmedia-creative-studio/core/workflows/character-consistency/):** Extract a structured `FacialCompositeProfile` from reference photos, synthesize candidate scenes, select the best likeness via Gemini, outpaint to `16:9`, and animate with Veo.
+*   **[Interior Design](/genmedia-creative-studio/core/workflows/interior-design/):** Convert a 2D floor plan into a 3D isometric visualization, zoom into individual rooms, iteratively restyle finishes in the Design Studio, and assemble a guided Veo walkthrough tour.
+*   **[Virtual Try-On (VTO)](/genmedia-creative-studio/core/workflows/virtual-try-on/):** Combine real or synthetically generated (`VirtualModelGenerator`) model portraits with product garments and animate the result with Veo.
+*   **[Starter Pack](/genmedia-creative-studio/core/workflows/starter-pack/):** Bi-directionally convert between lifestyle outfit photographs and flat-lay "Starter Pack" product moodboard collages.
+*   **[Motion Portraits](/genmedia-creative-studio/core/workflows/motion-portraits/):** Animate still portraits or live webcam selfies using curated cinematography styles (`PORTRAIT_STYLES`), Gemini scene direction, Veo Image-to-Video, and automatic GIF conversion.
 
-## 4. Advanced Tools
+## 4. Post-Production & Experimental Labs
 
-*   **Pixie Compositor:** A canvas to help you visually combine and arrange your generative media.
-*   **Labs:** A sneak peek at experimental features and odd things currently bubbling up in development.
+*   **[Pixie Compositor](/genmedia-creative-studio/core/workflows/pixie-compositor/):** Stitch multiple Veo video clips with transitions (`concat`, `crossfade`, `wipe`), layer Lyria or TTS audio tracks onto video, and export looping GIFs.
+*   **[Labs & Experimental Workflows](/genmedia-creative-studio/core/workflows/labs/):** Explore incubating workflows at `/labs`—including **Retro Games**, **Brand Adherence**, **Character Asset Sheet**, **Guideline Analysis**, **Object Rotation**, and **Banana Studio**.

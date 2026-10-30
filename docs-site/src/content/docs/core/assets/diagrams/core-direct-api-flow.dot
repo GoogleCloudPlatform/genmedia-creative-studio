@@ -1,0 +1,52 @@
+// Shared direct Foundation API request lifecycle in GenMedia Creative Studio.
+digraph core_direct_api_flow {
+  label = "GenMedia Creative Studio · direct foundation API architecture";
+  rankdir = LR;
+  ranksep = 0.6;
+  nodesep = 0.4;
+  newrank = true;
+
+  user [label="Authenticated user", class="terminal"];
+
+  subgraph cluster_edge {
+    label = "Identity & ingress";
+    iap   [label="Cloud IAP\nJWT verifier", class="emphasis"];
+    proxy [label="/media proxy\nbucket allowlist", class="code"];
+  }
+
+  subgraph cluster_app {
+    label = "Core Studio runtime (FastAPI + Mesop)";
+    class = "accent";
+    ui      [label="Mesop page &\nPageState", class="primary"];
+    adapter [label="Model adapter\nmodels/*.py", class="code"];
+    tracker [label="track_model_call\ncost & latency", class="code muted"];
+  }
+
+  subgraph cluster_vertex {
+    label = "Vertex AI / Cloud AI APIs";
+    genai [label="generate_content\n& predict", class="agent-blue code"];
+    inter [label="Interactions API\ninteractions.create", class="agent-teal code"];
+    lro   [label="Async LRO\ngenerate_videos", class="agent-violet code"];
+  }
+
+  subgraph cluster_data {
+    label = "Persistence";
+    gcs       [label="Cloud Storage\nGENMEDIA_BUCKET", class="store code"];
+    firestore [label="Firestore\ngenmedia_library", class="store code"];
+  }
+
+  user -> iap   [label="HTTPS"];
+  iap  -> ui    [label="verified email", class="primary"];
+  ui   -> adapter [label="prompt + refs", class="primary"];
+  adapter -> tracker [class="muted"];
+
+  adapter -> genai [label="Gemini / TTS", class="primary"];
+  adapter -> inter [label="Omni / Lyria 3"];
+  adapter -> lro   [label="Veo 3.1"];
+
+  {genai inter lro} -> gcs [label="store media", class="async"];
+  adapter -> firestore     [label="MediaItem", class="async"];
+  gcs -> proxy             [label="stream bytes", class="muted"];
+  gallery [label="Studio Gallery &\nLibrary UI", class="terminal positive"];
+  proxy -> gallery         [label="cached media", class="positive"];
+}

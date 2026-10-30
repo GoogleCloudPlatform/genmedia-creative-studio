@@ -1,0 +1,40 @@
+// Shop the Look workflow: catalog VTO loop with Gemini critic and Veo runway video.
+digraph workflow_shop_the_look {
+  label = "Shop the Look · sequential VTO, Gemini critic & Veo runway";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.35;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_catalog {
+    label = "1. Catalog & model selection";
+    models   [label="Model records\nFirestore / GCS", class="store"];
+    articles [label="Look articles\ntry_on_order", class="store"];
+    enrich   [label="describe_images_and_look\nGemini enrichment", class="agent-teal code"];
+  }
+
+  subgraph cluster_vto {
+    label = "2. Sequential garment try-on loop";
+    class = "accent";
+    vto   [label="generate_vto_image\nVertex AI VTO", class="primary code"];
+    judge [label="select_best_image\nGemini garment judge", class="agent-blue code"];
+  }
+
+  subgraph cluster_critic {
+    label = "3. Full-look verification & animation";
+    critic [label="final_image_critic\nall articles accurate?", class="decision"];
+    veo    [label="image_to_video\nVeo runway clip", class="emphasis code"];
+    out    [label="Shoppable look &\nrunway video", class="positive terminal"];
+  }
+
+  user -> {models articles};
+  articles -> enrich;
+  {models enrich} -> vto [class="primary"];
+  vto -> judge [label="N samples", class="primary"];
+  judge -> vto [label="next garment in look", class="weak", constraint=false];
+  judge -> critic [label="completed look", class="primary"];
+  critic -> vto   [label="retry failed articles", class="warning", constraint=false];
+  critic -> veo   [label="accurate", class="positive"];
+  veo -> out      [class="positive"];
+}

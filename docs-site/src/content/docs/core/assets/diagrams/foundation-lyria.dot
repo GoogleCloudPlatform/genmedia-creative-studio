@@ -1,0 +1,39 @@
+// Lyria music generation workspace (Lyria 2 predict vs Lyria 3 Interactions API).
+digraph foundation_lyria {
+  label = "Lyria · generative music & C2PA provenance";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "Creative inputs (pages/lyria.py)";
+    prompt [label="Musical style,\nmood & tempo prompt"];
+    lyrics [label="Custom lyrics &\nreference image", class="muted"];
+  }
+
+  route [label="Model version?", class="decision"];
+
+  subgraph cluster_models {
+    label = "Vertex AI Lyria backend (models/lyria.py)";
+    class = "accent";
+    lyria3 [label="Lyria 3 Clip / Pro\ninteractions.create", class="primary code"];
+    lyria2 [label="Lyria 2\nendpoint.predict", class="agent-teal code"];
+    sniff  [label="MIME & C2PA detector\npreserve MP3 / WAV", class="emphasis"];
+  }
+
+  gcs       [label="gs://GENMEDIA_BUCKET\nlyria_audio/", class="store code"];
+  firestore [label="Firestore\nMediaItem + C2PA", class="store code"];
+  player    [label="Audio player &\nwaveform visualizer", class="positive terminal"];
+
+  user -> {prompt lyrics};
+  prompt -> route [class="primary"];
+  lyrics -> lyria3 [label="Lyria 3 only", class="muted"];
+  route -> lyria3 [label="Lyria 3", class="primary"];
+  route -> lyria2 [label="Lyria 2"];
+  {lyria3 lyria2} -> sniff [label="audio bytes"];
+  sniff -> gcs       [label=".mp3 / .wav", class="async"];
+  sniff -> firestore [class="async"];
+  gcs   -> player    [class="positive"];
+}

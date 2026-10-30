@@ -1,0 +1,38 @@
+// Starter Pack bi-directional workflow (Look <-> Starter Pack moodboard).
+digraph workflow_starter_pack {
+  label = "Starter Pack · bi-directional look & flat-lay moodboard";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_mode_a {
+    label = "Tab 1 · Look to Starter Pack";
+    look_in [label="Lifestyle look\nimage"];
+    extract [label="Extract flat-lay\nNano Banana (1:1)", class="primary"];
+    board   [label="Starter pack\nmoodboard", class="positive terminal"];
+  }
+
+  subgraph cluster_mode_b {
+    label = "Tab 2 · Starter Pack to Look";
+    class = "accent";
+    pack_in [label="Starter pack\ncollage"];
+    vmodel  [label="Model image or\nVirtualModelGenerator", class="agent-teal"];
+    tryon   [label="Ensemble synthesis\nNano Banana (1:1)", class="emphasis"];
+    look_out [label="Styled model\nlook", class="positive terminal"];
+  }
+
+  gcs [label="gs://GENMEDIA_BUCKET\nstarter_pack_generations/", class="store code"];
+
+  user -> look_in;
+  look_in -> extract [class="primary"];
+  extract -> board   [class="positive"];
+  extract -> gcs     [class="async"];
+  board -> pack_in   [label="reuse moodboard", class="weak", constraint=false];
+
+  user -> {pack_in vmodel};
+  {pack_in vmodel} -> tryon [class="primary"];
+  tryon -> look_out [class="positive"];
+  tryon -> gcs      [class="async"];
+}

@@ -1,0 +1,37 @@
+// Virtual Try-On (VTO) workflow.
+digraph workflow_virtual_try_on {
+  label = "Virtual Try-On · person & garment recontextualization";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "1. Person & product inputs (pages/vto.py)";
+    person  [label="Person image\nupload or Library"];
+    vmodel  [label="VirtualModelGenerator\nNano Banana", class="agent-teal code"];
+    garment [label="Garment image\ntop · bottom · shoes"];
+  }
+
+  subgraph cluster_vto {
+    label = "2. Vertex AI VTO (models/vto.py)";
+    class = "accent";
+    recontext [label="recontext_image\nvto-1 diffusion", class="primary code"];
+  }
+
+  subgraph cluster_post {
+    label = "3. Storage & optional animation";
+    gcs  [label="gs://GENMEDIA_BUCKET\nvto_results/", class="store code"];
+    veo  [label="Animate result\nVeo I2V (optional)", class="agent-violet muted"];
+    out  [label="Try-on gallery &\nvideo preview", class="positive terminal"];
+  }
+
+  user -> {person vmodel garment};
+  vmodel -> person [label="generated model", class="muted"];
+  {person garment} -> recontext [class="primary"];
+  recontext -> gcs [label="N samples", class="primary"];
+  gcs -> out       [class="positive"];
+  gcs -> veo       [class="muted"];
+  veo -> out       [class="muted"];
+}

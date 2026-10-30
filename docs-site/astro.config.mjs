@@ -25,6 +25,34 @@ export default defineConfig({
 						{ label: 'Using the Studio', slug: 'core/usage' },
 						{ label: 'Architecture', slug: 'core/architecture' },
 						{
+							label: 'Foundation Models',
+							items: [
+								{ label: 'Overview', slug: 'core/foundation-models' },
+								{ label: 'Gemini Omni', slug: 'core/foundation-models/gemini-omni' },
+								{ label: 'Veo Video Generation', slug: 'core/foundation-models/veo' },
+								{ label: 'Gemini Image (Nano Banana)', slug: 'core/foundation-models/nano-banana' },
+								{ label: 'Lyria Music Generation', slug: 'core/foundation-models/lyria' },
+								{ label: 'Gemini TTS', slug: 'core/foundation-models/gemini-tts' },
+								{ label: 'Chirp 3 HD', slug: 'core/foundation-models/chirp-3hd' },
+								{ label: 'Writers Workshop', slug: 'core/foundation-models/writers-workshop' },
+							]
+						},
+						{
+							label: 'Creative Workflows',
+							items: [
+								{ label: 'Overview', slug: 'core/workflows' },
+								{ label: 'Storyboarder', slug: 'core/workflows/storyboarder' },
+								{ label: 'Shop the Look', slug: 'core/workflows/shop-the-look' },
+								{ label: 'Character Consistency', slug: 'core/workflows/character-consistency' },
+								{ label: 'Interior Design', slug: 'core/workflows/interior-design' },
+								{ label: 'Virtual Try-On (VTO)', slug: 'core/workflows/virtual-try-on' },
+								{ label: 'Starter Pack', slug: 'core/workflows/starter-pack' },
+								{ label: 'Motion Portraits', slug: 'core/workflows/motion-portraits' },
+								{ label: 'Pixie Compositor', slug: 'core/workflows/pixie-compositor' },
+								{ label: 'Labs & Experimental', slug: 'core/workflows/labs' },
+							]
+						},
+						{
 							label: 'Installation',
 							items: [
 								{ label: 'Local Setup', slug: 'core/installation/local_setup' },

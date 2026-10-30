@@ -1,0 +1,40 @@
+// Interior Design v2 workflow: 2D floor plan -> 3D view -> room styling -> Veo tour.
+digraph workflow_interior_design {
+  label = "Interior Design · 2D floor plan to 3D tour workflow";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.35;
+
+  plan [label="2D floor plan\nupload", class="terminal"];
+
+  subgraph cluster_parse {
+    label = "1. Floor plan synthesis";
+    class = "accent";
+    iso   [label="3D isometric view\nNano Banana", class="primary"];
+    rooms [label="extract_room_names\nGemini vision", class="agent-teal code"];
+  }
+
+  subgraph cluster_design {
+    label = "2. Room design studio";
+    zoom  [label="Room zoom view\nNano Banana", class="agent-blue"];
+    style [label="Iterative restyling\nmaterials & decor", class="emphasis"];
+  }
+
+  subgraph cluster_tour {
+    label = "3. Walkthrough video & storyboard";
+    veo    [label="Per-room clips\nVeo I2V", class="agent-violet"];
+    stitch [label="process_videos\nMoviePy tour", class="code"];
+    store  [label="Firestore\ninterior_design_storyboards", class="store code"];
+    tour   [label="3D walkthrough\nvideo tour", class="positive terminal"];
+  }
+
+  plan -> iso   [class="primary"];
+  plan -> rooms [class="primary"];
+  {iso rooms} -> zoom [label="select room", class="primary"];
+  zoom -> style [label="style prompt", class="primary"];
+  style -> style [label="refine", class="weak", constraint=false];
+  style -> veo   [label="styled room frames", class="primary"];
+  veo -> stitch  [class="primary"];
+  stitch -> store [class="async"];
+  stitch -> tour  [class="positive"];
+}

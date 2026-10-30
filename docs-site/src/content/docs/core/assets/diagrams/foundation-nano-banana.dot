@@ -1,0 +1,36 @@
+// Gemini Image Generation (Nano Banana) conversational workspace.
+digraph foundation_nano_banana {
+  label = "Gemini Image (Nano Banana) · conversational generation & editing";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "Prompt & conditioning";
+    prompt [label="Prompt + aspect ratio\n1K · 2K · 4K size"];
+    refs   [label="Reference images\nupload or Library"];
+    search [label="Google Search\ngrounding toggle", class="muted"];
+  }
+
+  subgraph cluster_gemini {
+    label = "Nano Banana adapter (models/gemini.py)";
+    class = "accent";
+    model [label="generate_content\nNano Banana 2 / Lite / Pro", class="primary code"];
+    parts [label="Extract inline_data\n& grounding metadata", class="emphasis"];
+  }
+
+  gcs       [label="gs://GENMEDIA_BUCKET\ngemini_images/", class="store code"];
+  firestore [label="Firestore\nMediaItem", class="store code"];
+  gallery   [label="Interactive gallery\n& iterative edit", class="positive terminal"];
+
+  user -> {prompt refs search};
+  {prompt refs} -> model [class="primary"];
+  search -> model [label="tools=[google_search]", class="muted"];
+  model -> parts  [label="Modality.IMAGE + TEXT", class="primary"];
+  parts -> gcs    [label="store PNG/JPEG", class="async"];
+  parts -> firestore [label="prompt + citations", class="async"];
+  gcs   -> gallery [label="display via /media", class="positive"];
+  gallery -> refs  [label="reuse as ref", class="weak", constraint=false];
+}

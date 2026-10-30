@@ -1,0 +1,35 @@
+// Motion Portraits workflow: portrait/selfie + style modifiers -> Veo I2V -> GIF/MP4.
+digraph workflow_motion_portraits {
+  label = "Motion Portraits · animated portraits & GIF export";
+  rankdir = LR;
+  ranksep = 0.55;
+  nodesep = 0.38;
+
+  user [label="User", class="terminal"];
+
+  subgraph cluster_inputs {
+    label = "1. Portrait & style setup (pages/portraits.py)";
+    img    [label="Portrait image\nupload · Library · Selfie"];
+    styles [label="PORTRAIT_STYLES\nmood & motion pills", class="agent-teal"];
+  }
+
+  subgraph cluster_gen {
+    label = "2. Direction & animation";
+    class = "accent";
+    dir [label="Scene direction\nGemini (optional)", class="agent-blue"];
+    veo [label="generate_video\nVeo 3.1 I2V", class="primary code"];
+    gif [label="convert_mp4_to_gif\nMoviePy / FFmpeg", class="emphasis code"];
+  }
+
+  gcs [label="gs://GENMEDIA_BUCKET", class="store code"];
+  out [label="Animated portrait\nMP4 & looping GIF", class="positive terminal"];
+
+  user -> {img styles};
+  {img styles} -> dir [class="muted"];
+  {img styles dir} -> veo [class="primary"];
+  veo -> gcs [label="MP4", class="async"];
+  veo -> out [class="positive"];
+  veo -> gif [label="on convert click", class="muted"];
+  gif -> gcs [label="GIF", class="async"];
+  gif -> out [class="positive"];
+}

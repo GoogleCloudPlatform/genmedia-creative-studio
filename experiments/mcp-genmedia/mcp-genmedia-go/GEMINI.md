@@ -11,7 +11,7 @@ Releases of the MCP servers are automated via **`release-please`** and **GoRelea
 1.  **Single Source of Truth (`VERSION`):** The version for all MCP servers lives in `experiments/mcp-genmedia/mcp-genmedia-go/VERSION` and is injected at build time via `-ldflags "-X main.version=<version>"`. **Never** hand-edit `var version = "dev"` in individual `.go` files, and do not manually bump `VERSION` on feature PRs (`release-please` bumps `VERSION` and updates `CHANGELOG.md` in its standing release PR).
 2.  **Conventional Commit PR Titles (Enforced by CI):** Because `release-please` derives SemVer bumps from squash-merged PR titles, every PR that modifies `experiments/mcp-genmedia/mcp-genmedia-go/**` **must** use a Conventional Commit PR title (`feat(mcp): ...` for minor, `fix(mcp): ...` for patch, `chore(mcp): ...` / `ci(mcp): ...` / `docs(mcp): ...` for non-releasing changes).
 3.  **In-Tree `mcp-common` Dependency Pin (`v0.0.0`):** Sibling server `go.mod` files must require `github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0` paired with `replace ... => ../mcp-common`. Never replace `v0.0.0` with a `v0.0.0-<timestamp>-<sha>` pseudo-version, which triggers Renovate digest churn on every commit.
-4.  **`.gitignore` Binary Rule (`**/mcp-*-go/mcp-*-go`):** Because the root `.gitignore` ignores compiled server binaries matching `**/mcp-*-go/mcp-*-go`, staging new or modified files inside `mcp-*-go/` requires `git add -f`, and searching with `rg` requires `rg --no-ignore` (or `git grep`).
+4.  **`.gitignore` Binary Rule (`**/mcp-*-go/mcp-*-go`):** Because the root `.gitignore` ignores compiled server binaries matching `**/mcp-*-go/mcp-*-go`, staging new or modified files inside `mcp-*-go/` requires `git add -f`, and searching with `rg` requires `rg --no-ignore` (or `git grep`). Never run `git add -f` on a whole `mcp-*-go/` directory after `go build ./...` without first removing compiled binaries (`rm -f mcp-*-go/mcp-*-go`) or scoping `git add -f` to `*.go`, `go.mod`, and `go.sum`.
 
 ### Architectural Pattern: Model-Specific Constraints
 
@@ -103,6 +103,8 @@ You should also run the standard Go tests:
 ```bash
 go test ./...
 ```
+
+*   **macOS `t.TempDir()` Symlink Canonicalization:** When writing Go unit tests that compare `t.TempDir()` paths against output from `ResolveConfinedOutputDir` (or any helper calling `filepath.EvalSymlinks`), canonicalize `dir` via `filepath.EvalSymlinks(dir)` in the test first so path assertions pass on macOS (where `/var` is a symlink to `/private/var`) as well as Linux CI.
 
 ### **Handling Safety Filters**
 

@@ -79,7 +79,7 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		imageSize = strings.TrimSpace(is)
 	}
 
-	modelArg, _ := request.GetArguments()["model"].(string)
+	modelArg := common.ResolveModel(request.GetArguments(), "model_id", "model_name")
 	model := "gemini-nano-banana-2.1"
 	if modelArg != "" {
 		model = modelArg
@@ -92,16 +92,13 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		aspectRatio, imageSize = validateGeminiImageParams(resolvedInfo, model, aspectRatio, imageSize)
 	}
 
-	outputDir := ""
-	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
-		outputDir = strings.TrimSpace(dir)
-	}
+	outputDir := common.ResolveOutputDirectory(request.GetArguments(), "output_local_dir", "local_path")
 
 	gcsOutputURI := ""
 	gcsBucketName := ""
 	gcsObjectPrefix := ""
-	if gcsURI, ok := request.GetArguments()["gcs_bucket_uri"].(string); ok && strings.TrimSpace(gcsURI) != "" {
-		gcsOutputURI = common.EnsureGCSPathPrefix(strings.TrimSpace(gcsURI))
+	if gcsURI := common.ResolveGCSBucketURI(request.GetArguments(), "bucket", "output_gcs_bucket"); gcsURI != "" {
+		gcsOutputURI = common.EnsureGCSPathPrefix(gcsURI)
 		var err error
 		gcsBucketName, gcsObjectPrefix, err = common.ParseGCSPrefix(gcsOutputURI)
 		if err != nil {

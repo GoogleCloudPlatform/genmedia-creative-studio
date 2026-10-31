@@ -96,7 +96,16 @@ func main() {
 		log.Printf("Global GenAI client initialized successfully.")
 	}
 
-	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, false))
+	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, true))
+
+	s.AddResource(mcp.NewResource(
+		"nanobanana://models",
+		"Supported Gemini Image Models",
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Gemini Image (Nano Banana) models, aliases, aspect ratios, and image sizes."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		return common.MarshalModelsResource("nanobanana://models", common.SupportedGeminiImageModels)
+	})
 
 	tool := mcp.NewTool("nanobanana_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini Image generation models."),

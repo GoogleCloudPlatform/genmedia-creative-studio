@@ -261,6 +261,7 @@ func main() {
 	s := server.NewMCPServer(
 		serviceName, // Standardized name
 		version,
+		server.WithResourceCapabilities(true, true),
 	)
 
 	chirpTool := mcp.NewTool("chirp_tts",
@@ -616,10 +617,7 @@ func chirpTTSHandler(client *texttospeech.Client, ctx context.Context, request m
 		}
 	}
 
-	outputDir := ""
-	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
-		outputDir = strings.TrimSpace(dir)
-	}
+	outputDir := common.ResolveOutputDirectory(request.GetArguments(), "output_local_dir", "local_path")
 	attemptLocalSave := outputDir != ""
 	log.Printf("Output directory: '%s', Attempt local save: %t", outputDir, attemptLocalSave)
 

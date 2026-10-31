@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -72,7 +73,16 @@ func main() {
 		appConfig.Location = "global"
 	}
 
-	s := server.NewMCPServer("Gemini Omni", version, server.WithResourceCapabilities(true, false))
+	s := server.NewMCPServer("Gemini Omni", version, server.WithResourceCapabilities(true, true))
+
+	s.AddResource(mcp.NewResource(
+		"omni://models",
+		"Supported Gemini Omni Models",
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Gemini Omni video models, aliases, resolutions, aspect ratios, duration bounds, and input limits."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		return common.MarshalModelsResource("omni://models", common.SupportedOmniModels)
+	})
 
 	tool := mcp.NewTool("omni_video_generation",
 		mcp.WithDescription("Generates video (with optional embedded audio) from a text prompt, optionally conditioned on input images and/or videos, using Google's Gemini Omni model via the Vertex Interactions API. Returns MP4(s) saved locally and/or to GCS."),

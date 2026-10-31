@@ -15,8 +15,11 @@
 package common
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // TestGeminiImageModelAspectRatios pins the corrected, doc-verified aspect-ratio
@@ -98,5 +101,51 @@ func TestResolveGeminiImageModelUnsafeFallback(t *testing.T) {
 
 	if _, found := ResolveGeminiImageModel("some-future-image-model", false); found {
 		t.Error("expected unknown model to NOT resolve when allowUnsafe=false")
+	}
+}
+
+// TestMarshalModelsResource verifies that all model capability registries
+// serialize cleanly into valid, non-empty JSON MCP resource payloads (#1784).
+func TestMarshalModelsResource(t *testing.T) {
+	cases := []struct {
+		name     string
+		uri      string
+		registry any
+		wantKey  string
+	}{
+		{"imagen", "imagen://models", SupportedImagenModels, "imagen-4.0-fast-generate-001"},
+		{"nanobanana", "nanobanana://models", SupportedGeminiImageModels, "gemini-nano-banana-2.1"},
+		{"veo", "veo://models", SupportedVeoModels, "veo-3.1-fast-generate-001"},
+		{"lyria", "lyria://models", SupportedLyriaModels, "lyria-3-clip-preview"},
+		{"omni", "omni://models", SupportedOmniModels, DefaultOmniModel},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			contents, err := MarshalModelsResource(tc.uri, tc.registry)
+			if err != nil {
+				t.Fatalf("MarshalModelsResource(%q) unexpected error: %v", tc.uri, err)
+			}
+			if len(contents) != 1 {
+				t.Fatalf("len(contents) = %d, want 1", len(contents))
+			}
+			txt, ok := contents[0].(mcp.TextResourceContents)
+			if !ok {
+				t.Fatalf("contents[0] type = %T, want mcp.TextResourceContents", contents[0])
+			}
+			if txt.URI != tc.uri {
+				t.Errorf("URI = %q, want %q", txt.URI, tc.uri)
+			}
+			if txt.MIMEType != "application/json" {
+				t.Errorf("MIMEType = %q, want application/json", txt.MIMEType)
+			}
+			var decoded map[string]map[string]any
+			if err := json.Unmarshal([]byte(txt.Text), &decoded); err != nil {
+				t.Fatalf("invalid JSON in resource %q: %v", tc.uri, err)
+			}
+			if _, ok := decoded[tc.wantKey]; !ok {
+				t.Errorf("resource %q missing expected canonical model key %q", tc.uri, tc.wantKey)
+			}
+		})
 	}
 }

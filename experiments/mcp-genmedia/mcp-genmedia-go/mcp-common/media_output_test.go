@@ -127,6 +127,9 @@ func TestPersistMediaOutputsGCSAndLocal(t *testing.T) {
 	// outputDir is now confined to MCP_OUTPUT_ROOT (CWE-22): make the temp dir a
 	// child of the configured root and pass it as a relative dir so it stays inside.
 	dir := t.TempDir()
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = resolved
+	}
 	t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
 	relDir := filepath.Base(dir)
 	art := MediaArtifact{Data: []byte("v"), MimeType: "video/mp4", FileName: "clip.mp4"}
@@ -309,6 +312,9 @@ func TestPersistMediaOutputsLocalOnly(t *testing.T) {
 	// outputDir is now confined to MCP_OUTPUT_ROOT (CWE-22): make the temp dir a
 	// child of the configured root and pass it as a relative dir so it stays inside.
 	dir := t.TempDir()
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = resolved
+	}
 	t.Setenv(OutputRootEnvVar, filepath.Dir(dir))
 	relDir := filepath.Base(dir)
 	art := MediaArtifact{

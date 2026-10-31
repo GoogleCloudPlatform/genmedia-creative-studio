@@ -17,9 +17,12 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 // --- Imagen Model Configuration ---
@@ -595,4 +598,22 @@ func BuildLyriaModelDescription() string {
 		sb.WriteString("\n")
 	}
 	return sb.String()
+}
+
+// MarshalModelsResource marshals a model capability registry map (such as
+// SupportedImagenModels, SupportedGeminiImageModels, SupportedVeoModels,
+// SupportedLyriaModels, or SupportedOmniModels) as indented JSON wrapped in an
+// MCP TextResourceContents slice at the given resource URI.
+func MarshalModelsResource(uri string, models any) ([]mcp.ResourceContents, error) {
+	jsonData, err := json.MarshalIndent(models, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal supported models for %s: %w", uri, err)
+	}
+	return []mcp.ResourceContents{
+		mcp.TextResourceContents{
+			URI:      uri,
+			MIMEType: "application/json",
+			Text:     string(jsonData),
+		},
+	}, nil
 }

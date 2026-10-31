@@ -19,6 +19,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
 
 // mp3ID3Bytes is a minimal MP3 payload leading with an ID3v2 tag — the shape the
@@ -246,4 +248,63 @@ func TestFinalizeLyriaFilename(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestResolveLyriaDestinationAndModel covers issue #1789 parameter standardization
+// in mcp-lyria-go: canonical gcs_bucket_uri, output_directory, and model take
+// precedence over legacy output_gcs_bucket, local_path, and model_id aliases.
+func TestResolveLyriaDestinationAndModel(t *testing.T) {
+	cfg := &common.Config{GenmediaBucket: "default-bucket"}
+
+	t.Run("canonical params win over legacy aliases", func(t *testing.T) {
+		params := map[string]any{
+			"gcs_bucket_uri":    "gs://canonical-bucket/",
+			"output_gcs_bucket": "legacy-bucket",
+			"output_directory":  "./canonical_dir",
+			"local_path":        "./legacy_dir",
+			"model":             "lyria-3-pro-preview",
+			"model_id":          "lyria-002",
+		}
+		bucket, dir, model := resolveLyriaDestinationAndModel(params, cfg)
+		if bucket != "canonical-bucket" {
+			t.Errorf("bucket = %q, want canonical-bucket", bucket)
+		}
+		if dir != "./canonical_dir" {
+			t.Errorf("dir = %q, want ./canonical_dir", dir)
+		}
+		if model != "lyria-3-pro-preview" {
+			t.Errorf("model = %q, want lyria-3-pro-preview", model)
+		}
+	})
+
+	t.Run("legacy aliases still work when canonical unset", func(t *testing.T) {
+		params := map[string]any{
+			"output_gcs_bucket": "gs://legacy-bucket",
+			"local_path":        "./legacy_dir",
+			"model_id":          "lyria-002",
+		}
+		bucket, dir, model := resolveLyriaDestinationAndModel(params, cfg)
+		if bucket != "legacy-bucket" {
+			t.Errorf("bucket = %q, want legacy-bucket", bucket)
+		}
+		if dir != "./legacy_dir" {
+			t.Errorf("dir = %q, want ./legacy_dir", dir)
+		}
+		if model != "lyria-002" {
+			t.Errorf("model = %q, want lyria-002", model)
+		}
+	})
+
+	t.Run("defaults used when neither canonical nor legacy set", func(t *testing.T) {
+		bucket, dir, model := resolveLyriaDestinationAndModel(map[string]any{}, cfg)
+		if bucket != "default-bucket" {
+			t.Errorf("bucket = %q, want default-bucket", bucket)
+		}
+		if dir != "" {
+			t.Errorf("dir = %q, want empty", dir)
+		}
+		if model != defaultLyriaModelID {
+			t.Errorf("model = %q, want %q", model, defaultLyriaModelID)
+		}
+	})
 }

@@ -195,3 +195,49 @@ func TestApplyRenamedURIsIdentityPairing(t *testing.T) {
 		}
 	})
 }
+
+// TestParseCommonVideoParamsStandardizedAliases verifies issue #1789 parameter
+// standardization in mcp-veo-go: canonical gcs_bucket_uri wins over legacy
+// bucket, while legacy bucket and output_gcs_bucket still work seamlessly.
+func TestParseCommonVideoParamsStandardizedAliases(t *testing.T) {
+	cfg := &common.Config{GenmediaBucket: "fallback-bucket"}
+
+	t.Run("canonical gcs_bucket_uri wins over legacy bucket", func(t *testing.T) {
+		args := map[string]interface{}{
+			"gcs_bucket_uri":   "canonical-bucket/videos",
+			"bucket":           "legacy-bucket/videos",
+			"output_directory": "./canonical_dir",
+			"local_path":       "./legacy_dir",
+		}
+		gcsBucket, outputDir, model, _, _, _, _, _, err := parseCommonVideoParams(args, cfg, false)
+		if err != nil {
+			t.Fatalf("parseCommonVideoParams error: %v", err)
+		}
+		if gcsBucket != "gs://canonical-bucket/videos" {
+			t.Errorf("gcsBucket = %q, want gs://canonical-bucket/videos", gcsBucket)
+		}
+		if outputDir != "./canonical_dir" {
+			t.Errorf("outputDir = %q, want ./canonical_dir", outputDir)
+		}
+		if model != "veo-3.1-fast-generate-001" {
+			t.Errorf("model = %q, want veo-3.1-fast-generate-001", model)
+		}
+	})
+
+	t.Run("legacy bucket alias still honored when gcs_bucket_uri unset", func(t *testing.T) {
+		args := map[string]interface{}{
+			"bucket":   "legacy-bucket/videos",
+			"model_id": "Veo 3.1",
+		}
+		gcsBucket, _, model, _, _, _, _, _, err := parseCommonVideoParams(args, cfg, false)
+		if err != nil {
+			t.Fatalf("parseCommonVideoParams error: %v", err)
+		}
+		if gcsBucket != "gs://legacy-bucket/videos" {
+			t.Errorf("gcsBucket = %q, want gs://legacy-bucket/videos", gcsBucket)
+		}
+		if model != "veo-3.1-generate-001" {
+			t.Errorf("model = %q, want veo-3.1-generate-001", model)
+		}
+	})
+}

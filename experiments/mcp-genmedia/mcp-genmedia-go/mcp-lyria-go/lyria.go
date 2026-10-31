@@ -121,7 +121,17 @@ func main() {
 	s := server.NewMCPServer(
 		"Lyria", // Standardized name
 		version,
+		server.WithResourceCapabilities(true, true),
 	)
+
+	s.AddResource(mcp.NewResource(
+		"lyria://models",
+		"Supported Lyria Models",
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Lyria music generation models, aliases, descriptions, and endpoint types."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		return common.MarshalModelsResource("lyria://models", common.SupportedLyriaModels)
+	})
 
 	lyriaToolParams := []mcp.ToolOption{
 		mcp.WithDescription("Generates music from a text prompt using Lyria. Optionally saves to GCS and/or a local directory. Audio data is returned directly ONLY if neither GCS nor local path is specified."),
@@ -140,8 +150,11 @@ func main() {
 			mcp.Min(1),
 			mcp.Description("Optional. Number of music samples (uint32) to generate. Currently, only the first sample is processed and returned."),
 		),
+		mcp.WithString("gcs_bucket_uri",
+			mcp.Description("Optional. Google Cloud Storage bucket name or URI prefix. Takes precedence over the deprecated 'output_gcs_bucket' parameter. If provided, audio is saved to GCS and direct audio data is NOT returned."),
+		),
 		mcp.WithString("output_gcs_bucket",
-			mcp.Description("Optional. Google Cloud Storage bucket name. If provided, audio is saved to GCS and direct audio data is NOT returned."),
+			mcp.Description("Optional (deprecated; use gcs_bucket_uri). Google Cloud Storage bucket name. If provided, audio is saved to GCS and direct audio data is NOT returned."),
 		),
 		mcp.WithString("output_filename",
 			mcp.Description("Optional. Client-predictable base name for the generated file (e.g. 'my_song.mp3'). Your requested extension is respected; if omitted it defaults to .mp3. When the generated bitstream is detected as MP3 the extension is set to .mp3 so the container matches the bytes and Google's C2PA/ID3 provenance metadata is preserved without transcoding. Used for the GCS object and the local file. If omitted entirely, a unique name is generated. An existing file/object of the same name is overwritten."),
@@ -149,12 +162,19 @@ func main() {
 		mcp.WithString("file_name",
 			mcp.Description("Optional. (deprecated; use output_filename) Desired file name (e.g., 'my_song.mp3'). Used for GCS object and local file. If omitted, a unique name is generated."),
 		),
+		mcp.WithString("output_directory",
+			mcp.Description("Optional. Local directory path to save the generated audio to. Takes precedence over the deprecated 'local_path' parameter. If provided, audio is saved locally and direct audio data is NOT returned."),
+		),
 		mcp.WithString("local_path",
-			mcp.Description("Optional. Local directory path. If provided, audio is saved locally and direct audio data is NOT returned (unless GCS is also not specified)."),
+			mcp.Description("Optional (deprecated; use output_directory). Local directory path. If provided, audio is saved locally and direct audio data is NOT returned (unless GCS is also not specified)."),
+		),
+		mcp.WithString("model",
+			mcp.DefaultString(defaultLyriaModelID),
+			mcp.Description(common.BuildLyriaModelDescription()),
 		),
 		mcp.WithString("model_id",
 			mcp.DefaultString(defaultLyriaModelID),
-			mcp.Description(common.BuildLyriaModelDescription()),
+			mcp.Description("Optional (deprecated; use model). "+common.BuildLyriaModelDescription()),
 		),
 	}
 
@@ -268,20 +288,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 		return mcp.NewToolResultError("Parameter 'prompt' must be a non-empty string and is required."), nil
 	}
 
-	gcsBucketParam := ""
-	userProvidedBucket, _ := params["output_gcs_bucket"].(string)
-	userProvidedBucket = strings.TrimSpace(userProvidedBucket)
-
-	if userProvidedBucket != "" {
-		gcsBucketParam = userProvidedBucket
-	} else if appConfig.GenmediaBucket != "" {
-		gcsBucketParam = appConfig.GenmediaBucket
-		log.Printf("Handler lyria_generate_music: 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", gcsBucketParam)
-	}
-
-	if gcsBucketParam != "" { // Only trim prefix if bucket is actually set
-		gcsBucketParam = strings.TrimPrefix(gcsBucketParam, "gs://")
-	}
+	gcsBucketParam, localDirectoryPathParameter, modelInput := resolveLyriaDestinationAndModel(params, appConfig)
 
 	// output_filename is the canonical param; file_name is the legacy alias
 	// (output_filename wins). The base is sanitized here (§4a) but the extension is
@@ -291,16 +298,6 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	fileNameParam, err := resolveLyriaOutputBase(params)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	localDirectoryPathParameter := ""
-	if val, ok := params["local_path"].(string); ok && strings.TrimSpace(val) != "" {
-		localDirectoryPathParameter = strings.TrimSpace(val)
-	}
-
-	modelInput := defaultLyriaModelID
-	if val, ok := params["model_id"].(string); ok && strings.TrimSpace(val) != "" {
-		modelInput = strings.TrimSpace(val)
 	}
 
 	modelInfo, found := common.ResolveLyriaModel(modelInput, appConfig.AllowUnsafeModels)
@@ -474,6 +471,33 @@ func appendLyriaResourceLink(items []mcp.Content, gcsBucketParam, gcsUploadedObj
 		MimeType:    mimeType,
 		Description: "lyria output 1 of 1",
 	}})
+}
+
+// resolveLyriaDestinationAndModel resolves the GCS bucket, local output directory,
+// and model identifier for lyria_generate_music, honoring the canonical parameter
+// names ("gcs_bucket_uri", "output_directory", "model") over legacy aliases
+// ("output_gcs_bucket"/"bucket", "local_path"/"output_local_dir", "model_id")
+// per issue #1789.
+func resolveLyriaDestinationAndModel(params map[string]any, cfg *common.Config) (gcsBucketParam, localDir, modelInput string) {
+	userProvidedBucket := common.ResolveGCSBucketURI(params, "output_gcs_bucket", "bucket")
+	if userProvidedBucket != "" {
+		gcsBucketParam = userProvidedBucket
+	} else if cfg != nil && cfg.GenmediaBucket != "" {
+		gcsBucketParam = cfg.GenmediaBucket
+		log.Printf("Handler lyria_generate_music: 'gcs_bucket_uri' / 'output_gcs_bucket' parameter not provided, using default from GENMEDIA_BUCKET: %s", gcsBucketParam)
+	}
+	if gcsBucketParam != "" {
+		gcsBucketParam = strings.TrimPrefix(gcsBucketParam, "gs://")
+		gcsBucketParam = strings.TrimSuffix(gcsBucketParam, "/")
+	}
+
+	localDir = common.ResolveOutputDirectory(params, "local_path", "output_local_dir")
+
+	modelInput = common.ResolveModel(params, "model_id", "model_name")
+	if modelInput == "" {
+		modelInput = defaultLyriaModelID
+	}
+	return gcsBucketParam, localDir, modelInput
 }
 
 // resolveLyriaOutputBase resolves the client-supplied output base name honoring

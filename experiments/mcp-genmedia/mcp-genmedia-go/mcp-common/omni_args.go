@@ -87,22 +87,17 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 	}
 	prompt = strings.TrimSpace(prompt)
 
-	outputDir := ""
-	if dir, ok := args["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
-		outputDir = strings.TrimSpace(dir)
-	}
+	outputDir := ResolveOutputDirectory(args, "output_local_dir", "local_path")
 
-	// gcsBucketURI: explicit "gcs_bucket_uri" takes precedence, otherwise fall
-	// back to the server-wide GENMEDIA_BUCKET default (mirrors the other tools).
-	gcsBucketURI := ""
-	if u, ok := args["gcs_bucket_uri"].(string); ok && strings.TrimSpace(u) != "" {
-		gcsBucketURI = strings.TrimSpace(u)
-	} else if cfg != nil && cfg.GenmediaBucket != "" {
+	// gcsBucketURI: explicit "gcs_bucket_uri" (or legacy "bucket" / "output_gcs_bucket")
+	// takes precedence, otherwise fall back to the server-wide GENMEDIA_BUCKET default.
+	gcsBucketURI := ResolveGCSBucketURI(args, "bucket", "output_gcs_bucket")
+	if gcsBucketURI == "" && cfg != nil && cfg.GenmediaBucket != "" {
 		gcsBucketURI = cfg.GenmediaBucket + "/omni_outputs/"
 	}
 
-	// Model resolution (honors an optional "model" arg / alias).
-	modelArg, _ := args["model"].(string)
+	// Model resolution (honors an optional "model" arg or legacy "model_id"/"model_name" alias).
+	modelArg := ResolveModel(args, "model_id", "model_name")
 	allowUnsafe := cfg != nil && cfg.AllowUnsafeModels
 	modelInfo, found := ResolveOmniModel(modelArg, allowUnsafe)
 	if !found {

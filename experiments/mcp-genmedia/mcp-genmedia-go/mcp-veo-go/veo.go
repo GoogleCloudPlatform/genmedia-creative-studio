@@ -100,11 +100,24 @@ func main() {
 	s := server.NewMCPServer(
 		"Veo", // Standardized name
 		version,
+		server.WithResourceCapabilities(true, true),
 	)
 
+	s.AddResource(mcp.NewResource(
+		"veo://models",
+		"Supported Veo Models",
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Veo models, aliases, durations, aspect ratios, max videos, and feature flags (generate_audio, first_last, reference_image, extend)."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		return common.MarshalModelsResource("veo://models", common.SupportedVeoModels)
+	})
+
 	commonVideoParams := []mcp.ToolOption{
+		mcp.WithString("gcs_bucket_uri",
+			mcp.Description("Optional. Google Cloud Storage bucket or URI prefix where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). Takes precedence over the deprecated 'bucket' parameter. If not provided, GENMEDIA_BUCKET env var will be used."),
+		),
 		mcp.WithString("bucket",
-			mcp.Description("Google Cloud Storage bucket where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). If not provided, GENMEDIA_BUCKET env var will be used. One of them is required."),
+			mcp.Description("Optional (deprecated; use gcs_bucket_uri). Google Cloud Storage bucket where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). If not provided, GENMEDIA_BUCKET env var will be used. One of them is required."),
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),
@@ -256,8 +269,11 @@ func main() {
 		mcp.WithString("prompt",
 			mcp.Description("Optional text prompt to guide video extension."),
 		),
+		mcp.WithString("gcs_bucket_uri",
+			mcp.Description("Optional. Google Cloud Storage bucket or URI prefix where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). Takes precedence over the deprecated 'bucket' parameter. If not provided, GENMEDIA_BUCKET env var will be used."),
+		),
 		mcp.WithString("bucket",
-			mcp.Description("Google Cloud Storage bucket where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). If not provided, GENMEDIA_BUCKET env var will be used. One of them is required."),
+			mcp.Description("Optional (deprecated; use gcs_bucket_uri). Google Cloud Storage bucket where the API will save the generated video(s) (e.g., your-bucket/output-folder or gs://your-bucket/output-folder). If not provided, GENMEDIA_BUCKET env var will be used. One of them is required."),
 		),
 		mcp.WithString("output_directory",
 			mcp.Description("Optional. If provided, specifies a local directory to download the generated video(s) to. Filenames will be generated automatically."),

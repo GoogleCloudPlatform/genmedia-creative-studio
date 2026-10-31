@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -107,21 +106,10 @@ func main() {
 	s.AddResource(mcp.NewResource(
 		"imagen://models",
 		"Supported Imagen Models",
-		mcp.WithResourceDescription("A list of supported Imagen models and their aliases."),
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Imagen models, aliases, max images, aspect ratios, and image sizes."),
 		mcp.WithMIMEType("application/json"),
 	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-		jsonData, err := json.MarshalIndent(common.SupportedImagenModels, "", "  ")
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal supported models: %w", err)
-		}
-		return []mcp.ResourceContents{
-				mcp.TextResourceContents{
-					URI:      "imagen://models",
-					MIMEType: "application/json",
-					Text:     string(jsonData),
-				},
-			},
-			nil
+		return common.MarshalModelsResource("imagen://models", common.SupportedImagenModels)
 	})
 
 	tool := mcp.NewTool("imagen_t2i",
@@ -364,8 +352,8 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		return &mcp.CallToolResult{Content: []mcp.Content{mcp.TextContent{Type: "text", Text: "Error: prompt must be a string and is required"}}}, nil
 	}
 
-	modelInput, ok := request.GetArguments()["model"].(string)
-	if !ok || modelInput == "" {
+	modelInput := common.ResolveModel(request.GetArguments(), "model_id", "model_name")
+	if modelInput == "" {
 		log.Printf("Model not provided or empty, using default: imagen-4.0-fast-generate-001")
 		modelInput = "imagen-4.0-fast-generate-001"
 	}
@@ -417,8 +405,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		}
 	} // ... rest of handler ...
 	gcsOutputURI := ""
-	gcsBucketUriParam, _ := request.GetArguments()["gcs_bucket_uri"].(string)
-	gcsBucketUriParam = strings.TrimSpace(gcsBucketUriParam)
+	gcsBucketUriParam := common.ResolveGCSBucketURI(request.GetArguments(), "bucket", "output_gcs_bucket")
 
 	if gcsBucketUriParam != "" {
 		gcsOutputURI = gcsBucketUriParam
@@ -438,10 +425,7 @@ func imagenGenerationHandler(client *genai.Client, ctx context.Context, request 
 		log.Printf("Appended '/' to gcsOutputURI for directory structure. New URI: %s", gcsOutputURI)
 	}
 
-	outputDir := ""
-	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
-		outputDir = strings.TrimSpace(dir)
-	}
+	outputDir := common.ResolveOutputDirectory(request.GetArguments(), "output_local_dir", "local_path")
 	attemptLocalSave := outputDir != ""
 
 	span.SetAttributes(

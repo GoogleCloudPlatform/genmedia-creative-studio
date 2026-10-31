@@ -96,7 +96,7 @@ func main() {
 		log.Printf("Global GenAI client initialized successfully.")
 	}
 
-	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, false))
+	s := server.NewMCPServer("Gemini", version, server.WithResourceCapabilities(true, true))
 
 	tool := mcp.NewTool("gemini_image_generation",
 		mcp.WithDescription("Generates content (text and/or images) based on a multimodal prompt using Gemini Image generation models."),
@@ -141,9 +141,14 @@ func main() {
 			mcp.DefaultString(defaultGeminiTTSVoice),
 			mcp.Description("The voice. Any model: one of the 30 prebuilt voices (see list_gemini_voices). Gemini 3.8 only: also an Extended Voice Library ID (e.g. 'en-au-podcaster-4') or a designed/replicated voice ID ('voice_...' or 'voicekey_...'). Ignored when speakers is provided."),
 		),
+		mcp.WithString("model",
+			mcp.DefaultString(defaultGeminiTTSModel),
+			mcp.Description("The model to use. Takes precedence over the deprecated 'model_name' parameter. gemini-3.8-flash-lite-tts: fast, cost-efficient, recommended replacement for gemini-3.1-flash-tts-preview. gemini-3.8-flash-tts: highest fidelity, acting nuance, dialects, multi-speaker. Older models use the Cloud Text-to-Speech API."),
+			mcp.Enum(geminiTTSModels...),
+		),
 		mcp.WithString("model_name",
 			mcp.DefaultString(defaultGeminiTTSModel),
-			mcp.Description("The model to use. gemini-3.8-flash-lite-tts: fast, cost-efficient, recommended replacement for gemini-3.1-flash-tts-preview. gemini-3.8-flash-tts: highest fidelity, acting nuance, dialects, multi-speaker. Older models use the Cloud Text-to-Speech API."),
+			mcp.Description("Optional (deprecated; use model). The model to use. gemini-3.8-flash-lite-tts: fast, cost-efficient, recommended replacement for gemini-3.1-flash-tts-preview. gemini-3.8-flash-tts: highest fidelity, acting nuance, dialects, multi-speaker. Older models use the Cloud Text-to-Speech API."),
 			mcp.Enum(geminiTTSModels...),
 		),
 		mcp.WithArray("turns",
@@ -268,6 +273,22 @@ func main() {
 		mcp.WithResourceDescription("A list of supported languages and their BCP-47 codes for Gemini TTS."),
 		mcp.WithMIMEType("application/json"),
 	), geminiLanguageCodesHandler)
+	s.AddResource(mcp.NewResource(
+		"gemini://image_models",
+		"Supported Gemini Image Models",
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Gemini Image (Nano Banana) models, aliases, aspect ratios, and image sizes."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		return common.MarshalModelsResource("gemini://image_models", common.SupportedGeminiImageModels)
+	})
+	s.AddResource(mcp.NewResource(
+		"gemini://omni_models",
+		"Supported Gemini Omni Models",
+		mcp.WithResourceDescription("A machine-readable capability matrix of supported Gemini Omni video models, aliases, resolutions, aspect ratios, duration bounds, and input limits."),
+		mcp.WithMIMEType("application/json"),
+	), func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+		return common.MarshalModelsResource("gemini://omni_models", common.SupportedOmniModels)
+	})
 	// --- End of Gemini Resources ---
 
 	switch transport {

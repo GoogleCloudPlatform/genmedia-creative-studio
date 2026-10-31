@@ -156,3 +156,40 @@ func TestResolveAVToolOutputFilename(t *testing.T) {
 		})
 	}
 }
+
+// TestResolveAVToolOutputDestinations covers issue #1789 parameter standardization
+// in mcp-avtool-go: canonical output_directory and gcs_bucket_uri win over
+// deprecated output_local_dir and output_gcs_bucket aliases.
+func TestResolveAVToolOutputDestinations(t *testing.T) {
+	cfg := &common.Config{GenmediaBucket: "fallback-bucket"}
+
+	t.Run("canonical output_directory and gcs_bucket_uri win over legacy aliases", func(t *testing.T) {
+		args := map[string]interface{}{
+			"output_directory":  "./canonical_dir",
+			"output_local_dir":  "./legacy_dir",
+			"gcs_bucket_uri":    "gs://canonical-bucket/",
+			"output_gcs_bucket": "legacy-bucket",
+		}
+		dir, bucket := resolveAVToolOutputDestinations(args, cfg, "test")
+		if dir != "./canonical_dir" {
+			t.Errorf("dir = %q, want ./canonical_dir", dir)
+		}
+		if bucket != "canonical-bucket" {
+			t.Errorf("bucket = %q, want canonical-bucket", bucket)
+		}
+	})
+
+	t.Run("legacy output_local_dir and output_gcs_bucket aliases still work", func(t *testing.T) {
+		args := map[string]interface{}{
+			"output_local_dir":  "./legacy_dir",
+			"output_gcs_bucket": "gs://legacy-bucket",
+		}
+		dir, bucket := resolveAVToolOutputDestinations(args, cfg, "test")
+		if dir != "./legacy_dir" {
+			t.Errorf("dir = %q, want ./legacy_dir", dir)
+		}
+		if bucket != "legacy-bucket" {
+			t.Errorf("bucket = %q, want legacy-bucket", bucket)
+		}
+	})
+}

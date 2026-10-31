@@ -327,3 +327,46 @@ func TestResolveOutputFilename(t *testing.T) {
 		})
 	}
 }
+
+// TestResolveStandardizedParams verifies the canonical-wins-over-legacy-alias
+// precedence for model, gcs_bucket_uri, and output_directory (#1789).
+func TestResolveStandardizedParams(t *testing.T) {
+	t.Run("ResolveModel", func(t *testing.T) {
+		if got := ResolveModel(map[string]any{"model": "lyria-3-pro-preview", "model_id": "lyria-002"}, "model_id"); got != "lyria-3-pro-preview" {
+			t.Errorf("ResolveModel canonical precedence = %q, want lyria-3-pro-preview", got)
+		}
+		if got := ResolveModel(map[string]any{"model_id": "lyria-002"}, "model_id"); got != "lyria-002" {
+			t.Errorf("ResolveModel legacy fallback = %q, want lyria-002", got)
+		}
+		if got := ResolveModel(map[string]any{"model_name": "gemini-3.8-flash-tts"}, "model_name"); got != "gemini-3.8-flash-tts" {
+			t.Errorf("ResolveModel model_name fallback = %q, want gemini-3.8-flash-tts", got)
+		}
+		if got := ResolveModel(map[string]any{}, "model_id", "model_name"); got != "" {
+			t.Errorf("ResolveModel empty = %q, want empty", got)
+		}
+	})
+
+	t.Run("ResolveGCSBucketURI", func(t *testing.T) {
+		if got := ResolveGCSBucketURI(map[string]any{"gcs_bucket_uri": "gs://canonical/out", "bucket": "gs://legacy/out"}, "bucket", "output_gcs_bucket"); got != "gs://canonical/out" {
+			t.Errorf("ResolveGCSBucketURI canonical precedence = %q, want gs://canonical/out", got)
+		}
+		if got := ResolveGCSBucketURI(map[string]any{"bucket": "  my-bucket/veo  "}, "bucket", "output_gcs_bucket"); got != "my-bucket/veo" {
+			t.Errorf("ResolveGCSBucketURI bucket alias = %q, want my-bucket/veo", got)
+		}
+		if got := ResolveGCSBucketURI(map[string]any{"output_gcs_bucket": "my-lyria-bucket"}, "bucket", "output_gcs_bucket"); got != "my-lyria-bucket" {
+			t.Errorf("ResolveGCSBucketURI output_gcs_bucket alias = %q, want my-lyria-bucket", got)
+		}
+	})
+
+	t.Run("ResolveOutputDirectory", func(t *testing.T) {
+		if got := ResolveOutputDirectory(map[string]any{"output_directory": "./canonical", "local_path": "./legacy"}, "local_path", "output_local_dir"); got != "./canonical" {
+			t.Errorf("ResolveOutputDirectory canonical precedence = %q, want ./canonical", got)
+		}
+		if got := ResolveOutputDirectory(map[string]any{"local_path": "  ./lyria_out  "}, "local_path", "output_local_dir"); got != "./lyria_out" {
+			t.Errorf("ResolveOutputDirectory local_path alias = %q, want ./lyria_out", got)
+		}
+		if got := ResolveOutputDirectory(map[string]any{"output_local_dir": "./avtool_out"}, "local_path", "output_local_dir"); got != "./avtool_out" {
+			t.Errorf("ResolveOutputDirectory output_local_dir alias = %q, want ./avtool_out", got)
+		}
+	})
+}

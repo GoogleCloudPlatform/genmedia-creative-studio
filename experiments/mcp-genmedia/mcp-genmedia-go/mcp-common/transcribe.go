@@ -148,8 +148,8 @@ func ParseTranscribeToolArgs(args map[string]any) (*ParsedTranscribeArgs, error)
 	}
 	p.MimeType = mimeType
 
-	if model, ok := args["model"].(string); ok && strings.TrimSpace(model) != "" {
-		p.Model = strings.TrimSpace(model)
+	if model := ResolveModel(args, "model_id", "model_name"); model != "" {
+		p.Model = model
 	} else {
 		p.Model = DefaultTranscribeModel
 	}
@@ -168,11 +168,9 @@ func ParseTranscribeToolArgs(args map[string]any) (*ParsedTranscribeArgs, error)
 	}
 
 	parsed := &ParsedTranscribeArgs{Params: p}
-	if dir, ok := args["output_directory"].(string); ok {
-		parsed.OutputDir = strings.TrimSpace(dir)
-	}
-	if uri, ok := args["gcs_bucket_uri"].(string); ok && strings.TrimSpace(uri) != "" {
-		parsed.GCSBucketURI = EnsureGCSPathPrefix(strings.TrimSpace(uri))
+	parsed.OutputDir = ResolveOutputDirectory(args, "output_local_dir", "local_path")
+	if uri := ResolveGCSBucketURI(args, "bucket", "output_gcs_bucket"); uri != "" {
+		parsed.GCSBucketURI = EnsureGCSPathPrefix(uri)
 	}
 	parsed.OutputFilename = ResolveOutputFilename(args)
 

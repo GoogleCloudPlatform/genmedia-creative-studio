@@ -23,6 +23,24 @@ import (
 	"strings"
 )
 
+// ResolveStringParam returns the client-supplied string argument for canonicalKey,
+// applying the shared accept-and-alias precedence contract (design #842 §4a /
+// issue #1789): the canonical parameter always wins when non-empty; otherwise
+// the first non-empty legacy alias (in the order given) is used; otherwise ""
+// is returned so the caller falls back to its default. Surrounding whitespace
+// is trimmed.
+func ResolveStringParam(args map[string]any, canonicalKey string, legacyKeys ...string) string {
+	if v, ok := args[canonicalKey].(string); ok && strings.TrimSpace(v) != "" {
+		return strings.TrimSpace(v)
+	}
+	for _, k := range legacyKeys {
+		if v, ok := args[k].(string); ok && strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
 // ResolveOutputFilename returns the client-supplied base output name, applying
 // the shared accept-and-alias precedence contract (design #842 §4a): the
 // canonical output_filename parameter always wins; otherwise the first non-empty
@@ -33,15 +51,28 @@ import (
 // reuses it (passing its own legacy key(s) as legacyKeys) so the rule this issue
 // exists to unify is never re-implemented per-server.
 func ResolveOutputFilename(args map[string]any, legacyKeys ...string) string {
-	if v, ok := args["output_filename"].(string); ok && strings.TrimSpace(v) != "" {
-		return strings.TrimSpace(v)
-	}
-	for _, k := range legacyKeys {
-		if v, ok := args[k].(string); ok && strings.TrimSpace(v) != "" {
-			return strings.TrimSpace(v)
-		}
-	}
-	return ""
+	return ResolveStringParam(args, "output_filename", legacyKeys...)
+}
+
+// ResolveModel returns the client-supplied model identifier, preferring the
+// canonical "model" parameter over legacy aliases such as "model_id" or
+// "model_name" (issue #1789).
+func ResolveModel(args map[string]any, legacyKeys ...string) string {
+	return ResolveStringParam(args, "model", legacyKeys...)
+}
+
+// ResolveGCSBucketURI returns the client-supplied GCS bucket or URI prefix,
+// preferring the canonical "gcs_bucket_uri" parameter over legacy aliases such
+// as "bucket" or "output_gcs_bucket" (issue #1789).
+func ResolveGCSBucketURI(args map[string]any, legacyKeys ...string) string {
+	return ResolveStringParam(args, "gcs_bucket_uri", legacyKeys...)
+}
+
+// ResolveOutputDirectory returns the client-supplied local output directory,
+// preferring the canonical "output_directory" parameter over legacy aliases
+// such as "local_path" or "output_local_dir" (issue #1789).
+func ResolveOutputDirectory(args map[string]any, legacyKeys ...string) string {
+	return ResolveStringParam(args, "output_directory", legacyKeys...)
 }
 
 // BuildOutputFilenames returns deterministic output file names for a generation

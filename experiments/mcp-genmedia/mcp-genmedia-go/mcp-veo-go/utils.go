@@ -40,9 +40,9 @@ func inferMimeTypeFromURI(uri string) string {
 
 // parseCommonVideoParams extracts and validates video generation parameters from the request arguments.
 func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Config, isExtend bool) (string, string, string, string, int32, int32, bool, string, error) {
-	// Model
-	modelInput, ok := args["model"].(string)
-	if !ok || modelInput == "" {
+	// Model (canonical "model" wins over legacy "model_id"/"model_name")
+	modelInput := common.ResolveModel(args, "model_id", "model_name")
+	if modelInput == "" {
 		modelInput = "veo-3.1-fast-generate-001"
 	}
 	modelInfo, found := common.ResolveVeoModel(modelInput, appConfig.AllowUnsafeModels)
@@ -52,17 +52,17 @@ func parseCommonVideoParams(args map[string]interface{}, appConfig *common.Confi
 	model := modelInfo.CanonicalName
 	modelDetails := modelInfo
 
-	// GCS Bucket
-	gcsBucket, _ := args["bucket"].(string)
+	// GCS Bucket (canonical "gcs_bucket_uri" wins over legacy "bucket" and "output_gcs_bucket")
+	gcsBucket := common.ResolveGCSBucketURI(args, "bucket", "output_gcs_bucket")
 	if gcsBucket != "" {
 		gcsBucket = common.EnsureGCSPathPrefix(gcsBucket)
 	} else if appConfig.GenmediaBucket != "" {
 		gcsBucket = fmt.Sprintf("gs://%s/veo_outputs/", appConfig.GenmediaBucket)
-		log.Printf("Handler: 'bucket' parameter not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
+		log.Printf("Handler: 'gcs_bucket_uri' / 'bucket' parameter not provided, using default constructed from GENMEDIA_BUCKET: %s", gcsBucket)
 	}
 
-	// Output Directory
-	outputDir, _ := args["output_directory"].(string)
+	// Output Directory (canonical "output_directory" wins over legacy "output_local_dir"/"local_path")
+	outputDir := common.ResolveOutputDirectory(args, "output_local_dir", "local_path")
 
 	// Number of Videos
 	var numberOfVideos int32 = 1

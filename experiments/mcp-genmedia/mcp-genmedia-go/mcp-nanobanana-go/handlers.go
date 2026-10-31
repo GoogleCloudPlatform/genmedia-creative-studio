@@ -97,7 +97,7 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 		imageSize = strings.TrimSpace(is)
 	}
 
-	modelArg, _ := request.GetArguments()["model"].(string)
+	modelArg := common.ResolveModel(request.GetArguments(), "model_id", "model_name")
 	model := "gemini-nano-banana-2.1"
 	if modelArg != "" {
 		model = modelArg
@@ -118,18 +118,12 @@ func nanobananaGenerateContentHandler(client *genai.Client, ctx context.Context,
 	// forwarded to the API. `model` is already the resolved canonical name here.
 	seed = seedForModel(model, seed)
 
-	outputDir := ""
-	if dir, ok := request.GetArguments()["output_directory"].(string); ok && strings.TrimSpace(dir) != "" {
-		outputDir = strings.TrimSpace(dir)
-	}
+	outputDir := common.ResolveOutputDirectory(request.GetArguments(), "output_local_dir", "local_path")
 
-	// gcsBucketURI: explicit "gcs_bucket_uri" argument takes precedence. If not
-	// provided, fall back to the server-wide GENMEDIA_BUCKET default (mirrors
-	// the fallback behavior documented for the other genmedia MCP tools).
-	gcsBucketURI := ""
-	if u, ok := request.GetArguments()["gcs_bucket_uri"].(string); ok && strings.TrimSpace(u) != "" {
-		gcsBucketURI = strings.TrimSpace(u)
-	} else if appConfig != nil && appConfig.GenmediaBucket != "" {
+	// gcsBucketURI: explicit "gcs_bucket_uri" (or legacy "bucket" / "output_gcs_bucket")
+	// takes precedence. If not provided, fall back to the server-wide GENMEDIA_BUCKET default.
+	gcsBucketURI := common.ResolveGCSBucketURI(request.GetArguments(), "bucket", "output_gcs_bucket")
+	if gcsBucketURI == "" && appConfig != nil && appConfig.GenmediaBucket != "" {
 		gcsBucketURI = appConfig.GenmediaBucket + "/nanobanana_outputs/"
 	}
 

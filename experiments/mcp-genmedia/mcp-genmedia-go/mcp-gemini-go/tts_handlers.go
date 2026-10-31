@@ -316,7 +316,7 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 	text, _ := args["text"].(string)
 	prompt, _ := args["prompt"].(string)
 
-	modelName, _ := args["model_name"].(string)
+	modelName := common.ResolveModel(args, "model_name", "model_id")
 	if modelName == "" {
 		modelName = defaultGeminiTTSModel
 	}
@@ -376,7 +376,7 @@ func geminiAudioTTSHandler(ctx context.Context, request mcp.CallToolRequest) (*m
 		audioEncoding = "LINEAR16"
 	}
 
-	outputDir, _ := args["output_directory"].(string)
+	outputDir := common.ResolveOutputDirectory(args, "output_local_dir", "local_path")
 
 	warnings := lintTTSInput(modelName, text, prompt, turns)
 	if len(turns) > 0 {

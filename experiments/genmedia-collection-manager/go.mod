@@ -3,7 +3,7 @@ module github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/genme
 go 1.26.0
 
 require (
-	cloud.google.com/go/firestore v1.29.0
+	cloud.google.com/go/firestore v1.29.2
 	cloud.google.com/go/storage v1.70.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10

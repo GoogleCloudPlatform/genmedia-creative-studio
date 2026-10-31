@@ -8,8 +8,6 @@ cloud.google.com/go/auth/oauth2adapt v0.3.0 h1:FY8oSZpCYoUNv6QxVODuMjQz4IlSOVeiQ
 cloud.google.com/go/auth/oauth2adapt v0.3.0/go.mod h1:7+2uCm7++XFO+/lN06c2HXpDXb/NMNn2/UwyBPbTnkk=
 cloud.google.com/go/compute/metadata v0.10.0 h1:pyKMUQSwchgkIBBJGdILqQbs/BNJXqwSA7Ej6LAvvtY=
 cloud.google.com/go/compute/metadata v0.10.0/go.mod h1:rGFHRrIif570kSibjFTMbt6/4/tzgJWFGI/HVol4GIk=
-cloud.google.com/go/firestore v1.29.0 h1:fplxMS69zAV4PWnRV9iWtqjsMSYOCpAa4LA8Tb1JaVw=
-cloud.google.com/go/firestore v1.29.0/go.mod h1:igzGLe8KqzF6LwK3n5skIqtozEmRJ3DXxJk10JgZZkc=
 cloud.google.com/go/firestore v1.29.2 h1:sZ837QNitckne/qSWymsrO75kgtbbR2lcMINLv8nZgs=
 cloud.google.com/go/firestore v1.29.2/go.mod h1:yV4tCwON9BOoG0Mcp8k+N2wgIQQkbdvG7kd5qvggfY0=
 cloud.google.com/go/iam v1.14.0 h1:YRIB1/4xxwJ+NfI6RQr1WaOoHHeV0MizJEj940nBXJA=

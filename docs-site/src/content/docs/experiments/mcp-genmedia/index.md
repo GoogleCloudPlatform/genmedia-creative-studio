@@ -21,11 +21,14 @@ Each server can be enabled and run separately, allowing flexibility for environm
 
 We provide a set of expert **Agent Skills** that provide AI agents (like Gemini CLI or Antigravity) with deep domain knowledge on how to use these MCP tools effectively for complex workflows.
 
+*   `install-mcp-genmedia`: Installs the mcp-genmedia MCP servers from pre-compiled release binaries and registers them in `mcp_config.json`.
+*   `build-mcp-genmedia`: Builds the mcp-genmedia Go MCP servers from source and configures them.
 *   `genmedia-producer`: Orchestrates multi-step workflows like podcast creation and storyboarding.
 *   `genmedia-video-editor`: Expertise in FFmpeg composition, image overlays, and GIF generation.
 *   `genmedia-audio-engineer`: Specialist in high-fidelity TTS synthesis and multi-track mixing.
 *   `genmedia-image-artist`: Expert in visual generation, prompt optimization, and collaborative refinement.
 *   `genmedia-voice-director`: Expert in casting, directing, and generating expressive text-to-speech using Gemini TTS.
+*   `story-generator`: Expert in generating full multi-scene multimedia storybooks (image, video, voice, and music) using direct, native MCP tool calls and parallel subagent orchestration, and packaging them into premium Material 3 interactive making-of reports.
 
 See the [Agent Skills](./skills/) directory for more information on how to link or install these skills.
 

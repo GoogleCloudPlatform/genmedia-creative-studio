@@ -6,11 +6,14 @@ This directory contains a set of expert **Agent Skills** designed to provide AI 
 
 ## Available Skills
 
+- **`install-mcp-genmedia`**: Installs the mcp-genmedia MCP servers from pre-compiled release binaries and registers them in `mcp_config.json`. Use this for the clone-free setup path when you don't need to build from source.
+- **`build-mcp-genmedia`**: Builds the mcp-genmedia Go MCP servers from source and configures them. Use this to compile missing or broken MCP tools in restricted environments.
 - **`genmedia-producer`**: The high-level orchestrator. Use this for storyboarding, podcast creation, and managing complex production pipelines.
 - **`genmedia-video-editor`**: Specialized in post-production. Use this for FFmpeg composition, image-on-video overlays, and creating high-quality GIFs.
 - **`genmedia-audio-engineer`**: Specialized in sound design. Use this for high-fidelity speech synthesis, music generation, and multi-track audio mixing.
 - **`genmedia-voice-director`**: Expert in casting, directing, and generating expressive text-to-speech. Use this for virtual voice actor personas and "take 3 on the bounce" variations.
 - **`genmedia-image-artist`**: Specialized in visual arts. Use this for high-fidelity image generation, prompt optimization, and iterative collaborative refinement.
+- **`story-generator`**: Expert in generating full multi-scene multimedia storybooks (image, video, voice, and music) using direct, native MCP tool calls and parallel subagent orchestration, and packaging them into premium Material 3 interactive making-of reports.
 
 ## Installation & Usage
 

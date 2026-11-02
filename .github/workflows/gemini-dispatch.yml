@@ -63,7 +63,10 @@ jobs:
   dispatch:
     # For PRs: only if not from a fork
     # For comments: only if user types @gemini-cli and is OWNER/MEMBER/COLLABORATOR
-    # For issues: only on open/reopen
+    # For issues: only on open/reopen, from ANY author. This is only safe because
+    # the `Extract command` step routes untrusted issue authors to triage only
+    # (no GitHub write token, no cloud credentials). Do not route issue text to
+    # review/invoke without an author_association check.
     if: |-
       (
         github.event_name == 'pull_request' &&
@@ -86,6 +89,7 @@ jobs:
     outputs:
       command: '${{ steps.extract_command.outputs.command }}'
       request: '${{ steps.extract_command.outputs.request }}'
+      trusted: '${{ steps.extract_command.outputs.trusted }}'
       additional_context: '${{ steps.extract_command.outputs.additional_context }}'
       issue_number: '${{ github.event.pull_request.number || github.event.issue.number || inputs.issue_number }}'
     steps:
@@ -109,12 +113,25 @@ jobs:
           REQUEST: '${{ github.event.comment.body || github.event.review.body || github.event.issue.body }}'
           INPUT_COMMAND: '${{ inputs.command }}'
           INPUT_CONTEXT: '${{ inputs.additional_context }}'
+          AUTHOR_ASSOCIATION: '${{ github.event.comment.author_association || github.event.review.author_association || github.event.issue.author_association || github.event.pull_request.author_association }}'
         with:
           script: |
             const request = process.env.REQUEST;
             const eventType = process.env.EVENT_TYPE;
             const inputCommand = process.env.INPUT_COMMAND;
             const inputContext = process.env.INPUT_CONTEXT;
+            const association = process.env.AUTHOR_ASSOCIATION || '';
+
+            // SECURITY: `issues` events are accepted from any GitHub user (the
+            // dispatch `if:` has no author gate for them so that outside issues
+            // can be triaged). The text of such an issue is attacker-controlled,
+            // so it must NEVER be able to select `review` or `invoke` (which
+            // hold cloud credentials and GitHub write tools). Only manual
+            // dispatch (requires repo write access) or an OWNER/MEMBER/
+            // COLLABORATOR author may use `@gemini-cli` commands.
+            const trusted = Boolean(inputCommand) ||
+              ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(association);
+            core.setOutput('trusted', String(trusted));
 
             if (inputCommand) {
                core.setOutput('command', inputCommand);
@@ -125,7 +142,16 @@ jobs:
 
             core.setOutput('request', request);
 
-            if (request.startsWith("@gemini-cli /review")) {
+            if (eventType === 'pull_request.opened') {
+              core.setOutput('command', 'review');
+            } else if (!trusted) {
+              // Untrusted authors: triage-only for new issues, nothing else.
+              if (['issues.opened', 'issues.reopened'].includes(eventType)) {
+                core.setOutput('command', 'triage');
+              } else {
+                core.setOutput('command', 'fallthrough');
+              }
+            } else if (request.startsWith("@gemini-cli /review")) {
               core.setOutput('command', 'review');
               const additionalContext = request.replace(/^@gemini-cli \/review/, '').trim();
               core.setOutput('additional_context', additionalContext);
@@ -135,8 +161,6 @@ jobs:
               core.setOutput('command', 'invoke');
               const additionalContext = request.replace(/^@gemini-cli/, '').trim();
               core.setOutput('additional_context', additionalContext);
-            } else if (eventType === 'pull_request.opened') {
-              core.setOutput('command', 'review');
             } else if (['issues.opened', 'issues.reopened'].includes(eventType)) {
               core.setOutput('command', 'triage');
             } else {
@@ -192,7 +216,7 @@ jobs:
   invoke:
     needs: 'dispatch'
     if: |-
-      ${{ needs.dispatch.outputs.command == 'invoke' }}
+      ${{ needs.dispatch.outputs.command == 'invoke' && needs.dispatch.outputs.trusted == 'true' }}
     uses: './.github/workflows/gemini-invoke.yml'
     permissions:
       contents: 'read'

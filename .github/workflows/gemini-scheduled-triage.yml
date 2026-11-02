@@ -111,7 +111,11 @@ jobs:
           ISSUES_TO_TRIAGE: '${{ steps.find_issues.outputs.issues_to_triage }}'
           REPOSITORY: '${{ github.repository }}'
           AVAILABLE_LABELS: '${{ steps.get_labels.outputs.available_labels }}'
-          GEMINI_CLI_TRUST_WORKSPACE: 'false'
+          # Headless Gemini CLI exits 1 ("not running in a trusted directory") when
+          # this is 'false'. Safe to trust here: this job does not check out the
+          # repo (empty workspace, no .gemini settings/GEMINI.md to load), has no
+          # GitHub token, and `coreTools` is empty. Keep it that way.
+          GEMINI_CLI_TRUST_WORKSPACE: 'true'
         with:
           gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
           gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'

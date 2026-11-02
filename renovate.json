@@ -21,7 +21,12 @@
       "enabled": false
     },
     {
-      "matchPackageNames": ["hashicorp/google", "hashicorp/google-beta"],
+      "description": "Charmbracelet v2 moved to new charm.land/* import paths with breaking TUI API changes (see closed PRs #2104, #2111, #2112). Renovate only edits one go.mod line, which breaks go mod tidy/build. Migrate bubbles/bubbletea/lipgloss together by hand instead.",
+      "matchPackageNames": [
+        "hashicorp/google",
+        "hashicorp/google-beta",
+        "github.com/charmbracelet/**"
+      ],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },

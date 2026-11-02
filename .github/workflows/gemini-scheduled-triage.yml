@@ -117,7 +117,7 @@ jobs:
           # GitHub token, and `coreTools` is empty. Keep it that way.
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
         with:
-          gemini_cli_version: '${{ vars.GEMINI_CLI_VERSION }}'
+          gemini_cli_version: "${{ vars.GEMINI_CLI_VERSION || '0.66.0' }}"
           gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
           gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
           gcp_location: '${{ vars.GOOGLE_CLOUD_LOCATION }}'
@@ -131,11 +131,16 @@ jobs:
           settings: |-
             {
               "maxSessionTurns": 50,
+              "experimental": {
+                "enableAgents": false
+              },
               "telemetry": {
                 "enabled": ${{ vars.GOOGLE_CLOUD_PROJECT != '' }},
                 "target": "gcp"
               },
-              "coreTools": []
+              "tools": {
+                "core": []
+              }
             }
           prompt: |-
             You are an expert Issue Triage Engineer. Your task is to analyze a list of GitHub issues and assign the most relevant labels.

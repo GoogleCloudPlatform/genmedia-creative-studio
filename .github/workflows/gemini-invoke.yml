@@ -26,6 +26,9 @@ defaults:
 jobs:
   invoke:
     runs-on: 'ubuntu-latest'
+    # Human approval gate. Configure required reviewers on this environment
+    # (Settings > Environments > gemini-invoke); until then it is a no-op.
+    environment: 'gemini-invoke'
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -58,6 +61,7 @@ jobs:
           ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
         with:
+          gemini_cli_version: "${{ vars.GEMINI_CLI_VERSION || '0.66.0' }}"
           gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
           gcp_workload_identity_provider: '${{ vars.GCP_WIF_PROVIDER }}'
           gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
@@ -71,6 +75,9 @@ jobs:
           settings: |-
             {
               "maxSessionTurns": 25,
+              "experimental": {
+                "enableAgents": false
+              },
               "telemetry": {
                 "enabled": ${{ vars.GOOGLE_CLOUD_PROJECT != '' }},
                 "target": "gcp"
@@ -114,13 +121,15 @@ jobs:
                   }
                 }
               },
-              "coreTools": [
-                "run_shell_command(cat)",
-                "run_shell_command(echo)",
-                "run_shell_command(grep)",
-                "run_shell_command(head)",
-                "run_shell_command(tail)"
-              ]
+              "tools": {
+                "core": [
+                  "run_shell_command(echo)"
+                ],
+                "exclude": [
+                  "web_fetch",
+                  "google_web_search"
+                ]
+              }
             }
           prompt: |-
             ## Persona and Guiding Principles

@@ -7,6 +7,10 @@ on:
         type: 'string'
         description: 'Any additional context from the request'
         required: false
+      issue_number:
+        type: 'string'
+        description: 'Issue number to triage; only used for manual workflow_dispatch runs (event runs read it from the issue payload)'
+        required: false
     secrets:
       GEMINI_API_KEY:
         required: false
@@ -16,7 +20,7 @@ on:
         required: false
 
 concurrency:
-  group: '${{ github.workflow }}-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'
+  group: '${{ github.workflow }}-triage-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number || inputs.issue_number }}'
   cancel-in-progress: true
 
 defaults:
@@ -58,6 +62,30 @@ jobs:
             core.info(`Found ${labelNames.length} labels: ${labelNames.join(', ')}`);
             return labelNames;
 
+      - name: 'Fetch issue for manual dispatch'
+        id: 'manual_issue'
+        # Event-driven runs read the issue from the event payload. A manual
+        # workflow_dispatch has no issue payload, so fetch it (read-only token).
+        if: |-
+          ${{ github.event_name == 'workflow_dispatch' && inputs.issue_number != '' }}
+        uses: 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3' # v9
+        env:
+          INPUT_ISSUE_NUMBER: '${{ inputs.issue_number }}'
+        with:
+          script: |-
+            const issueNumber = Number.parseInt(process.env.INPUT_ISSUE_NUMBER, 10);
+            if (!Number.isInteger(issueNumber) || issueNumber <= 0) {
+              core.setFailed(`Invalid issue number: ${process.env.INPUT_ISSUE_NUMBER}`);
+              return;
+            }
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+            });
+            core.setOutput('title', issue.title || '');
+            core.setOutput('body', issue.body || '');
+
       - name: 'Run Gemini issue analysis'
         id: 'gemini_analysis'
         if: |-
@@ -65,8 +93,8 @@ jobs:
         uses: 'google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489' # v0
         env:
           GITHUB_TOKEN: '' # Do NOT pass any auth tokens here since this runs on untrusted inputs
-          ISSUE_TITLE: '${{ github.event.issue.title }}'
-          ISSUE_BODY: '${{ github.event.issue.body }}'
+          ISSUE_TITLE: '${{ github.event.issue.title || steps.manual_issue.outputs.title }}'
+          ISSUE_BODY: '${{ github.event.issue.body || steps.manual_issue.outputs.body }}'
           AVAILABLE_LABELS: '${{ steps.get_labels.outputs.available_labels }}'
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
         with:
@@ -150,7 +178,7 @@ jobs:
 
       - name: 'Apply labels'
         env:
-          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number || inputs.issue_number }}'
           AVAILABLE_LABELS: '${{ needs.triage.outputs.available_labels }}'
           SELECTED_LABELS: '${{ needs.triage.outputs.selected_labels }}'
         uses: 'actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3' # v9

@@ -210,6 +210,7 @@ jobs:
       pull-requests: 'write'
     with:
       additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+      issue_number: '${{ needs.dispatch.outputs.issue_number }}'
     secrets:
       GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
       GOOGLE_API_KEY: '${{ secrets.GOOGLE_API_KEY }}'

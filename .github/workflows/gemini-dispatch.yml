@@ -181,8 +181,10 @@ jobs:
 
   review:
     needs: 'dispatch'
+    # Defence in depth: comment/review-driven reviews require a trusted author.
+    # `pull_request` is already limited to non-fork PRs by the dispatch job `if:`.
     if: |-
-      ${{ needs.dispatch.outputs.command == 'review' }}
+      ${{ needs.dispatch.outputs.command == 'review' && (needs.dispatch.outputs.trusted == 'true' || github.event_name == 'pull_request') }}
     uses: './.github/workflows/gemini-review.yml'
     permissions:
       contents: 'read'

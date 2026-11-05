@@ -68,7 +68,7 @@ class OmniVideoGenerationRequest(BaseModel):
     duration_seconds: int = Field(..., gt=0)
     aspect_ratio: str
     resolution: str
-    omni_mode: str  # "t2v", "i2v", "ref2v", "edit"
+    omni_mode: str  # "t2v", "i2v", "ref2v", "edit", "extend", "upscale"
     model_version_id: str
 
     # Reference Image GCS URIs

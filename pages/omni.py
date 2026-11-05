@@ -31,7 +31,13 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
 from components.page_scaffold import page_frame, page_scaffold
 from config.default import Default
-from config.omni_models import OMNI_MODELS, get_omni_model_config
+from config.omni_models import (
+    OMNI_MODE_LABELS,
+    OMNI_MODELS,
+    clamp_duration,
+    get_omni_model_config,
+    modes_for_model,
+)
 from models.omni import find_missing_required_media, generate_omni_video
 from models.requests import APIReferenceImage, OmniVideoGenerationRequest
 from state.omni_state import PageState
@@ -71,7 +77,9 @@ def omni_page() -> None:
                         "* **Text-to-Video (T2V)**: Generate videos from detailed prompt descriptions.\n"
                         "* **Image-to-Video (I2V)**: Bring a still image to life using an initial starting frame.\n"
                         "* **Reference-to-Video (Ref2V)**: Guide video character and style consistency with up to 3 reference images.\n"
-                        "* **Video Editing**: Perform multi-turn conversational video edits on an existing base video.",
+                        "* **Video Editing**: Perform multi-turn conversational video edits on an existing base video.\n"
+                        "* **Extend Video** (1.2+): Continue an existing video with additional seconds.\n"
+                        "* **Upscale Video** (1.2+): Re-render an existing video at a higher resolution (video only, no prompt).",
                     )
                     me.divider()
                     me.text("Current Settings", type="headline-6")
@@ -181,12 +189,18 @@ def render_single_turn_workspace(state: PageState) -> None:
                 flex_grow=1,
             ),
         ):
-            me.textarea(
-                label="Prompt Description",
-                value=state.prompt,
-                on_blur=on_prompt_blur,
-                style=me.Style(width="100%", height="140px"),
-            )
+            if state.omni_mode != "upscale":
+                me.textarea(
+                    label="Prompt Description",
+                    value=state.prompt,
+                    on_blur=on_prompt_blur,
+                    style=me.Style(width="100%", height="140px"),
+                )
+            else:
+                me.text(
+                    "Upscale takes a video only; no prompt is needed.",
+                    type="body-1",
+                )
         with me.box(
             style=me.Style(
                 flex_basis="max(240px, calc(40% - 16px))",
@@ -205,6 +219,10 @@ def render_single_turn_workspace(state: PageState) -> None:
                 render_image_uploader(state, "Optional: Upload Reference/Style Image")
                 me.box(style=me.Style(height=8))
                 render_video_uploader(state, "Upload Base Video to Edit")
+            elif state.omni_mode == "extend":
+                render_video_uploader(state, "Upload Base Video to Extend")
+            elif state.omni_mode == "upscale":
+                render_video_uploader(state, "Upload Video to Upscale")
 
     me.box(style=me.Style(flex_grow=1))
     if state.result_display_url:
@@ -352,10 +370,8 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
     me.select(
         label="Mode",
         options=[
-            me.SelectOption(label="Text-to-Video", value="t2v"),
-            me.SelectOption(label="Image-to-Video", value="i2v"),
-            me.SelectOption(label="Reference-to-Video", value="ref2v"),
-            me.SelectOption(label="Video Editing", value="edit"),
+            me.SelectOption(label=OMNI_MODE_LABELS[m], value=m)
+            for m in modes_for_model(state.omni_model)
         ],
         value=state.omni_mode,
         on_selection_change=on_mode_change,
@@ -374,6 +390,8 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         disabled=chat_started,
     )
 
+    # Upscale and extend inherit framing from the input video.
+    follows_input = state.omni_mode in ("extend", "upscale")
     me.text("Aspect Ratio", type="body-2")
     me.select(
         label="Aspect Ratio",
@@ -383,7 +401,7 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         ],
         value=state.aspect_ratio,
         on_selection_change=on_aspect_ratio_change,
-        disabled=chat_started,
+        disabled=chat_started or follows_input,
     )
 
     selected_model = get_omni_model_config(state.omni_model)
@@ -402,14 +420,30 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
         disabled=chat_started,
     )
 
-    me.text(f"Video Duration: {state.video_length}s", type="body-2")
-    me.slider(
-        min=3,
-        max=10,
-        value=state.video_length,
-        on_value_change=on_duration_change,
-        disabled=chat_started,
-    )
+    if state.omni_mode == "upscale":
+        me.text(
+            "Output length follows the input video.",
+            type="caption",
+            style=me.Style(font_style="italic"),
+        )
+    else:
+        duration_range = get_omni_model_config(state.omni_model)
+        min_duration = duration_range.min_duration if duration_range else 3
+        max_duration = duration_range.max_duration if duration_range else 10
+        me.text(f"Video Duration: {state.video_length}s", type="body-2")
+        me.slider(
+            min=min_duration,
+            max=max_duration,
+            value=clamp_duration(state.omni_model, state.video_length),
+            on_value_change=on_duration_change,
+            disabled=chat_started or state.omni_mode == "extend",
+        )
+        if state.omni_mode == "extend":
+            me.text(
+                "Output length follows the input video.",
+                type="caption",
+                style=me.Style(font_style="italic"),
+            )
 
     me.box(style=me.Style(height=24))
 
@@ -634,6 +668,10 @@ def on_model_change(e: me.SelectSelectionChangeEvent) -> None:
         state.resolution = (
             model_config.resolutions[0] if model_config.resolutions else "720p"
         )
+    # Keep the mode and duration valid for the newly selected model.
+    if state.omni_mode not in modes_for_model(e.value):
+        state.omni_mode = "t2v"
+    state.video_length = clamp_duration(e.value, state.video_length)
     yield
 
 
@@ -918,43 +956,50 @@ def on_click_generate(_e: me.ClickEvent) -> Generator[None]:
 
         state.result_gcs_uri = gcs_uri
         state.result_display_url = create_display_url(gcs_uri)
-        state.previous_interaction_id = interaction_id
 
-        # Hydrate initial chat history JSON
-        history = [
-            {
-                "type": "user_input",
-                "content": [{"type": "text", "text": state.prompt}],
-            },
-            {
-                "type": "model_output",
-                "content": [
-                    {
-                        "type": "video",
-                        "gcs_uri": gcs_uri,
-                        "mime_type": "video/mp4",
-                    },
-                ],
-            },
-        ]
-        state.chat_history_json = json.dumps(history)
+        # Upscale is a terminal, video-only operation: no chat thread follows.
+        is_upscale = state.omni_mode == "upscale"
+        library_prompt = (
+            f"Upscale to {state.resolution}" if is_upscale else state.prompt
+        )
+        if not is_upscale:
+            state.previous_interaction_id = interaction_id
 
-        # Hydrate UI message representations
-        ui_messages = [
-            {"role": "user", "text": state.prompt},
-            {
-                "role": "model",
-                "text": state.prompt,
-                "video_url": state.result_display_url,
-                "gcs_uri": gcs_uri,
-            },
-        ]
-        state.chat_messages_json = json.dumps(ui_messages)
+            # Hydrate initial chat history JSON
+            history = [
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": state.prompt}],
+                },
+                {
+                    "type": "model_output",
+                    "content": [
+                        {
+                            "type": "video",
+                            "gcs_uri": gcs_uri,
+                            "mime_type": "video/mp4",
+                        },
+                    ],
+                },
+            ]
+            state.chat_history_json = json.dumps(history)
+
+            # Hydrate UI message representations
+            ui_messages = [
+                {"role": "user", "text": state.prompt},
+                {
+                    "role": "model",
+                    "text": state.prompt,
+                    "video_url": state.result_display_url,
+                    "gcs_uri": gcs_uri,
+                },
+            ]
+            state.chat_messages_json = json.dumps(ui_messages)
 
         # Log item to library
         item = MediaItem(
             gcs_uris=[gcs_uri],
-            prompt=state.prompt,
+            prompt=library_prompt,
             mime_type="video/mp4",
             aspect=state.aspect_ratio,
             resolution=state.resolution,

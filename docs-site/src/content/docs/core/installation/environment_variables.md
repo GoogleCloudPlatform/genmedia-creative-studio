@@ -48,9 +48,9 @@ Configuration for the Gemini Omni Flash multimodal video interaction model.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`DEFAULT_OMNI_MODEL_NAME`** | `gemini-omni-1.1-flash-preview` | The fallback model identifier for Gemini Omni when starting a session. |
+| **`DEFAULT_OMNI_MODEL_NAME`** | `gemini-omni-1.2-flash` | The fallback model identifier for Gemini Omni when starting a session. |
 | **`OMNI_LOCATION`** | `global` | Region for the Gemini Omni API endpoint. |
-| **`OMNI_MODEL_ID`** | `gemini-omni-1.1-flash-preview` | The standard Gemini Omni model ID. |
+| **`OMNI_MODEL_ID`** | `gemini-omni-1.2-flash` | The standard Gemini Omni model ID. |
 | **`OMNI_PROJECT_ID`** | `PROJECT_ID` | Allows using a different GCP project for Gemini Omni quota if needed. |
 | **`OMNI_TIMEOUT_MS`** | `600000` | Client-side HTTP timeout in milliseconds (default 10 minutes) for long-running video generation and editing requests. |
 

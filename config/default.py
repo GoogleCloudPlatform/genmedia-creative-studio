@@ -163,11 +163,11 @@ class Default:
     # Gemini Omni
     DEFAULT_OMNI_MODEL_NAME: str = os.environ.get(
         "DEFAULT_OMNI_MODEL_NAME",
-        "gemini-omni-1.1-flash-preview",
+        "gemini-omni-1.2-flash",
     )
     OMNI_LOCATION: str = os.environ.get("OMNI_LOCATION", "global")
     OMNI_MODEL_ID: str = os.environ.get(
-        "OMNI_MODEL_ID", "gemini-omni-1.1-flash-preview"
+        "OMNI_MODEL_ID", "gemini-omni-1.2-flash"
     )
     OMNI_PROJECT_ID: str = os.environ.get("OMNI_PROJECT_ID", PROJECT_ID)
     OMNI_TIMEOUT_MS: int = int(os.environ.get("OMNI_TIMEOUT_MS", "600000"))

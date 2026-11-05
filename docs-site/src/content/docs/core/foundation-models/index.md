@@ -11,7 +11,7 @@ GenMedia Creative Studio provides dedicated, interactive workspaces for explorin
 
 | Workspace | Route | Primary Models (`config/`) | Key Capabilities |
 | :--- | :--- | :--- | :--- |
-| **[Gemini Omni](/genmedia-creative-studio/core/foundation-models/gemini-omni/)** | `/gemini-omni` | `gemini-omni-1.1-flash-preview` | Interleaved multimodal text, image, and audio generation via the Vertex AI Interactions API (`interactions.create`) with resolution controls (`360p`–`4k`) and thought summaries. |
+| **[Gemini Omni](/genmedia-creative-studio/core/foundation-models/gemini-omni/)** | `/gemini-omni` | `gemini-omni-1.2-flash` | Interleaved multimodal text, image, and audio generation via the Vertex AI Interactions API (`interactions.create`) with resolution controls (`360p`–`4k`) and thought summaries. |
 | **[Veo](/genmedia-creative-studio/core/foundation-models/veo/)** | `/veo` | `veo-3.1-generate-001`, `veo-3.1-fast-generate-001`, `veo-3.1-lite-generate-001`, `veo-3.0-*`, `veo-2.0-*` | Asynchronous long-running operation (`generate_videos`) video synthesis across Text-to-Video (T2V), Image-to-Video (I2V), First/Last Frame Interpolation, Reference-to-Video (R2V), and Video Extension. |
 | **[Gemini Image Generation (Nano Banana)](/genmedia-creative-studio/core/foundation-models/nano-banana/)** | `/nano-banana` | `gemini-3.1-flash-image-preview` (Nano Banana 2), `gemini-3.1-flash-image-lite-preview` (2 Lite), `gemini-3-pro-image-preview` (Pro), `gemini-2.5-flash-image` | Conversational image generation and multi-reference editing (`up to 14` reference images), `1K`/`2K`/`4K` output sizing, aspect ratio controls, and Google Search grounding. |
 | **[Lyria](/genmedia-creative-studio/core/foundation-models/lyria/)** | `/lyria` | `lyria-002`, `lyria-3-clip-preview`, `lyria-3-pro-preview` | Instrumental and vocal music synthesis supporting text prompts, custom lyrics, image conditioning, and C2PA provenance metadata preservation. |
@@ -40,7 +40,7 @@ Every direct foundation model workspace in the core application (`main.py`) shar
 ### 3. Vertex AI & Cloud AI API Dispatch
 Depending on the model family, adapters in `models/` invoke one of three primary Google Cloud API patterns via `google.genai.Client` or `google-cloud-texttospeech`:
 1. **Unary `models.generate_content` / `models.predict`:** Used by Gemini Image Generation (Nano Banana), Gemini TTS, Gemini Writers Workshop, and Lyria 2 (`lyria-002`).
-2. **Vertex AI Interactions API (`client.interactions.create`):** Used by Gemini Omni (`gemini-omni-1.1-flash-preview`) and Lyria 3 (`lyria-3-clip-preview`, `lyria-3-pro-preview`) for multimodal turn interactions and C2PA-signed media payloads.
+2. **Vertex AI Interactions API (`client.interactions.create`):** Used by Gemini Omni (`gemini-omni-1.2-flash`) and Lyria 3 (`lyria-3-clip-preview`, `lyria-3-pro-preview`) for multimodal turn interactions and C2PA-signed media payloads.
 3. **Asynchronous Long-Running Operations (`models.generate_videos`):** Used by Veo (`models/veo.py`) and the FastAPI `/api/veo/*` router (`routers/veo_router.py`), polling operation status until video bytes or GCS URIs are finalized.
 
 ### 4. Cloud Storage, `/media` Proxy, and Firestore Telemetry

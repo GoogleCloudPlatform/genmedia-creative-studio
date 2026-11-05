@@ -3,9 +3,24 @@ title: "Gemini Omni"
 description: "Interleaved multimodal text, image, and audio generation workspace powered by the Vertex AI Interactions API."
 ---
 
-The **Gemini Omni** workspace (`/gemini-omni`) provides a unified canvas for **interleaved multimodal generation** using `gemini-omni-1.1-flash-preview`. Unlike single-modality endpoints, Gemini Omni accepts mixed combinations of text, reference images, and audio inputs and produces interleaved responses containing rich markdown text, synthesized images, and audio outputs in a single turn.
+The **Gemini Omni** workspace (`/gemini-omni`) provides a unified canvas for **interleaved multimodal generation** using `gemini-omni-1.2-flash`. Unlike single-modality endpoints, Gemini Omni accepts mixed combinations of text, reference images, and audio inputs and produces interleaved responses containing rich markdown text, synthesized images, and audio outputs in a single turn.
 
 ![Gemini Omni Interaction Architecture](../assets/diagrams/foundation-gemini-omni-light.webp)
+
+## Video Modes (`gemini-omni-1.2-flash`)
+
+`gemini-omni-1.2-flash` is the default model on the `/gemini-omni` page. Gemini Omni 1.1 (`gemini-omni-1.1-flash-preview`) remains selectable from the model dropdown. The mode list is model-aware (`config/omni_models.py`):
+
+| Mode | Inputs | Notes |
+| :--- | :--- | :--- |
+| Text to video | Prompt | |
+| Image to video | Prompt + image | |
+| Reference to video | Prompt + reference images | |
+| Edit video | Prompt + video | Output length matches the input video. |
+| Extend video | Prompt + video | 1.2 only. Sends `generation_config.video_config.task="extend"`. |
+| Upscale video | Video only | 1.2 only. Sends `video_config.task="upscale"`, no text part. Terminal: no chat follow-up. Target resolution `1080p` or `4k`. |
+
+Duration is 3–15 seconds on 1.2 (3–10 seconds on 1.1). Aspect ratios are `16:9` and `9:16`. Resolutions are `360p`, `720p` (default), `1080p`, and `4k`.
 
 ## Source Architecture
 
@@ -35,7 +50,7 @@ Gemini Omni exposes intermediate reasoning steps before emitting its final inter
 
 1. **Client Initialization:** `get_omni_client()` initializes a `genai.Client(vertexai=True, project=cfg.PROJECT_ID, location="global", http_options=HttpOptions(api_version="v1beta1"))`.
 2. **Input Assembly:** `generate_omni_content()` downloads any referenced `gs://` images or audio clips into memory, base64-encodes the binary payloads, and appends the user's text prompt to the `inputs` list.
-3. **Interactions API Call:** Invokes `client.interactions.create(model="gemini-omni-1.1-flash-preview", input=inputs, response_modalities=["text", "image"], generation_config=...)` inside `track_model_call()`.
+3. **Interactions API Call:** Invokes `client.interactions.create(model="gemini-omni-1.2-flash", input=inputs, response_modalities=["text", "image"], generation_config=...)` inside `track_model_call()`.
 4. **Interleaved Output Parsing & Persistence:**
    * `text` blocks are appended in order (`{"type": "text", "text": ...}`).
    * `image` and `audio` blocks are decoded from base64, uploaded to `gs://<GENMEDIA_BUCKET>/omni_outputs/` via `store_to_gcs()`, and returned as ordered items in `outputs`.

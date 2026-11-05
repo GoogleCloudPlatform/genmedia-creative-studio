@@ -384,22 +384,74 @@ def test_on_video_select(mock_state: MagicMock) -> None:
 
 
 def test_omni_registry_default_and_legacy_model() -> None:
-    """The 1.1 model is the default and the legacy model remains selectable."""
+    """The 1.2 model is the default and earlier models remain selectable."""
     from config.omni_models import (
         DEFAULT_OMNI_VERSION_ID,
         get_omni_model_config,
     )
 
-    assert DEFAULT_OMNI_VERSION_ID == "gemini-omni-1.1-flash-preview"
+    assert DEFAULT_OMNI_VERSION_ID == "gemini-omni-1.2-flash"
 
+    latest = get_omni_model_config("gemini-omni-1.2-flash")
+    assert latest is not None
+    assert latest.resolutions == ["360p", "720p", "1080p", "4k"]
+    assert latest.supported_aspect_ratios == ["16:9", "9:16"]
+    assert (latest.min_duration, latest.max_duration) == (3, 15)
+    assert latest.default_duration == 10
+
+    # The 1.1 model stays selectable with its original limits.
     new_model = get_omni_model_config("gemini-omni-1.1-flash-preview")
     assert new_model is not None
     assert new_model.resolutions == ["360p", "720p", "1080p", "4k"]
+    assert (new_model.min_duration, new_model.max_duration) == (3, 10)
 
     # Legacy model kept selectable (Q1) and constrained to 720p.
     legacy_model = get_omni_model_config("gemini-omni-flash-preview")
     assert legacy_model is not None
     assert legacy_model.resolutions == ["720p"]
+
+
+def test_omni_registry_default_config_matches_registry() -> None:
+    """The configured default model names resolve to a registered model."""
+    from config.default import Default
+    from config.omni_models import get_omni_model_config
+
+    cfg = Default()
+    assert get_omni_model_config(cfg.DEFAULT_OMNI_MODEL_NAME) is not None
+    assert get_omni_model_config(cfg.OMNI_MODEL_ID) is not None
+
+
+def test_modes_for_model_gates_extend_and_upscale() -> None:
+    """Extend and upscale are offered only by models that support them."""
+    from config.omni_models import modes_for_model
+
+    assert modes_for_model("gemini-omni-1.2-flash") == [
+        "t2v",
+        "i2v",
+        "ref2v",
+        "edit",
+        "extend",
+        "upscale",
+    ]
+    assert modes_for_model("gemini-omni-1.1-flash-preview") == [
+        "t2v",
+        "i2v",
+        "ref2v",
+        "edit",
+    ]
+    # Unknown models fall back to the four common modes.
+    assert modes_for_model("no-such-model") == ["t2v", "i2v", "ref2v", "edit"]
+
+
+def test_clamp_duration_uses_model_range() -> None:
+    """Durations are clamped into each model's supported range."""
+    from config.omni_models import clamp_duration
+
+    assert clamp_duration("gemini-omni-1.2-flash", 15) == 15
+    assert clamp_duration("gemini-omni-1.2-flash", 30) == 15
+    assert clamp_duration("gemini-omni-1.2-flash", 1) == 3
+    assert clamp_duration("gemini-omni-1.1-flash-preview", 15) == 10
+    assert clamp_duration("no-such-model", 42) == 42
 
 
 @patch("pages.omni.me.state")
@@ -425,6 +477,8 @@ def test_on_model_change_resets_unsupported_resolution(mock_state: MagicMock) ->
 
     mock_page_state = MagicMock()
     mock_page_state.resolution = "4k"
+    mock_page_state.omni_mode = "t2v"
+    mock_page_state.video_length = 10
     mock_state.return_value = mock_page_state
 
     event = MagicMock()
@@ -444,6 +498,8 @@ def test_on_model_change_keeps_supported_resolution(mock_state: MagicMock) -> No
 
     mock_page_state = MagicMock()
     mock_page_state.resolution = "1080p"
+    mock_page_state.omni_mode = "t2v"
+    mock_page_state.video_length = 10
     mock_state.return_value = mock_page_state
 
     event = MagicMock()
@@ -453,6 +509,50 @@ def test_on_model_change_keeps_supported_resolution(mock_state: MagicMock) -> No
 
     assert mock_page_state.omni_model == "gemini-omni-1.1-flash-preview"
     assert mock_page_state.resolution == "1080p"
+
+
+@patch("pages.omni.me.state")
+def test_on_model_change_resets_unsupported_mode_and_clamps_duration(
+    mock_state: MagicMock,
+) -> None:
+    """Switching 1.2 -> 1.1 drops extend/upscale and clamps 15s to 10s."""
+    from pages.omni import on_model_change
+
+    mock_page_state = MagicMock()
+    mock_page_state.resolution = "720p"
+    mock_page_state.omni_mode = "extend"
+    mock_page_state.video_length = 15
+    mock_state.return_value = mock_page_state
+
+    event = MagicMock()
+    event.value = "gemini-omni-1.1-flash-preview"
+
+    list(on_model_change(event))
+
+    assert mock_page_state.omni_mode == "t2v"
+    assert mock_page_state.video_length == 10
+
+
+@patch("pages.omni.me.state")
+def test_on_model_change_keeps_supported_mode_and_duration(
+    mock_state: MagicMock,
+) -> None:
+    """Switching to 1.2 keeps a mode and duration it supports."""
+    from pages.omni import on_model_change
+
+    mock_page_state = MagicMock()
+    mock_page_state.resolution = "720p"
+    mock_page_state.omni_mode = "upscale"
+    mock_page_state.video_length = 12
+    mock_state.return_value = mock_page_state
+
+    event = MagicMock()
+    event.value = "gemini-omni-1.2-flash"
+
+    list(on_model_change(event))
+
+    assert mock_page_state.omni_mode == "upscale"
+    assert mock_page_state.video_length == 12
 
 
 # ==============================================================================
@@ -689,3 +789,167 @@ def test_generate_omni_video_multiturn_skips_media_check(
     assert gcs_uri == "gs://bucket/videos/output.mp4"
     assert interaction_id == "int-next"
     mock_client.interactions.create.assert_called_once()
+
+
+# ==============================================================================
+# Extend and upscale (Gemini Omni 1.2)
+# ==============================================================================
+
+OMNI_12 = "gemini-omni-1.2-flash"
+
+
+def test_find_missing_required_media_extend_and_upscale() -> None:
+    """Extend and upscale both need a video; an image or references don't help."""
+    for mode in ("extend", "upscale"):
+        assert (
+            find_missing_required_media(
+                mode,
+                has_image=True,
+                has_video=False,
+                reference_count=3,
+            )
+            is not None
+        )
+        assert (
+            find_missing_required_media(
+                mode,
+                has_image=False,
+                has_video=True,
+                reference_count=0,
+            )
+            is None
+        )
+
+
+def test_build_input_parts_extend_sends_prompt_and_video() -> None:
+    """Extend sends the prompt (unmodified) followed by the base video."""
+    req = _omni_request(
+        "extend",
+        prompt="Keep going as the camera pulls back",
+        duration_seconds=5,
+        aspect_ratio="9:16",
+        model_version_id=OMNI_12,
+        reference_video_gcs="gs://bucket/base.mp4",
+        reference_video_mime_type="video/mp4",
+    )
+    parts = _build_input_parts(req)
+    # No aspect ratio / duration suffix: the output follows the input video.
+    assert parts == [
+        {"type": "text", "text": "Keep going as the camera pulls back"},
+        {"type": "video", "mime_type": "video/mp4", "uri": "gs://bucket/base.mp4"},
+    ]
+
+
+def test_build_input_parts_upscale_is_video_only() -> None:
+    """Upscale must not send any text part (the API rejects text for upscale)."""
+    req = _omni_request(
+        "upscale",
+        prompt="ignored",
+        model_version_id=OMNI_12,
+        reference_video_gcs="gs://bucket/base.mp4",
+        reference_video_mime_type="video/mp4",
+    )
+    parts = _build_input_parts(req)
+    assert parts == [
+        {"type": "video", "mime_type": "video/mp4", "uri": "gs://bucket/base.mp4"},
+    ]
+
+
+def _mock_video_interaction(interaction_id: str = "int-1") -> MagicMock:
+    """Build a mock Interactions response holding one video output."""
+    content = MagicMock()
+    content.type = "video"
+    content.data = "encoded_video_data"
+    step = MagicMock()
+    step.type = "model_output"
+    step.content = [content]
+    interaction = MagicMock()
+    interaction.id = interaction_id
+    interaction.steps = [step]
+    return interaction
+
+
+@pytest.mark.parametrize("mode", ["extend", "upscale"])
+@patch("models.omni._save_video_to_gcs")
+@patch("models.omni.get_omni_client")
+def test_generate_omni_video_sends_explicit_task(
+    mock_get_client: MagicMock,
+    mock_save: MagicMock,
+    mode: str,
+) -> None:
+    """Extend and upscale send generation_config.video_config.task."""
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    mock_client.interactions.create.return_value = _mock_video_interaction()
+    mock_save.return_value = "gs://bucket/videos/output.mp4"
+
+    req = _omni_request(
+        mode,
+        resolution="1080p",
+        model_version_id=OMNI_12,
+        reference_video_gcs="gs://bucket/base.mp4",
+    )
+    generate_omni_video(req)
+
+    _, kwargs = mock_client.interactions.create.call_args
+    assert kwargs["generation_config"] == {"video_config": {"task": mode}}
+    assert kwargs["response_format"] == [{"type": "video", "resolution": "1080p"}]
+    if mode == "upscale":
+        assert all(p["type"] != "text" for p in kwargs["input"])
+
+
+@patch("models.omni._save_video_to_gcs")
+@patch("models.omni.get_omni_client")
+def test_generate_omni_video_other_modes_omit_task(
+    mock_get_client: MagicMock,
+    mock_save: MagicMock,
+) -> None:
+    """Modes the model can infer keep the plain request shape (no task)."""
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    mock_client.interactions.create.return_value = _mock_video_interaction()
+    mock_save.return_value = "gs://bucket/videos/output.mp4"
+
+    generate_omni_video(_omni_request("t2v", model_version_id=OMNI_12))
+
+    _, kwargs = mock_client.interactions.create.call_args
+    assert "generation_config" not in kwargs
+
+
+@pytest.mark.parametrize("mode", ["extend", "upscale"])
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_extend_upscale_rejected_on_1_1(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+    mode: str,
+) -> None:
+    """A model without the mode is rejected before any billable call."""
+    from common.error_handling import GenerationError
+
+    req = _omni_request(mode, reference_video_gcs="gs://bucket/base.mp4")
+
+    with pytest.raises(GenerationError, match=mode):
+        generate_omni_video(req)
+
+    mock_track.assert_not_called()
+    mock_get_client.assert_not_called()
+
+
+@pytest.mark.parametrize("mode", ["extend", "upscale"])
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_extend_upscale_missing_video_not_billed(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+    mode: str,
+) -> None:
+    """Extend/upscale without a video never reach the billable API."""
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+
+    with pytest.raises(MissingMediaError):
+        generate_omni_video(_omni_request(mode, model_version_id=OMNI_12))
+
+    mock_client.interactions.create.assert_not_called()
+    mock_track.assert_not_called()

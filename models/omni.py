@@ -64,6 +64,8 @@ def find_missing_required_media(
       - ``i2v``:   a reference image is required.
       - ``ref2v``: at least one reference image is required.
       - ``edit``:  a base video to edit is required (image is optional).
+      - ``extend``: a base video to extend is required.
+      - ``upscale``: a video to upscale is required (no text prompt is sent).
     """
     if omni_mode == "i2v" and not has_image:
         return "Image-to-Video requires a reference image."
@@ -71,6 +73,10 @@ def find_missing_required_media(
         return "Reference-to-Video requires at least one reference image."
     if omni_mode == "edit" and not has_video:
         return "Video editing requires a base video to edit."
+    if omni_mode == "extend" and not has_video:
+        return "Extend requires a base video to extend."
+    if omni_mode == "upscale" and not has_video:
+        return "Upscale requires a video to upscale."
     return None
 
 
@@ -125,6 +131,15 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
             f"Unsupported Gemini Omni model: {request.model_version_id}",
         )
 
+    # Fail fast if the selected model does not offer the requested mode, before
+    # any media validation or billable call.
+    if request.omni_mode not in model_config.supported_modes:
+        raise GenerationError(
+            f"{model_config.display_name} does not support the "
+            f"'{request.omni_mode}' mode.",
+            category=ErrorCategory.INVALID_ARGUMENT,
+        )
+
     # Validate required media *before* opening the model-call span, so a
     # missing-input request is never recorded as a failed model_call and never
     # reaches the billable Interactions API (issue #1929).
@@ -160,6 +175,13 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
                 ]
             if request.previous_interaction_id:
                 call_args["previous_interaction_id"] = request.previous_interaction_id
+            # Extend and upscale cannot be inferred from the inputs alone, so
+            # the task is sent explicitly. Other modes keep the plain request
+            # shape that is proven on every Omni model.
+            if request.omni_mode in EXPLICIT_TASK_MODES:
+                call_args["generation_config"] = {
+                    "video_config": {"task": request.omni_mode},
+                }
 
             logger.info(
                 f"Calling client.interactions.create with model={model_config.model_name}",
@@ -184,6 +206,10 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
 
 
 DEFAULT_OMNI_DURATION = 10
+
+# Modes whose task cannot be inferred from the inputs alone; the Interactions
+# API needs ``generation_config.video_config.task`` for these.
+EXPLICIT_TASK_MODES = ("extend", "upscale")
 
 
 def _modify_prompt_for_omni(prompt: str, aspect_ratio: str, duration: int) -> str:
@@ -251,11 +277,16 @@ def _build_input_parts(request: OmniVideoGenerationRequest) -> list:
     """Build the input parts list from the request options."""
     input_parts = []
 
-    modified_prompt = _modify_prompt_for_omni(
-        request.prompt,
-        request.aspect_ratio,
-        request.duration_seconds,
-    )
+    # Extend output length follows the input video, so the duration slider
+    # value must not leak into the prompt for that mode.
+    if request.omni_mode == "extend":
+        modified_prompt = request.prompt
+    else:
+        modified_prompt = _modify_prompt_for_omni(
+            request.prompt,
+            request.aspect_ratio,
+            request.duration_seconds,
+        )
 
     # Handle multi-turn history if present
     if request.previous_interaction_id and request.chat_history_json:
@@ -274,8 +305,10 @@ def _build_input_parts(request: OmniVideoGenerationRequest) -> list:
             },
         )
     else:
-        # Standard single-turn flow
-        input_parts.append({"type": "text", "text": modified_prompt})
+        # Standard single-turn flow. Upscale is video-only: the API rejects any
+        # text input for that task.
+        if request.omni_mode != "upscale":
+            input_parts.append({"type": "text", "text": modified_prompt})
         _append_single_turn_media(request, input_parts)
 
     return input_parts
@@ -342,6 +375,20 @@ def _append_single_turn_media(
                     "uri": request.reference_video_gcs,
                 },
             )
+
+    elif request.omni_mode in ("extend", "upscale"):
+        logger.info(f"Mode: {request.omni_mode}")
+        if not request.reference_video_gcs:
+            raise GenerationError(
+                f"A base video GCS URI is required for {request.omni_mode}.",
+            )
+        input_parts.append(
+            {
+                "type": "video",
+                "mime_type": request.reference_video_mime_type or "video/mp4",
+                "uri": request.reference_video_gcs,
+            },
+        )
 
     return input_parts
 

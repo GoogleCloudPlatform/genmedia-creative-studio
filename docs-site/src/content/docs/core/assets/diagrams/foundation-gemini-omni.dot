@@ -17,7 +17,7 @@ digraph foundation_gemini_omni {
     label = "Omni adapter (models/omni.py)";
     class = "accent";
     state  [label="Conversation turns\nstate/omni_state.py", class="code"];
-    client [label="interactions.create\ngemini-omni-1.1-flash", class="primary code"];
+    client [label="interactions.create\ngemini-omni-1.2-flash", class="primary code"];
     parse  [label="Step parser\nthoughts · text · video", class="emphasis"];
   }
 

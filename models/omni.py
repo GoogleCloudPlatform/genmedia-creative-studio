@@ -166,13 +166,12 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
                 "model": model_config.model_name,
                 "input": input_parts,
             }
-            # Request the desired output resolution via the Interactions API
-            # video response_format. Aspect ratio and duration continue to be
-            # conveyed through the prompt text (see _modify_prompt_for_omni).
-            if request.resolution:
-                call_args["response_format"] = [
-                    {"type": "video", "resolution": request.resolution},
-                ]
+            # Request resolution, aspect ratio and duration via the
+            # Interactions API video response_format (server-validated and
+            # kept out of the prompt text).
+            video_format = _build_video_response_format(request)
+            if video_format:
+                call_args["response_format"] = [video_format]
             if request.previous_interaction_id:
                 call_args["previous_interaction_id"] = request.previous_interaction_id
             # Extend and upscale cannot be inferred from the inputs alone, so
@@ -205,25 +204,35 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
             raise GenerationError(f"Omni generation failed: {e}") from e
 
 
-DEFAULT_OMNI_DURATION = 10
-
 # Modes whose task cannot be inferred from the inputs alone; the Interactions
 # API needs ``generation_config.video_config.task`` for these.
 EXPLICIT_TASK_MODES = ("extend", "upscale")
 
+# Modes whose output keeps the input video's framing and length. Sending an
+# aspect ratio or duration for these is wrong at best and a 400 at worst
+# (verified live: edit with a duration that differs from the input length is
+# rejected with "Edited video duration ... does not match config duration").
+INPUT_DERIVED_MODES = ("edit", *EXPLICIT_TASK_MODES)
 
-def _modify_prompt_for_omni(prompt: str, aspect_ratio: str, duration: int) -> str:
-    """Append aspect ratio and duration to the prompt if they differ from defaults (16:9, 10s)."""
-    additions = []
-    if aspect_ratio != "16:9":
-        additions.append(f"aspect ratio {aspect_ratio}")
-    if duration != DEFAULT_OMNI_DURATION:
-        additions.append(f"duration {duration}s")
 
-    if additions:
-        separator = " " if prompt.endswith(",") else ", "
-        return prompt.strip() + separator + ", ".join(additions)
-    return prompt
+def _build_video_response_format(
+    request: OmniVideoGenerationRequest,
+) -> dict | None:
+    """Build the Interactions API ``video`` response_format for a request.
+
+    Resolution is always sent when set. Aspect ratio and duration are sent only
+    for modes that generate new framing/length; edit, extend and upscale derive
+    both from the input video, so they are omitted there.
+    """
+    video_format: dict = {"type": "video"}
+    if request.resolution:
+        video_format["resolution"] = request.resolution
+    if request.omni_mode not in INPUT_DERIVED_MODES:
+        if request.aspect_ratio:
+            video_format["aspect_ratio"] = request.aspect_ratio
+        if request.duration_seconds:
+            video_format["duration"] = f"{request.duration_seconds}s"
+    return video_format if len(video_format) > 1 else None
 
 
 def _resolve_gcs_uris_in_history(input_parts: list) -> list:
@@ -277,16 +286,8 @@ def _build_input_parts(request: OmniVideoGenerationRequest) -> list:
     """Build the input parts list from the request options."""
     input_parts = []
 
-    # Extend output length follows the input video, so the duration slider
-    # value must not leak into the prompt for that mode.
-    if request.omni_mode == "extend":
-        modified_prompt = request.prompt
-    else:
-        modified_prompt = _modify_prompt_for_omni(
-            request.prompt,
-            request.aspect_ratio,
-            request.duration_seconds,
-        )
+    # Aspect ratio and duration travel in response_format, not the prompt.
+    modified_prompt = request.prompt
 
     # Handle multi-turn history if present
     if request.previous_interaction_id and request.chat_history_json:

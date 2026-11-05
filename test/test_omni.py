@@ -29,8 +29,8 @@ from common.error_handling import GenerationError
 from models.omni import (
     MissingMediaError,
     _build_input_parts,
+    _build_video_response_format,
     _extract_video_payload,
-    _modify_prompt_for_omni,
     find_missing_required_media,
     generate_omni_video,
 )
@@ -309,42 +309,77 @@ def test_generate_omni_video_success(
     assert interaction_id == "new-interaction-id"
 
     mock_client.interactions.create.assert_called_once()
-    # Resolution is passed through to the Interactions API via response_format.
+    # Resolution, aspect ratio and duration are passed through to the
+    # Interactions API via response_format, not the prompt text.
     _, call_kwargs = mock_client.interactions.create.call_args
     assert call_kwargs["response_format"] == [
-        {"type": "video", "resolution": "1080p"},
+        {
+            "type": "video",
+            "resolution": "1080p",
+            "aspect_ratio": "16:9",
+            "duration": "10s",
+        },
     ]
+    assert call_kwargs["input"][0] == {
+        "type": "text",
+        "text": "Cinematic city sunset",
+    }
     mock_save.assert_called_once_with("encoded_video_data")
 
 
-def test_modify_prompt_for_omni_defaults() -> None:
-    """Test prompt modification when defaults (16:9, 10s) are selected."""
-    res = _modify_prompt_for_omni("A cute dog running", "16:9", 10)
-    assert res == "A cute dog running"
+def test_build_video_response_format_generative_modes() -> None:
+    """t2v/i2v/ref2v send resolution, aspect ratio and a 'Ns' duration."""
+    for mode in ("t2v", "i2v", "ref2v"):
+        req = _omni_request(
+            mode,
+            resolution="360p",
+            aspect_ratio="9:16",
+            duration_seconds=5,
+        )
+        assert _build_video_response_format(req) == {
+            "type": "video",
+            "resolution": "360p",
+            "aspect_ratio": "9:16",
+            "duration": "5s",
+        }
 
 
-def test_modify_prompt_for_omni_custom_aspect() -> None:
-    """Test prompt modification when custom aspect ratio is selected."""
-    res = _modify_prompt_for_omni("A cute dog running", "9:16", 10)
-    assert res == "A cute dog running, aspect ratio 9:16"
+@pytest.mark.parametrize("mode", ["edit", "extend", "upscale"])
+def test_build_video_response_format_input_derived_modes(mode: str) -> None:
+    """Edit/extend/upscale keep the input's framing and length: resolution only.
+
+    Verified live: edit with a duration that differs from the input length is
+    rejected by the API with a 400.
+    """
+    req = _omni_request(
+        mode,
+        resolution="1080p",
+        aspect_ratio="9:16",
+        duration_seconds=5,
+    )
+    assert _build_video_response_format(req) == {
+        "type": "video",
+        "resolution": "1080p",
+    }
 
 
-def test_modify_prompt_for_omni_custom_duration() -> None:
-    """Test prompt modification when custom duration is selected."""
-    res = _modify_prompt_for_omni("A cute dog running", "16:9", 6)
-    assert res == "A cute dog running, duration 6s"
+def test_build_video_response_format_edit_without_resolution_is_none() -> None:
+    """No response_format at all when nothing is left to send."""
+    req = _omni_request("edit", resolution="", aspect_ratio="9:16", duration_seconds=5)
+    assert _build_video_response_format(req) is None
 
 
-def test_modify_prompt_for_omni_both_custom() -> None:
-    """Test prompt modification when both aspect and duration are custom."""
-    res = _modify_prompt_for_omni("A cute dog running", "9:16", 8)
-    assert res == "A cute dog running, aspect ratio 9:16, duration 8s"
-
-
-def test_modify_prompt_for_omni_with_trailing_comma() -> None:
-    """Test prompt modification when prompt ends with a comma."""
-    res = _modify_prompt_for_omni("A cute dog running,", "9:16", 8)
-    assert res == "A cute dog running, aspect ratio 9:16, duration 8s"
+def test_build_input_parts_never_appends_format_to_prompt() -> None:
+    """Aspect ratio and duration must not pollute the prompt text."""
+    req = _omni_request(
+        "t2v",
+        prompt="A cute dog running",
+        aspect_ratio="9:16",
+        duration_seconds=8,
+    )
+    assert _build_input_parts(req) == [
+        {"type": "text", "text": "A cute dog running"},
+    ]
 
 
 @patch("pages.omni.me.state")

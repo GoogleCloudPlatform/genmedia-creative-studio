@@ -76,7 +76,7 @@ async def run_variation_benchmark(job_id: str, prompt: str, count: int, duration
         eval_project = os.getenv("GOOGLE_CLOUD_PROJECT")
         eval_location = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
         eval_model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-        target_video_model = video_model or os.getenv("VEO_MODEL", "gemini-omni-1.1-flash-preview")
+        target_video_model = video_model or os.getenv("VEO_MODEL", "gemini-omni-1.2-flash")
         
         # 1. Generate Prompt Variations
         jobs[job_id]["status"] = "brainstorming_variations"

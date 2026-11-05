@@ -2,7 +2,7 @@
 title: "MCP Omni Server"
 ---
 
-This tool provides video generation (with optional embedded audio) using Google's Gemini Omni model (`gemini-omni-1.1-flash-preview`) via the **Vertex Interactions API**. It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to allow LLMs and other MCP clients to generate videos from a text prompt, optionally conditioned on input images and/or videos.
+This tool provides video generation (with optional embedded audio) using Google's Gemini Omni model (`gemini-omni-1.2-flash`) via the **Vertex Interactions API**. It is one of the MCP tools for Google Cloud Genmedia services, acting as an MCP server component to allow LLMs and other MCP clients to generate videos from a text prompt, optionally conditioned on input images and/or videos.
 
 Unlike the other genmedia servers (which use the Vertex `genai` client), Omni is reachable only through the Interactions API, so this server calls the shared `common.GenerateOmniVideo` helper (which owns the Interactions client) rather than a `genai.Client`. The Interactions endpoint is **global-only**: `LOCATION` defaults to `global` and the API call is always made against the `global` endpoint.
 
@@ -16,8 +16,8 @@ The server exposes the following tool:
 *   **Handler**: `omniVideoGenerationHandler`
 *   **Parameters**:
     *   `prompt` (string, required): The text prompt describing the video to generate.
-    *   `model` (string, optional): Model to use. Can be the canonical model ID (`gemini-omni-1.1-flash-preview`) or a common alias (e.g. `Omni`, `Omni 1.1`, `Gemini Omni 1.1 Flash`). The prior `gemini-omni-flash-preview` remains selectable via its ID or the `Gemini Omni Flash` alias. See `mcp-common/models.go` for the supported list. Defaults to `gemini-omni-1.1-flash-preview`.
-    *   `resolution` (string, optional): Video output resolution: `360p`, `720p`, `1080p`, or `4k` (`gemini-omni-1.1-flash-preview` supports all four; `gemini-omni-flash-preview` supports `720p`). Sent in `response_format`.
+    *   `model` (string, optional): Model to use. Can be the canonical model ID (`gemini-omni-1.2-flash`) or a common alias (e.g. `Omni`, `Omni 1.2`, `Gemini Omni 1.2 Flash`; `Omni 1.1` selects the previous preview). The prior `gemini-omni-1.1-flash-preview` and `gemini-omni-flash-preview` models remains selectable via its ID or the `Gemini Omni Flash` alias. See `mcp-common/models.go` for the supported list. Defaults to `gemini-omni-1.2-flash`.
+    *   `resolution` (string, optional): Video output resolution: `360p`, `720p`, `1080p`, or `4k` (`gemini-omni-1.2-flash` and `gemini-omni-1.1-flash-preview` support all four; `gemini-omni-flash-preview` supports `720p`). Sent in `response_format`.
     *   `aspect_ratio` (string, optional): Video output aspect ratio: `16:9` or `9:16`. Sent in `response_format`.
     *   `duration_seconds` (number, optional): Video output duration in seconds (`3`-`10`, maximum `10` seconds with or without audio). Sent in `response_format`.
     *   `images` (array of string, optional): Up to 10 input images to condition generation on (first/last frames, character/style references, or starting frame). Each entry is a local file path (up to 20 MB) or a `gs://` URI (up to 30 MB). The MIME type is inferred from the file extension: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/heic`, `image/heif`.
@@ -29,18 +29,18 @@ The server exposes the following tool:
     *   `output_filename` (string, optional): Base name for the output(s), e.g. `clip.mp4`. The extension is forced to the true video type and, when more than one video is generated, a `_1..n` suffix is inserted before the extension. Applied identically to local files and GCS objects. See [Naming Outputs](../index.md#naming-outputs-output_filename).
     *   `gcs_bucket_uri` (string, optional): GCS URI prefix to store generated video(s) (e.g., `your-bucket/outputs/`). If not provided and `GENMEDIA_BUCKET` is set, `gs://<GENMEDIA_BUCKET>/omni_outputs/` is used. For each uploaded video a best-effort V4 signed HTTPS URL is also returned (see `OMNI_SIGNED_URL_EXPIRY_HOURS`).
 
-## Model Specifications (`gemini-omni-1.1-flash-preview`)
+## Model Specifications (`gemini-omni-1.2-flash`)
 
-Per the [Google Cloud Gemini Omni 1.1 Flash documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/omni-1-1-flash):
+Per the [Google Cloud Gemini Omni 1.1 Flash documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/omni-1-1-flash) and verified against `gemini-omni-1.2-flash` (GA):
 
 | Specification | Details |
 | :--- | :--- |
-| **Model ID** | `gemini-omni-1.1-flash-preview` (default) |
+| **Model ID** | `gemini-omni-1.2-flash` (default); `gemini-omni-1.1-flash-preview` remains selectable |
 | **API & Endpoint** | Vertex Interactions API (`global` location) |
 | **Modalities** | Text (input & output), Image (input only), Video (input & output, with embedded speech, music, and sound effects) |
 | **Token Limits** | Max input: `131,072` tokens · Max output: `57,920` tokens |
 | **Supported Capabilities** | Thinking, Text-to-Video, Image-to-Video, Reference-to-Video, First/Last Frame Video, Sound Generation (speech, music, SFX), Video Editing, Video Extension, Content Credentials (C2PA) |
-| **Video Output Specs** | Max length: `10s` (with or without audio) · Aspect ratios: `16:9`, `9:16` · Resolutions: `360p`, `720p`, `1080p`, `4k` |
+| **Video Output Specs** | Length: `3`–`15s` on 1.2 (`3`–`10s` on 1.1) (with or without audio) · Aspect ratios: `16:9`, `9:16` · Resolutions: `360p`, `720p`, `1080p`, `4k` |
 | **Input Limits** | Up to `10` images per prompt (`<=20 MB` inline / `<=30 MB` GCS) · Up to `3` videos per prompt |
 
 ## Authentication

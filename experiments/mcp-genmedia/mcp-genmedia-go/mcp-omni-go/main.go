@@ -14,7 +14,7 @@
 
 // Package main implements an MCP server for Google's Gemini Omni video model.
 //
-// Omni (gemini-omni-1.1-flash-preview) is reachable only through the Vertex
+// Omni (gemini-omni-1.2-flash) is reachable only through the Vertex
 // Interactions API, so this server calls the shared common.GenerateOmniVideo
 // helper (which owns the Interactions client) rather than the shared genai.Client.
 
@@ -88,7 +88,7 @@ func main() {
 		mcp.WithDescription("Generates video (with optional embedded audio) from a text prompt, optionally conditioned on input images and/or videos, using Google's Gemini Omni model via the Vertex Interactions API. Returns MP4(s) saved locally and/or to GCS."),
 		mcp.WithString("prompt", mcp.Required(), mcp.Description("The text prompt describing the video to generate.")),
 		mcp.WithString("model", mcp.Description(common.BuildOmniModelDescription())),
-		mcp.WithString("resolution", mcp.Description("Optional. Video output resolution: 360p, 720p, 1080p, or 4k (gemini-omni-1.1-flash-preview supports all four; gemini-omni-flash-preview supports 720p). Sent in response_format.")),
+		mcp.WithString("resolution", mcp.Description("Optional. Video output resolution: 360p, 720p, 1080p, or 4k (gemini-omni-1.2-flash and gemini-omni-1.1-flash-preview support all four; gemini-omni-flash-preview supports 720p). Sent in response_format.")),
 		mcp.WithString("aspect_ratio", mcp.Description("Optional. Video output aspect ratio: 16:9 or 9:16. Sent in response_format.")),
 		mcp.WithNumber("duration_seconds", mcp.Description("Optional. Video output duration in seconds (3-10, maximum 10s). Sent in response_format.")),
 		mcp.WithArray("images",

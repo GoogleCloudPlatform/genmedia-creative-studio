@@ -31,6 +31,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -81,11 +82,20 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 	var out OmniToolArgs
 
 	// --- Parameter Parsing ---
-	prompt, ok := args["prompt"].(string)
-	if !ok || strings.TrimSpace(prompt) == "" {
+	// task (optional): explicit video task. Parsed first because the upscale
+	// task is video-only and therefore the only mode where prompt is optional.
+	task := ""
+	if rawTask, ok := args["task"].(string); ok {
+		task = strings.ToLower(strings.TrimSpace(rawTask))
+	}
+	if task != "" && task != OmniTaskExtend && task != OmniTaskUpscale {
+		return out, fmt.Errorf("unsupported task %q (supported: %s, %s)", task, OmniTaskExtend, OmniTaskUpscale)
+	}
+	prompt, _ := args["prompt"].(string)
+	prompt = strings.TrimSpace(prompt)
+	if prompt == "" && task != OmniTaskUpscale {
 		return out, fmt.Errorf("prompt must be a non-empty string and is required")
 	}
-	prompt = strings.TrimSpace(prompt)
 
 	outputDir := ResolveOutputDirectory(args, "output_local_dir", "local_path")
 
@@ -104,7 +114,13 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 		return out, fmt.Errorf("unsupported model %q (set ALLOW_UNSAFE_MODELS=true to bypass)", modelArg)
 	}
 	model := modelInfo.CanonicalName
-
+	if task != "" && !slices.Contains(modelInfo.SupportedTasks, task) {
+		supported := "none"
+		if len(modelInfo.SupportedTasks) > 0 {
+			supported = strings.Join(modelInfo.SupportedTasks, ", ")
+		}
+		return out, fmt.Errorf("task %q is not supported by model %q (supported tasks: %s)", task, model, supported)
+	}
 	// Image / video inputs (local paths -> inline bytes; gs:// -> URI).
 	// Enforce the image-count and video-count limits BEFORE parseMediaRefs reads any file into memory.
 	if imgs, ok := args["images"].([]interface{}); ok && len(imgs) > maxOmniImages {
@@ -144,6 +160,17 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 			resolution = matched
 		} else {
 			resolution = strings.ToLower(resTrim)
+		}
+	}
+
+	// upscale only produces 1080p or 4k (verified live); default to 1080p.
+	if task == OmniTaskUpscale {
+		switch resolution {
+		case "":
+			resolution = "1080p"
+		case "1080p", "4k":
+		default:
+			return out, fmt.Errorf("task %q supports resolution 1080p or 4k, got %q", task, resolution)
 		}
 	}
 
@@ -213,6 +240,7 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 
 	out.Params = OmniParams{
 		Prompt:          prompt,
+		Task:            task,
 		Model:           model,
 		Images:          images,
 		Videos:          videos,
@@ -223,10 +251,43 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 		AspectRatio:     aspectRatio,
 		DurationSeconds: durationSeconds,
 	}
+	if err := validateOmniTask(out.Params); err != nil {
+		return OmniToolArgs{}, err
+	}
 	out.OutputDir = outputDir
 	out.GCSBucketURI = gcsBucketURI
 	out.OutputFilename = ResolveOutputFilename(args)
 	return out, nil
+}
+
+// OmniVideoToolOptions returns the mcp.NewTool options (description and argument
+// schema) of the omni_video_generation tool. Both mcp-omni-go and mcp-gemini-go
+// register the tool from this single definition so their schemas cannot drift,
+// mirroring how ParseOmniToolArgs shares the argument handling. Model-dependent
+// limits (duration, resolution, tasks) are described generically; the per-model
+// values come from BuildOmniModelDescription / SupportedOmniModels.
+func OmniVideoToolOptions() []mcp.ToolOption {
+	return []mcp.ToolOption{
+		mcp.WithDescription("Generates video (with optional embedded audio) from a text prompt, optionally conditioned on input images and/or videos, using Google's Gemini Omni model via the Vertex Interactions API. Also edits videos and, on models that support them, extends or upscales an input video (see the task argument). Returns MP4(s) saved locally and/or to GCS."),
+		mcp.WithString("prompt", mcp.Description("The text prompt describing the video to generate, edit, or how to extend an input video. Required, except for task=upscale, which is video-only and must not include a prompt.")),
+		mcp.WithString("task", mcp.Enum(OmniTaskExtend, OmniTaskUpscale), mcp.Description("Optional. Explicit video task, for models that support it (see the model description). 'extend' continues the single input video guided by the prompt (output is the input plus a fixed extra span; no aspect_ratio/duration_seconds). 'upscale' re-renders the single input video at 1080p or 4k (default 1080p) with no prompt. Both require exactly one entry in videos and no images. Omit for text-to-video, image-to-video, reference-to-video and editing, which the model infers from the inputs.")),
+		mcp.WithString("model", mcp.Description(BuildOmniModelDescription())),
+		mcp.WithString("resolution", mcp.Description("Optional. Video output resolution: 360p, 720p, 1080p, or 4k (model-dependent; see the model description). Sent in response_format.")),
+		mcp.WithString("aspect_ratio", mcp.Description("Optional. Video output aspect ratio: 16:9 or 9:16. Sent in response_format.")),
+		mcp.WithNumber("duration_seconds", mcp.Description("Optional. Video output duration in seconds, at least 3 (the maximum is model-dependent: 15 for gemini-omni-1.2-flash, 10 for older models; see the model description). Sent in response_format.")),
+		mcp.WithArray("images",
+			mcp.Items(map[string]any{"type": "string"}),
+			mcp.Description("Optional. Up to 10 input images to condition generation on. Each entry is a local file path (<=20 MB) or a gs:// URI (<=30 MB; image/png, image/jpeg, image/webp, image/heic, image/heif).")),
+		mcp.WithArray("videos",
+			mcp.Items(map[string]any{"type": "string"}),
+			mcp.Description("Optional. Up to 3 input videos to reference, edit, or extend (exactly 1 for task=extend or task=upscale). Each entry is a local file path (<=20 MB) or a gs:// URI (video/mp4, video/webm, video/quicktime, video/mpeg, video/x-flv, video/wmv, video/3gpp).")),
+		mcp.WithNumber("sample_count", mcp.Description("Optional. Number of videos to generate (1-3, default 1). Clamped to the model maximum of 3.")),
+		mcp.WithNumber("temperature", mcp.Description("Optional. Sampling temperature, 0.0-2.0 (default 1.0; higher = more varied). Sent in generation_config.")),
+		mcp.WithNumber("top_p", mcp.Description("Optional. Nucleus sampling probability mass, 0.0-1.0 (default 0.95). Sent in generation_config.")),
+		mcp.WithString("output_directory", mcp.Description("Optional. Local directory to save the generated video(s) to.")),
+		mcp.WithString("gcs_bucket_uri", mcp.Description("Optional. GCS URI prefix to store generated video(s) (e.g., your-bucket/outputs/). Falls back to GENMEDIA_BUCKET+/omni_outputs/ if set.")),
+		mcp.WithString("output_filename", mcp.Description("Optional. Client-predictable base name for the generated file(s). The extension is forced to the true output media type (e.g. .mp4). When a single video is produced the name is used as-is (e.g. 'clip.mp4'); when multiple videos are produced they are suffixed '_1', '_2', ... before the extension (e.g. 'clip_1.mp4'). An existing file/object of the same name is overwritten.")),
+	}
 }
 
 // RenderOmniResult persists each returned video (locally and/or to GCS, with a

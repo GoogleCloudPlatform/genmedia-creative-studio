@@ -24,11 +24,22 @@ The server exposes the following tool:
     and/or to GCS.
 *   **Handler**: `omniVideoGenerationHandler`
 *   **Parameters**:
-    *   `prompt` (string, required): The text prompt describing the video to generate.
+    *   `prompt` (string, required except for `task=upscale`): The text prompt
+        describing the video to generate, edit, or how to extend an input video.
+        `task=upscale` is video-only and must not include a prompt.
+    *   `task` (string, optional): Explicit video task: `extend` or `upscale`
+        (models that list them, currently `gemini-omni-1.2-flash`). Omit it for
+        text-to-video, image-to-video, reference-to-video and editing, which the
+        model infers from the inputs. Both tasks take exactly one entry in `videos`
+        and no `images`, and do not accept `aspect_ratio` or `duration_seconds`.
+        `extend` continues the video guided by `prompt` (the output is the input
+        plus a fixed extra span, about 10 seconds). `upscale` re-renders the video
+        at `1080p` or `4k` (default `1080p`). Sent in
+        `generation_config.video_config.task`.
     *   `model` (string, optional): Model to use. Can be the canonical model ID
         (`gemini-omni-1.2-flash`) or a common alias (e.g. `Omni`,
         `Omni 1.1`, `Gemini Omni 1.1 Flash`). The prior `gemini-omni-1.1-flash-preview` and `gemini-omni-flash-preview` models
-        remains selectable via its ID or the `Gemini Omni Flash` alias. See
+        remain selectable via their IDs or the `Gemini Omni Flash` alias. See
         `mcp-common/models.go` for the supported list.
         Defaults to `gemini-omni-1.2-flash`.
     *   `resolution` (string, optional): Video output resolution: `360p`, `720p`,
@@ -37,7 +48,8 @@ The server exposes the following tool:
     *   `aspect_ratio` (string, optional): Video output aspect ratio: `16:9` or
         `9:16`. Sent in `response_format`.
     *   `duration_seconds` (number, optional): Video output duration in seconds
-        (`3`-`10`, maximum `10` seconds with or without audio). Sent in
+        (at least `3`; the maximum is model-dependent: `15` for
+        `gemini-omni-1.2-flash`, `10` for the older models). Sent in
         `response_format`.
     *   `images` (array of string, optional): Up to 10 input images to condition
         generation on (first/last frames, character/style references, or starting
@@ -79,7 +91,7 @@ Per the [Google Cloud Gemini Omni 1.1 Flash documentation](https://docs.cloud.go
 | **API & Endpoint** | Vertex Interactions API (`global` location) |
 | **Modalities** | Text (input & output), Image (input only), Video (input & output, with embedded speech, music, and sound effects) |
 | **Token Limits** | Max input: `131,072` tokens · Max output: `57,920` tokens |
-| **Supported Capabilities** | Thinking, Text-to-Video, Image-to-Video, Reference-to-Video, First/Last Frame Video, Sound Generation (speech, music, SFX), Video Editing, Video Extension, Content Credentials (C2PA) |
+| **Supported Capabilities** | Thinking, Text-to-Video, Image-to-Video, Reference-to-Video, First/Last Frame Video, Sound Generation (speech, music, SFX), Video Editing, Video Extension, Video Upscale (1.2), Content Credentials (C2PA) |
 | **Video Output Specs** | Length: `3`–`15s` on 1.2 (`3`–`10s` on 1.1) (with or without audio) · Aspect ratios: `16:9`, `9:16` · Resolutions: `360p`, `720p`, `1080p`, `4k` |
 | **Input Limits** | Up to `10` images per prompt (`<=20 MB` inline / `<=30 MB` GCS) · Up to `3` videos per prompt |
 

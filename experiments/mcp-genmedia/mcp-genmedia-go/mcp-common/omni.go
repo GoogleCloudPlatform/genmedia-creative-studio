@@ -30,6 +30,17 @@ const omniVideoMimePrefix = "video/"
 // prompt (findings §1). sample_count is clamped to this ceiling.
 const MaxOmniSampleCount = 3
 
+// Explicit Omni video tasks sent as generation_config.video_config.task. The
+// remaining modes (text/image/reference-to-video, edit) are inferred by the model
+// from the prompt and inputs, so no task is sent for them.
+const (
+	// OmniTaskExtend continues an input video (video + optional text prompt).
+	OmniTaskExtend = "extend"
+	// OmniTaskUpscale re-renders an input video at a higher resolution
+	// (video only: the API rejects a text part for this task).
+	OmniTaskUpscale = "upscale"
+)
+
 // OmniMediaRef is a single image or video input to an Omni generation. It is
 // either inline bytes (Data, base64-encoded onto the wire) or a gs:// URI
 // (URI) — exactly one should be set. MimeType is required for both.
@@ -44,8 +55,12 @@ type OmniMediaRef struct {
 
 // OmniParams are the inputs to a Gemini Omni video generation call (design §5.1).
 type OmniParams struct {
-	// Prompt is the text prompt (required).
+	// Prompt is the text prompt (required, except for the upscale task which is
+	// video-only and must not carry text).
 	Prompt string
+	// Task is the optional explicit video task (OmniTaskExtend or
+	// OmniTaskUpscale). Empty lets the model infer the mode from the inputs.
+	Task string
 	// Model is the resolved canonical model ID. If empty, the default Omni model
 	// is used (see ResolveOmniModel).
 	Model string
@@ -97,7 +112,7 @@ type OmniResult struct {
 // optional generation_config), calls the Interactions client sample_count times,
 // and aggregates the decoded MP4 bytes + text (design §7.2).
 func GenerateOmniVideo(ctx context.Context, cfg *Config, p OmniParams) (*OmniResult, error) {
-	if strings.TrimSpace(p.Prompt) == "" {
+	if strings.TrimSpace(p.Prompt) == "" && p.Task != OmniTaskUpscale {
 		return nil, fmt.Errorf("omni: prompt must be a non-empty string")
 	}
 
@@ -171,7 +186,14 @@ func clampSampleCount(n int) int {
 // inputs become additional content parts; sampling controls become a
 // generation_config (only when set).
 func buildOmniRequest(model string, p OmniParams) (*InteractionRequest, error) {
-	content := []Part{{Type: "text", Text: p.Prompt}}
+	if err := validateOmniTask(p); err != nil {
+		return nil, err
+	}
+
+	var content []Part
+	if strings.TrimSpace(p.Prompt) != "" {
+		content = append(content, Part{Type: "text", Text: p.Prompt})
+	}
 
 	imageParts, err := mediaRefsToParts("image", p.Images)
 	if err != nil {
@@ -194,8 +216,11 @@ func buildOmniRequest(model string, p OmniParams) (*InteractionRequest, error) {
 		Store: false,
 	}
 
-	if p.Temperature != nil || p.TopP != nil {
+	if p.Temperature != nil || p.TopP != nil || p.Task != "" {
 		req.GenerationConfig = &GenerationConfig{Temperature: p.Temperature, TopP: p.TopP}
+		if p.Task != "" {
+			req.GenerationConfig.VideoConfig = &VideoConfig{Task: p.Task}
+		}
 	}
 
 	if p.Resolution != "" || p.AspectRatio != "" || p.DurationSeconds > 0 {
@@ -211,6 +236,34 @@ func buildOmniRequest(model string, p OmniParams) (*InteractionRequest, error) {
 	}
 
 	return req, nil
+}
+
+// validateOmniTask enforces the input contract of the explicit video tasks
+// (verified live against gemini-omni-1.2-flash): extend and upscale take exactly
+// one input video and no images, and neither takes an aspect ratio or duration
+// (the output keeps the input's framing; extend adds a fixed span). Upscale is
+// video-only: the API answers a text part with a 400.
+func validateOmniTask(p OmniParams) error {
+	switch p.Task {
+	case "":
+		return nil
+	case OmniTaskExtend, OmniTaskUpscale:
+	default:
+		return fmt.Errorf("omni: unsupported task %q (supported: %s, %s)", p.Task, OmniTaskExtend, OmniTaskUpscale)
+	}
+	if len(p.Videos) != 1 {
+		return fmt.Errorf("omni: task %q requires exactly one input video, got %d", p.Task, len(p.Videos))
+	}
+	if len(p.Images) > 0 {
+		return fmt.Errorf("omni: task %q does not accept input images", p.Task)
+	}
+	if p.AspectRatio != "" || p.DurationSeconds > 0 {
+		return fmt.Errorf("omni: task %q does not accept aspect_ratio or duration_seconds", p.Task)
+	}
+	if p.Task == OmniTaskUpscale && strings.TrimSpace(p.Prompt) != "" {
+		return fmt.Errorf("omni: task %q is video-only and does not accept a prompt", p.Task)
+	}
+	return nil
 }
 
 // mediaRefsToParts converts input media refs into interaction Parts of the given

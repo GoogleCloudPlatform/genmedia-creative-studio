@@ -35,7 +35,7 @@ func newTestClient(baseURL string, httpClient *http.Client) *libInteractionsClie
 	inner.HTTPClient = httpClient
 	inner.WithUserProject("test-project")
 	inner.WithAPIRevision(DefaultInteractionsAPIRevision)
-	return &libInteractionsClient{inner: inner}
+	return newLibInteractionsClient(inner)
 }
 
 // TestInteractionsClientCreate exercises the library-backed transport against a

@@ -47,7 +47,7 @@ func newSeamAgainst(server *httptest.Server, userProject string) InteractionsCli
 	client.HTTPClient = server.Client()
 	client.WithUserProject(userProject)
 	client.WithAPIRevision(DefaultInteractionsAPIRevision)
-	return &libInteractionsClient{inner: client}
+	return newLibInteractionsClient(client)
 }
 
 // omniOutputsJSON is a variant of the Omni response that places results in

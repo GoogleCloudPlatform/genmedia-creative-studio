@@ -20,10 +20,12 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import json
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from common.error_handling import GenerationError
 from models.omni import (
     MissingMediaError,
     _build_input_parts,
@@ -195,6 +197,77 @@ def test_extract_video_payload() -> None:
     video_data, interaction_id = _extract_video_payload(mock_interaction)
     assert video_data == "base64_data_here"
     assert interaction_id == "int-789"
+
+
+def test_extract_video_payload_failed_interaction_reports_errors() -> None:
+    """A failed interaction surfaces the API's plural ``errors`` reason."""
+    interaction = SimpleNamespace(
+        id="int-failed",
+        status="failed",
+        steps=[SimpleNamespace(type="thought", content=[])],
+        errors=[
+            SimpleNamespace(
+                message="Generation duration 20 seconds exceeds maximum duration 15 seconds.",
+                code="invalid_request",
+            ),
+        ],
+    )
+
+    with pytest.raises(GenerationError) as exc_info:
+        _extract_video_payload(interaction)
+
+    message = str(exc_info.value)
+    assert "failed" in message
+    assert "exceeds maximum duration 15 seconds" in message
+    assert "invalid_request" in message
+    assert "No outputs returned" not in message
+
+
+def test_extract_video_payload_failed_interaction_dict_and_singular_error() -> None:
+    """Plain-dict responses and the singular ``error`` field are honoured too."""
+    interaction = {
+        "id": "int-failed",
+        "status": "failed",
+        "steps": [],
+        "errors": [{"message": "first"}, {"message": "second", "code": "c"}],
+        "error": {"message": "single"},
+    }
+
+    with pytest.raises(GenerationError) as exc_info:
+        _extract_video_payload(interaction)
+
+    message = str(exc_info.value)
+    assert "first; second (code: c); single" in message
+
+
+def test_extract_video_payload_failed_without_details() -> None:
+    """A failed status with no errors list still raises, naming the status."""
+    interaction = SimpleNamespace(
+        id="int-failed",
+        status="failed",
+        steps=[],
+        errors=None,
+    )
+
+    with pytest.raises(GenerationError, match="failed: no error details"):
+        _extract_video_payload(interaction)
+
+
+def test_extract_video_payload_completed_with_diagnostic_errors() -> None:
+    """errors[] on a completed interaction is diagnostic; the video is kept."""
+    interaction = SimpleNamespace(
+        id="int-ok",
+        status="completed",
+        steps=[
+            SimpleNamespace(
+                type="model_output",
+                content=[SimpleNamespace(type="video", data="ZGF0YQ==")],
+            ),
+        ],
+        errors=[SimpleNamespace(message="minor diagnostic", code="warn")],
+    )
+
+    assert _extract_video_payload(interaction) == ("ZGF0YQ==", "int-ok")
 
 
 @patch("models.omni.get_omni_client")

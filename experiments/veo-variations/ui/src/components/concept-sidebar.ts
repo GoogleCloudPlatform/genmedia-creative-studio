@@ -24,8 +24,8 @@ const PRESETS = [
 
 const VIDEO_MODELS = [
   {
-    id: 'gemini-omni-1.1-flash-preview',
-    label: 'Gemini Omni 1.1 Flash (360p)',
+    id: 'gemini-omni-1.2-flash',
+    label: 'Gemini Omni 1.2 Flash (360p)',
     badge: 'Fast · ~25s'
   },
   {
@@ -40,7 +40,7 @@ export class ConceptSidebar extends LitElement {
   @state() private prompt: string = ''
   @state() private variations: number = 4
   @state() private aspectRatio: string = '16:9'
-  @state() private videoModel: string = 'gemini-omni-1.1-flash-preview'
+  @state() private videoModel: string = 'gemini-omni-1.2-flash'
   @state() private imagePreview: string | null = null
   @state() private selectedFile: File | null = null
   @state() private activePresetIndex: number | null = null

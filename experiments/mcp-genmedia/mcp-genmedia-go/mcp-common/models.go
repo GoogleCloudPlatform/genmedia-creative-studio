@@ -466,7 +466,7 @@ func ResolveLyriaModel(modelInput string, allowUnsafe bool) (LyriaModelInfo, boo
 // --- Omni Model Configuration ---
 
 // DefaultOmniModel is the canonical default Gemini Omni model ID.
-const DefaultOmniModel = "gemini-omni-1.1-flash-preview"
+const DefaultOmniModel = "gemini-omni-1.2-flash"
 
 // OmniModelInfo holds the details for a specific Gemini Omni model. Omni models
 // (text/image/video in, text+video out) are reachable only via the Vertex
@@ -490,9 +490,19 @@ type OmniModelInfo struct {
 
 // SupportedOmniModels is the single source of truth for all supported Omni models.
 var SupportedOmniModels = map[string]OmniModelInfo{
+	"gemini-omni-1.2-flash": {
+		CanonicalName:         "gemini-omni-1.2-flash",
+		Aliases:               []string{"Gemini Omni 1.2 Flash", "Omni 1.2", "Omni"},
+		SupportedResolutions:  []string{"360p", "720p", "1080p", "4k"},
+		SupportedAspectRatios: []string{"16:9", "9:16"},
+		MinDurationSeconds:    3,
+		MaxDurationSeconds:    15,
+		MaxVideos:             3,
+		Description:           "Gemini Omni 1.2 Flash (GA): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, 3-15s duration, up to 10 input images, and up to 3 input videos.",
+	},
 	"gemini-omni-1.1-flash-preview": {
 		CanonicalName:         "gemini-omni-1.1-flash-preview",
-		Aliases:               []string{"Gemini Omni 1.1 Flash", "Omni 1.1", "Omni"},
+		Aliases:               []string{"Gemini Omni 1.1 Flash", "Omni 1.1"},
 		SupportedResolutions:  []string{"360p", "720p", "1080p", "4k"},
 		SupportedAspectRatios: []string{"16:9", "9:16"},
 		MinDurationSeconds:    3,

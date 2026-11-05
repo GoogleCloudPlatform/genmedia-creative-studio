@@ -15,7 +15,7 @@
 // Package main implements an MCP server for Google's Gemini models.
 //
 // This file adds the Gemini Omni video-generation capability to the all-in-one
-// mcp-gemini-go server. Omni (gemini-omni-1.1-flash-preview) is reachable only
+// mcp-gemini-go server. Omni (gemini-omni-1.2-flash) is reachable only
 // through the Vertex Interactions API, so the handler is a THIN wrapper around
 // the shared common.ParseOmniToolArgs / common.GenerateOmniVideo /
 // common.RenderOmniResult helpers — the identical calls mcp-omni-go's standalone

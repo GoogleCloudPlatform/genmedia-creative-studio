@@ -399,7 +399,7 @@ func TestParseOmniToolArgsValidationErrors(t *testing.T) {
 			wantSub: "unsupported aspect_ratio",
 		},
 		"duration_seconds out of range": {
-			args:    map[string]interface{}{"prompt": "hi", "duration_seconds": float64(15)},
+			args:    map[string]interface{}{"prompt": "hi", "duration_seconds": float64(16)},
 			wantSub: "duration_seconds must be in the range",
 		},
 		"non-integer sample_count": {
@@ -660,4 +660,31 @@ func names(entries []os.DirEntry) []string {
 		out[i] = e.Name()
 	}
 	return out
+}
+
+// TestParseOmniToolArgsDurationByModel verifies the per-model duration bounds:
+// 1.2 allows up to 15s, while the 1.1 preview stays capped at 10s.
+func TestParseOmniToolArgsDurationByModel(t *testing.T) {
+	cfg := &Config{GenmediaBucket: "my-bucket"}
+	cases := []struct {
+		model   string
+		seconds float64
+		wantErr bool
+	}{
+		{"gemini-omni-1.2-flash", 15, false},
+		{"gemini-omni-1.2-flash", 3, false},
+		{"gemini-omni-1.2-flash", 16, true},
+		{"gemini-omni-1.1-flash-preview", 10, false},
+		{"gemini-omni-1.1-flash-preview", 15, true},
+	}
+	for _, c := range cases {
+		_, err := ParseOmniToolArgs(map[string]interface{}{
+			"prompt":           "hi",
+			"model":            c.model,
+			"duration_seconds": c.seconds,
+		}, cfg)
+		if (err != nil) != c.wantErr {
+			t.Errorf("model %q duration %v: err = %v, wantErr %v", c.model, c.seconds, err, c.wantErr)
+		}
+	}
 }

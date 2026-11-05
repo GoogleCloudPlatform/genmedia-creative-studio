@@ -25,7 +25,7 @@ class PageState:
 
     omni_model: str = DEFAULT_OMNI_VERSION_ID
     omni_prompt_input: str = ""
-    omni_mode: str = "t2v"  # "t2v", "i2v", "ref2v", "edit"
+    omni_mode: str = "t2v"  # "t2v", "i2v", "ref2v", "edit", "extend", "upscale"
 
     prompt: str = (
         "A head-on shot of a neon sign that reads 'Omni' glowing against a brick wall."

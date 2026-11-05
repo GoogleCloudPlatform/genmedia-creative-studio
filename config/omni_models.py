@@ -36,6 +36,19 @@ class OmniModelConfig:
 # Single source of truth for all Omni model configurations.
 OMNI_MODELS: list[OmniModelConfig] = [
     OmniModelConfig(
+        version_id="gemini-omni-1.2-flash",
+        model_name="gemini-omni-1.2-flash",
+        display_name="Gemini Omni 1.2 Flash",
+        supported_modes=["t2v", "i2v", "ref2v", "edit", "extend", "upscale"],
+        supported_aspect_ratios=["16:9", "9:16"],
+        resolutions=["360p", "720p", "1080p", "4k"],
+        min_duration=3,
+        max_duration=15,
+        default_duration=10,
+        max_samples=1,  # Quota limits focus on 1 sample
+        default_samples=1,
+    ),
+    OmniModelConfig(
         version_id="gemini-omni-1.1-flash-preview",
         model_name="gemini-omni-1.1-flash-preview",
         display_name="Gemini Omni 1.1 Flash (Preview)",
@@ -85,10 +98,39 @@ def get_version_id_by_model_name(model_name: str) -> Optional[str]:
     return None
 
 
+# Human-readable labels for every generation mode a model may support.
+OMNI_MODE_LABELS: dict[str, str] = {
+    "t2v": "Text-to-Video",
+    "i2v": "Image-to-Video",
+    "ref2v": "Reference-to-Video",
+    "edit": "Video Editing",
+    "extend": "Extend Video",
+    "upscale": "Upscale Video",
+}
+
+
+def modes_for_model(version_id: str) -> list[str]:
+    """Returns the modes a model supports, in display order.
+
+    Unknown models fall back to the four modes every Omni model supports.
+    """
+    model = get_omni_model_config(version_id)
+    if not model:
+        return ["t2v", "i2v", "ref2v", "edit"]
+    return [m for m in OMNI_MODE_LABELS if m in model.supported_modes]
+
+
+def clamp_duration(version_id: str, seconds: int) -> int:
+    """Clamps a duration into the model's supported range (unchanged if unknown)."""
+    model = get_omni_model_config(version_id)
+    if not model:
+        return seconds
+    return max(model.min_duration, min(model.max_duration, seconds))
+
+
 from config.default import Default
 
 cfg = Default()
 DEFAULT_OMNI_VERSION_ID = (
-    get_version_id_by_model_name(cfg.DEFAULT_OMNI_MODEL_NAME)
-    or "gemini-omni-1.1-flash-preview"
+    get_version_id_by_model_name(cfg.DEFAULT_OMNI_MODEL_NAME) or "gemini-omni-1.2-flash"
 )

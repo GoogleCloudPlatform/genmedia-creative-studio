@@ -17,10 +17,13 @@
 package common
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"time"
 
 	interactions "github.com/ghchinoy/cloud-interactions-go"
@@ -86,6 +89,16 @@ type OmniVideoResponseFormat struct {
 type GenerationConfig struct {
 	Temperature *float32 `json:"temperature,omitempty"`
 	TopP        *float32 `json:"top_p,omitempty"`
+	// VideoConfig selects an explicit Omni video task (extend/upscale). The
+	// adopted client library has no video_config field, so requests carrying it
+	// take the raw transport path (see libInteractionsClient.Create).
+	VideoConfig *VideoConfig `json:"video_config,omitempty"`
+}
+
+// VideoConfig models generation_config.video_config. Task is optional for the
+// inferred modes (text/image/reference/edit) and is sent only for extend/upscale.
+type VideoConfig struct {
+	Task string `json:"task,omitempty"`
 }
 
 // InputItem is one entry in an interaction's input array. For Omni the shape is
@@ -210,16 +223,70 @@ func NewInteractionsClient(ctx context.Context, cfg *Config) (InteractionsClient
 // body is surfaced verbatim by the library so preview-access / quota errors remain
 // legible (design §4).
 func (c *libInteractionsClient) Create(ctx context.Context, req *InteractionRequest) (*InteractionResponse, error) {
-	libResp, err := c.inner.Create(ctx, toLibRequest(req))
-	if err != nil {
-		return nil, fmt.Errorf("interactions: create failed: %w", err)
+	var resp *InteractionResponse
+	if req.GenerationConfig != nil && req.GenerationConfig.VideoConfig != nil {
+		// The adopted library cannot serialize generation_config.video_config, so
+		// explicit video tasks (extend/upscale) use the raw path below. Swapping the
+		// transport for the official genai interactions package removes this split.
+		raw, err := c.createRaw(ctx, req)
+		if err != nil {
+			return nil, fmt.Errorf("interactions: create failed: %w", err)
+		}
+		resp = raw
+	} else {
+		libResp, err := c.inner.Create(ctx, toLibRequest(req))
+		if err != nil {
+			return nil, fmt.Errorf("interactions: create failed: %w", err)
+		}
+		resp = fromLibResponse(libResp)
 	}
 
-	resp := fromLibResponse(libResp)
 	if resp.Error != nil && resp.Error.Message != "" {
 		return resp, fmt.Errorf("interactions API returned error: %s", resp.Error.Message)
 	}
 	log.Printf("Interactions API call completed: status=%q steps=%d outputs=%d", resp.Status, len(resp.Steps), len(resp.Outputs))
+	return resp, nil
+}
+
+// createRaw POSTs the suite's own request JSON (which, unlike the library's
+// request type, carries generation_config.video_config) using the library
+// client's endpoint, authenticated HTTP client, and load-bearing headers
+// (x-goog-user-project, Api-Revision). Error bodies are surfaced verbatim in the
+// same "API error (status N): body" form as the library path.
+func (c *libInteractionsClient) createRaw(ctx context.Context, req *InteractionRequest) (*InteractionResponse, error) {
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.inner.BaseURL, bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if c.inner.UserProject != "" {
+		httpReq.Header.Set("x-goog-user-project", c.inner.UserProject)
+	}
+	if c.inner.APIRevision != "" {
+		httpReq.Header.Set("Api-Revision", c.inner.APIRevision)
+	}
+
+	httpResp, err := c.inner.HTTPClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer func() { _ = httpResp.Body.Close() }()
+	body, err := io.ReadAll(httpResp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	if httpResp.StatusCode >= 400 {
+		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, string(body))
+	}
+	resp, err := decodeInteractionResponse(body)
+	if err != nil {
+		return nil, err
+	}
+	resp.SherlogLink = httpResp.Header.Get("X-Goog-Sherlog-Link")
 	return resp, nil
 }
 

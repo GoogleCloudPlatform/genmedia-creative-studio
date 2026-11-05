@@ -15,11 +15,12 @@ The server exposes the following tool:
 *   **Description**: Generates video (with optional embedded audio) from a text prompt, optionally conditioned on input images and/or videos, using Google's Gemini Omni model via the Vertex Interactions API. Returns MP4(s) saved locally and/or to GCS.
 *   **Handler**: `omniVideoGenerationHandler`
 *   **Parameters**:
-    *   `prompt` (string, required): The text prompt describing the video to generate.
-    *   `model` (string, optional): Model to use. Can be the canonical model ID (`gemini-omni-1.2-flash`) or a common alias (e.g. `Omni`, `Omni 1.2`, `Gemini Omni 1.2 Flash`; `Omni 1.1` selects the previous preview). The prior `gemini-omni-1.1-flash-preview` and `gemini-omni-flash-preview` models remains selectable via its ID or the `Gemini Omni Flash` alias. See `mcp-common/models.go` for the supported list. Defaults to `gemini-omni-1.2-flash`.
+    *   `prompt` (string, required except for `task=upscale`): The text prompt describing the video to generate, edit, or how to extend an input video. `task=upscale` is video-only and must not include a prompt.
+    *   `task` (string, optional): Explicit video task: `extend` or `upscale` (models that list them, currently `gemini-omni-1.2-flash`). Omit it for text-to-video, image-to-video, reference-to-video and editing, which the model infers from the inputs. Both tasks take exactly one entry in `videos` and no `images`, and do not accept `aspect_ratio` or `duration_seconds`. `extend` continues the video guided by `prompt` (the output is the input plus a fixed extra span, about 10 seconds). `upscale` re-renders the video at `1080p` or `4k` (default `1080p`). Sent in `generation_config.video_config.task`.
+    *   `model` (string, optional): Model to use. Can be the canonical model ID (`gemini-omni-1.2-flash`) or a common alias (e.g. `Omni`, `Omni 1.2`, `Gemini Omni 1.2 Flash`; `Omni 1.1` selects the previous preview). The prior `gemini-omni-1.1-flash-preview` and `gemini-omni-flash-preview` models remain selectable via their IDs or the `Gemini Omni Flash` alias. See `mcp-common/models.go` for the supported list. Defaults to `gemini-omni-1.2-flash`.
     *   `resolution` (string, optional): Video output resolution: `360p`, `720p`, `1080p`, or `4k` (`gemini-omni-1.2-flash` and `gemini-omni-1.1-flash-preview` support all four; `gemini-omni-flash-preview` supports `720p`). Sent in `response_format`.
     *   `aspect_ratio` (string, optional): Video output aspect ratio: `16:9` or `9:16`. Sent in `response_format`.
-    *   `duration_seconds` (number, optional): Video output duration in seconds (`3`-`10`, maximum `10` seconds with or without audio). Sent in `response_format`.
+    *   `duration_seconds` (number, optional): Video output duration in seconds (at least `3`; the maximum is model-dependent: `15` for `gemini-omni-1.2-flash`, `10` for the older models). Sent in `response_format`.
     *   `images` (array of string, optional): Up to 10 input images to condition generation on (first/last frames, character/style references, or starting frame). Each entry is a local file path (up to 20 MB) or a `gs://` URI (up to 30 MB). The MIME type is inferred from the file extension: `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/heic`, `image/heif`.
     *   `videos` (array of string, optional): Up to 3 input videos to reference, edit, or extend. Each entry is a local file path (up to 20 MB) or a `gs://` URI (`video/mp4`, `video/webm`, `video/quicktime`, `video/mpeg`, `video/x-flv`, `video/wmv`, `video/3gpp`).
     *   `sample_count` (number, optional): Number of videos to generate (1-3, default 1). Clamped to the model maximum of 3.
@@ -39,7 +40,7 @@ Per the [Google Cloud Gemini Omni 1.1 Flash documentation](https://docs.cloud.go
 | **API & Endpoint** | Vertex Interactions API (`global` location) |
 | **Modalities** | Text (input & output), Image (input only), Video (input & output, with embedded speech, music, and sound effects) |
 | **Token Limits** | Max input: `131,072` tokens · Max output: `57,920` tokens |
-| **Supported Capabilities** | Thinking, Text-to-Video, Image-to-Video, Reference-to-Video, First/Last Frame Video, Sound Generation (speech, music, SFX), Video Editing, Video Extension, Content Credentials (C2PA) |
+| **Supported Capabilities** | Thinking, Text-to-Video, Image-to-Video, Reference-to-Video, First/Last Frame Video, Sound Generation (speech, music, SFX), Video Editing, Video Extension, Video Upscale (1.2), Content Credentials (C2PA) |
 | **Video Output Specs** | Length: `3`–`15s` on 1.2 (`3`–`10s` on 1.1) (with or without audio) · Aspect ratios: `16:9`, `9:16` · Resolutions: `360p`, `720p`, `1080p`, `4k` |
 | **Input Limits** | Up to `10` images per prompt (`<=20 MB` inline / `<=30 MB` GCS) · Up to `3` videos per prompt |
 

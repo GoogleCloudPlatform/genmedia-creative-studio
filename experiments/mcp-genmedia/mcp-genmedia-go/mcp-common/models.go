@@ -484,8 +484,12 @@ type OmniModelInfo struct {
 	MinDurationSeconds int
 	MaxDurationSeconds int
 	// MaxVideos is the maximum number of input videos per prompt.
-	MaxVideos   int
-	Description string
+	MaxVideos int
+	// SupportedTasks lists the explicit generation_config.video_config.task modes
+	// the model accepts beyond the inferred text/image/reference/edit modes
+	// (OmniTaskExtend, OmniTaskUpscale). Empty means only inferred modes.
+	SupportedTasks []string
+	Description    string
 }
 
 // SupportedOmniModels is the single source of truth for all supported Omni models.
@@ -498,7 +502,8 @@ var SupportedOmniModels = map[string]OmniModelInfo{
 		MinDurationSeconds:    3,
 		MaxDurationSeconds:    15,
 		MaxVideos:             3,
-		Description:           "Gemini Omni 1.2 Flash (GA): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, 3-15s duration, up to 10 input images, and up to 3 input videos.",
+		SupportedTasks:        []string{OmniTaskExtend, OmniTaskUpscale},
+		Description:           "Gemini Omni 1.2 Flash (GA): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, 3-15s duration, up to 10 input images, up to 3 input videos, and the extend and upscale tasks.",
 	},
 	"gemini-omni-1.1-flash-preview": {
 		CanonicalName:         "gemini-omni-1.1-flash-preview",
@@ -582,6 +587,12 @@ func BuildOmniModelDescription() string {
 		}
 		if len(info.SupportedAspectRatios) > 0 {
 			fmt.Fprintf(&sb, " Aspect ratios: %s.", strings.Join(info.SupportedAspectRatios, ", "))
+		}
+		if info.MaxDurationSeconds > 0 {
+			fmt.Fprintf(&sb, " Duration: %d-%ds.", info.MinDurationSeconds, info.MaxDurationSeconds)
+		}
+		if len(info.SupportedTasks) > 0 {
+			fmt.Fprintf(&sb, " Supported tasks (task argument): %s.", strings.Join(info.SupportedTasks, ", "))
 		}
 		sb.WriteString("\n")
 	}

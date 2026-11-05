@@ -393,8 +393,61 @@ def _append_single_turn_media(
     return input_parts
 
 
+_FAILED_INTERACTION_STATUSES = frozenset(
+    {"failed", "cancelled", "incomplete", "budget_exceeded"},
+)
+
+
+def _field(obj: object, name: str) -> object:
+    """Read ``name`` from an SDK model object or a plain dict."""
+    if isinstance(obj, dict):
+        return obj.get(name)
+    return getattr(obj, name, None)
+
+
+def _describe_interaction_errors(interaction: object) -> str:
+    """Join the messages of a failed interaction's ``errors`` (plural) list.
+
+    The Interactions API reports failures in ``errors`` (each entry has
+    ``message`` and ``code``); the singular ``error`` is also honoured. Returns
+    an empty string when there is nothing to report.
+    """
+    entries: list[object] = []
+    errors = _field(interaction, "errors")
+    if isinstance(errors, (list, tuple)):
+        entries.extend(errors)
+    single = _field(interaction, "error")
+    if single is not None and not callable(single):
+        entries.append(single)
+
+    parts: list[str] = []
+    for entry in entries:
+        message = _field(entry, "message")
+        if not isinstance(message, str) or not message:
+            continue
+        code = _field(entry, "code")
+        parts.append(
+            f"{message} (code: {code})" if isinstance(code, str) and code else message,
+        )
+    return "; ".join(parts)
+
+
+def _raise_if_interaction_failed(interaction: object) -> None:
+    """Raise a GenerationError carrying the API's reason for a failed interaction."""
+    status = _field(interaction, "status")
+    status = status if isinstance(status, str) else ""
+    detail = _describe_interaction_errors(interaction)
+    if status in _FAILED_INTERACTION_STATUSES:
+        reason = detail or "no error details were returned"
+        raise GenerationError(f"Omni interaction {status}: {reason}")
+    # Not a failed status: errors[] is diagnostic, so fall through and let the
+    # caller look for the video payload.
+
+
 def _extract_video_payload(interaction: object) -> tuple[str, str]:
     """Extract raw video base64 payload and interaction ID from response."""
+    _raise_if_interaction_failed(interaction)
+
     contents = []
 
     # Safely get steps from interaction

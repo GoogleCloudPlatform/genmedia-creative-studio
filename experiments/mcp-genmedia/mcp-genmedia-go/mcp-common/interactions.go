@@ -24,6 +24,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	interactions "github.com/ghchinoy/cloud-interactions-go"
@@ -133,6 +135,11 @@ type InteractionResponse struct {
 	Outputs []Step            `json:"outputs"`
 	Usage   *InteractionUsage `json:"usage,omitempty"`
 	Error   *InteractionError `json:"error,omitempty"`
+	// Errors is the plural diagnostics list the API attaches to a failed
+	// interaction (status "failed"), e.g. [{"message":"...","code":"invalid_request"}].
+	// The adopted library does not model it, so the transport captures it from the
+	// raw body (see failureCapturingTransport).
+	Errors []InteractionError `json:"errors,omitempty"`
 
 	// SherlogLink is populated from the x-goog-sherlog-link response header. It is
 	// not part of the JSON body. Since cloud-interactions-go v0.2.0 the adopted
@@ -164,11 +171,121 @@ type InteractionUsage struct {
 	TotalThoughtTokens int `json:"total_thought_tokens,omitempty"`
 }
 
-// InteractionError models a structured error object if the API returns one.
+// InteractionError models a structured error object if the API returns one. The
+// wire "code" is a string on failed interactions (e.g. "invalid_request") but a
+// number in some error bodies, so UnmarshalJSON accepts either.
 type InteractionError struct {
-	Code    int    `json:"code,omitempty"`
+	Code    string `json:"code,omitempty"`
 	Status  string `json:"status,omitempty"`
 	Message string `json:"message,omitempty"`
+}
+
+// UnmarshalJSON decodes an error object whose "code" may be a string or a number.
+func (e *InteractionError) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Code    json.RawMessage `json:"code"`
+		Status  string          `json:"status"`
+		Message string          `json:"message"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	e.Status, e.Message, e.Code = raw.Status, raw.Message, ""
+	if len(raw.Code) > 0 && string(raw.Code) != "null" {
+		var s string
+		if err := json.Unmarshal(raw.Code, &s); err == nil {
+			e.Code = s
+		} else {
+			e.Code = strings.TrimSpace(string(raw.Code))
+		}
+	}
+	return nil
+}
+
+// failureDetail joins the messages of the singular Error and the plural Errors
+// into one human-readable string ("" when the response carries none).
+func (r *InteractionResponse) failureDetail() string {
+	var parts []string
+	add := func(e InteractionError) {
+		if e.Message == "" {
+			return
+		}
+		s := e.Message
+		if e.Code != "" {
+			s += " (code: " + e.Code + ")"
+		}
+		parts = append(parts, s)
+	}
+	if r.Error != nil {
+		add(*r.Error)
+	}
+	for _, e := range r.Errors {
+		add(e)
+	}
+	return strings.Join(parts, "; ")
+}
+
+// failureSinkKey carries a *failureSink in a request context so the
+// failureCapturingTransport can hand the raw body's "errors" back to Create.
+type failureSinkKey struct{}
+
+// failureSink receives the plural "errors" list observed on a response body.
+type failureSink struct {
+	errs []InteractionError
+}
+
+// failureCapturingTransport wraps an http.RoundTripper and, for requests whose
+// context carries a failureSink, records the plural "errors" array from a
+// successful (2xx) response body. The adopted cloud-interactions-go library drops
+// that field when it decodes the body, which turned failed interactions into a
+// misleading "no video output found". The body is buffered and restored, so the
+// library still sees it unchanged. Remove together with the library transport.
+type failureCapturingTransport struct {
+	base http.RoundTripper
+}
+
+func (t *failureCapturingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil || resp == nil || resp.StatusCode >= 400 {
+		return resp, err
+	}
+	sink, _ := req.Context().Value(failureSinkKey{}).(*failureSink)
+	if sink == nil {
+		return resp, nil
+	}
+	body, readErr := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if readErr != nil {
+		return nil, readErr
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+	// Cheap pre-check so large base64 video bodies are not parsed twice.
+	if bytes.Contains(body, []byte(`"errors"`)) {
+		var probe struct {
+			Errors []InteractionError `json:"errors"`
+		}
+		if json.Unmarshal(body, &probe) == nil {
+			sink.errs = probe.Errors
+		}
+	}
+	return resp, nil
+}
+
+// newLibInteractionsClient wraps the library client's HTTP transport with the
+// failure-capturing transport. A nil HTTPClient falls back to the default client.
+func newLibInteractionsClient(inner *interactions.Client) *libInteractionsClient {
+	hc := inner.HTTPClient
+	if hc == nil {
+		hc = &http.Client{Timeout: interactionsRequestTimeout}
+	}
+	base := hc.Transport
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	wrapped := *hc
+	wrapped.Transport = &failureCapturingTransport{base: base}
+	inner.HTTPClient = &wrapped
+	return &libInteractionsClient{inner: inner}
 }
 
 // libInteractionsClient is the concrete transport, backed by the adopted
@@ -215,7 +332,7 @@ func NewInteractionsClient(ctx context.Context, cfg *Config) (InteractionsClient
 	// the load-bearing header is guaranteed regardless of a future library default.
 	client.WithAPIRevision(DefaultInteractionsAPIRevision)
 
-	return &libInteractionsClient{inner: client}, nil
+	return newLibInteractionsClient(client), nil
 }
 
 // Create translates the request into the library's type, performs a synchronous
@@ -223,6 +340,11 @@ func NewInteractionsClient(ctx context.Context, cfg *Config) (InteractionsClient
 // body is surfaced verbatim by the library so preview-access / quota errors remain
 // legible (design §4).
 func (c *libInteractionsClient) Create(ctx context.Context, req *InteractionRequest) (*InteractionResponse, error) {
+	// The sink lets failureCapturingTransport return the plural "errors" array the
+	// library drops while decoding (a no-op if the transport is not installed).
+	sink := &failureSink{}
+	ctx = context.WithValue(ctx, failureSinkKey{}, sink)
+
 	var resp *InteractionResponse
 	if req.GenerationConfig != nil && req.GenerationConfig.VideoConfig != nil {
 		// The adopted library cannot serialize generation_config.video_config, so
@@ -240,9 +362,25 @@ func (c *libInteractionsClient) Create(ctx context.Context, req *InteractionRequ
 		}
 		resp = fromLibResponse(libResp)
 	}
+	if len(resp.Errors) == 0 {
+		resp.Errors = sink.errs
+	}
 
-	if resp.Error != nil && resp.Error.Message != "" {
-		return resp, fmt.Errorf("interactions API returned error: %s", resp.Error.Message)
+	// A singular error is always fatal. The plural errors list is diagnostic on a
+	// completed interaction (the video may still be present), so it only fails the
+	// call when the interaction did not complete.
+	detail := resp.failureDetail()
+	singular := resp.Error != nil && resp.Error.Message != ""
+	notCompleted := resp.Status != "" && resp.Status != "completed"
+	if detail != "" && (singular || notCompleted) {
+		if notCompleted {
+			detail += fmt.Sprintf(" (interaction status: %s)", resp.Status)
+		}
+		return resp, fmt.Errorf("interactions API returned error: %s", detail)
+	}
+	switch resp.Status {
+	case "failed", "cancelled", "incomplete", "budget_exceeded":
+		return resp, fmt.Errorf("interactions API returned error: interaction ended with status %q and no error details", resp.Status)
 	}
 	log.Printf("Interactions API call completed: status=%q steps=%d outputs=%d", resp.Status, len(resp.Steps), len(resp.Outputs))
 	return resp, nil
@@ -353,9 +491,11 @@ func fromLibResponse(resp *interactions.InteractionResponse) *InteractionRespons
 	}
 	if resp.Error != nil {
 		out.Error = &InteractionError{
-			Code:    resp.Error.Code,
 			Status:  resp.Error.Status,
 			Message: resp.Error.Message,
+		}
+		if resp.Error.Code != 0 {
+			out.Error.Code = strconv.Itoa(resp.Error.Code)
 		}
 	}
 	return out

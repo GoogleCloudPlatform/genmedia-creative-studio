@@ -86,10 +86,31 @@ def close_info_dialog(e: me.ClickEvent):
     yield
 
 
+def workshop_model_options() -> list[str]:
+    """Return the models offered by the picker, preferred model first.
+
+    The configured default is always included so it can be preselected even if
+    an operator left it out of ``GEMINI_WRITERS_WORKSHOP_MODELS``.
+    """
+    models = list(cfg().GEMINI_WRITERS_WORKSHOP_MODELS)
+    default = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
+    if default and default not in models:
+        models.insert(0, default)
+    return models
+
+
+def default_workshop_model() -> str:
+    """Return the model preselected in the picker."""
+    options = workshop_model_options()
+    default = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
+    return default if default in options else options[0]
+
+
 def on_load(e: me.LoadEvent):
     state = me.state(PageState)
-    if not state.selected_model:
-        state.selected_model = cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
+    # Also reset a stale selection (e.g. a model that is no longer offered).
+    if state.selected_model not in workshop_model_options():
+        state.selected_model = default_workshop_model()
     if state.prompt_templates_json == "[]":
         templates = prompt_template_service.load_templates(
             config_path="config/text_prompt_templates.json",
@@ -347,27 +368,25 @@ def gemini_writers_workshop_page_content():
                 # Media upload
                 _media_upload_slots()
 
-                # Model choice
-                if cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID != cfg().MODEL_ID:
-                    me.select(
-                        label="Model",
-                        options=[
-                            me.SelectOption(
-                                label=f"Default ({cfg().MODEL_ID})",
-                                value=cfg().MODEL_ID,
+                # Model choice: exactly the configured Workshop models.
+                me.select(
+                    label="Model",
+                    options=[
+                        me.SelectOption(
+                            label=(
+                                f"{model_id} (default)"
+                                if model_id == default_workshop_model()
+                                else model_id
                             ),
-                            me.SelectOption(
-                                label=f"Workshop ({cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID})",
-                                value=cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID,
-                            ),
-                        ],
-                        on_selection_change=on_model_selection_change,
-                        value=state.selected_model,
-                        style=me.Style(width="100%"),
-                        appearance="outline",
-                    )
-                else:
-                    me.text(f"Model: {cfg().MODEL_ID}")
+                            value=model_id,
+                        )
+                        for model_id in workshop_model_options()
+                    ],
+                    on_selection_change=on_model_selection_change,
+                    value=state.selected_model or default_workshop_model(),
+                    style=me.Style(width="100%"),
+                    appearance="outline",
+                )
 
                 with me.box(
                     style=me.Style(
@@ -711,7 +730,7 @@ def _generate_text_and_save(base_prompt: str, input_gcs_uris: list[str]):
     state.generation_complete = False
     yield
 
-    model_id = state.selected_model or cfg().GEMINI_WRITERS_WORKSHOP_MODEL_ID
+    model_id = state.selected_model or default_workshop_model()
 
     try:
         text_result, execution_time = generate_text(

@@ -473,7 +473,7 @@ wheels = [
 
 [[package]]
 name = "genmedia-creative-studio"
-version = "1.20.2"
+version = "1.21.0"
 source = { virtual = "." }
 dependencies = [
     { name = "black" },

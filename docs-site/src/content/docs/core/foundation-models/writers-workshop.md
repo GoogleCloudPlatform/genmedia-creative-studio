@@ -13,7 +13,7 @@ The **Gemini Writers Workshop** (`/gemini-writers-workshop`) is a multimodal ide
 | :--- | :--- | :--- |
 | **Mesop Page & State** | `pages/gemini_writers_workshop.py` (`WritersWorkshopState`) | Prompt editor, system instruction panel, multimodal reference uploader, markdown output viewer, and template save/load dialogs. |
 | **Template Service** | `common/prompt_template_service.py` (`PromptTemplate`, `PromptTemplateService`) | CRUD persistence layer storing categorized prompt templates in the Firestore `prompt_templates` collection. |
-| **Model Config** | `config/default.py` (`MODEL_ID`) | Configures the default Gemini reasoning model (`gemini-2.5-flash` / `gemini-3.5-flash`). |
+| **Model Config** | `config/default.py` (`GEMINI_WRITERS_WORKSHOP_MODELS`, `GEMINI_WRITERS_WORKSHOP_MODEL_ID`) | Configures the model picker, which offers exactly `gemini-4-argon` and `gemini-3.8-flash` by default, with `gemini-4-argon` preselected. |
 
 ## Key Capabilities
 

@@ -20,6 +20,13 @@
 *   **Feature:** Add `gemini-nano-banana-2.1` (Nano Banana 2.1) as a supported Gemini image model and make it the default for both `nanobanana_image_generation` (`mcp-nanobanana-go`) and `gemini_image_generation` (`mcp-gemini-go`). The model supports 15 aspect ratios (including `9:21`) and `1K`/`2K`/`4K` sizes. Because Nano Banana 2.1 rejects the `seed` parameter (the API errors if it is set), any caller-supplied `seed` is now dropped for this model instead of being forwarded.
 *   **Fix:** `install-online.sh` and `install.sh` now ad-hoc codesign (and clear the quarantine attribute on) macOS binaries after install. Previously, downloaded and locally-built darwin binaries could be silently killed by Gatekeeper (`SIGKILL`, exit 137) on launch with no error output, causing MCP clients to report failed/unresponsive server starts.
 
+## [3.25.0](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/compare/mcp-v3.24.0...mcp-v3.25.0) (2026-11-06)
+
+
+### Features
+
+* **mcp:** add reference_to_video task and document omni image semantics ([#2145](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/issues/2145)) ([52c6998](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/52c6998a3f44d0686ecdb0151f46842e22e1ecc3))
+
 ## [3.24.0](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/compare/mcp-v3.23.0...mcp-v3.24.0) (2026-11-05)
 
 

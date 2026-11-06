@@ -78,7 +78,7 @@ from common.identity import (
     set_internal_scope_headers,
 )
 from common.prompt_template_service import PromptTemplate
-from common.utils import create_display_url
+from common.utils import create_display_url, https_url_to_gcs_uri
 from common.verified_identity import (
     get_verified_user_identity,
     validate_serving_environment,
@@ -223,19 +223,43 @@ def convert_to_gif(gcs_uri: str, request: Request):
 
 
 @app.get("/api/get_signed_url")
-def get_signed_url(gcs_uri: str):
-    """Generates a signed URL for a GCS object."""
+def get_signed_url(request: Request, gcs_uri: str):
+    """Generates a signed URL for an object in one of the app's own buckets.
+
+    Mirrors the ``/media`` proxy's guards: authentication outside local dev and a
+    fail-closed bucket allowlist. Without them any caller could obtain a signed
+    URL, minted by the runtime service account, for an object in ANY bucket that
+    service account can read.
+    """
+    user_email = request.scope.get("MESOP_USER_EMAIL")
+    if config.Default.APP_ENV not in LOCAL_APP_ENVS and (
+        not user_email or user_email == ANONYMOUS_USER_EMAIL
+    ):
+        return JSONResponse({"error": "Authentication required"}, status_code=401)
+
+    # Accept gs:// URIs (and GCS https/proxy URLs, normalized to gs://).
+    normalized_uri = https_url_to_gcs_uri(gcs_uri)
+    if not normalized_uri.startswith("gs://"):
+        return JSONResponse({"error": "Invalid gcs_uri"}, status_code=400)
+    bucket_name, _, blob_name = normalized_uri.removeprefix("gs://").partition("/")
+    if not blob_name:
+        return JSONResponse({"error": "Invalid gcs_uri"}, status_code=400)
+
+    # Same generic 404 as a missing object so the endpoint is not an oracle for
+    # which buckets exist or are readable.
+    if not _is_proxy_bucket_allowed(bucket_name):
+        return JSONResponse({"error": "Object not found"}, status_code=404)
+
     try:
         credentials, _ = google.auth.default()
 
         signing_credentials = impersonated_credentials.Credentials(
             source_credentials=credentials,
             target_principal=config.Default.SERVICE_ACCOUNT_EMAIL,
-            target_scopes="https://www.googleapis.com/auth/devstorage.read_only",
+            target_scopes=["https://www.googleapis.com/auth/devstorage.read_only"],
         )
 
         storage_client = storage.Client()
-        bucket_name, blob_name = gcs_uri.replace("gs://", "").split("/", 1)
         bucket = storage_client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
 
@@ -256,7 +280,8 @@ def get_signed_url(gcs_uri: str):
                 "Please ensure you have authenticated with service account impersonation by running: "
                 "gcloud auth application-default login --impersonate-service-account=<YOUR_SERVICE_ACCOUNT_EMAIL>",
             )
-        return {"error": error_message}, 500
+        # Do not echo internal error details to the client (log above only).
+        return JSONResponse({"error": "Failed to generate signed URL"}, status_code=500)
 
 
 @app.middleware("http")

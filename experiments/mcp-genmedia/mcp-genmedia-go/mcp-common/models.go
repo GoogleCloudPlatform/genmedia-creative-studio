@@ -486,8 +486,9 @@ type OmniModelInfo struct {
 	// MaxVideos is the maximum number of input videos per prompt.
 	MaxVideos int
 	// SupportedTasks lists the explicit generation_config.video_config.task modes
-	// the model accepts beyond the inferred text/image/reference/edit modes
-	// (OmniTaskExtend, OmniTaskUpscale). Empty means only inferred modes.
+	// the model accepts beyond the inferred text/image/first-last/edit modes
+	// (OmniTaskExtend, OmniTaskUpscale, OmniTaskReferenceToVideo). Empty means
+	// only inferred modes.
 	SupportedTasks []string
 	Description    string
 }
@@ -502,8 +503,8 @@ var SupportedOmniModels = map[string]OmniModelInfo{
 		MinDurationSeconds:    3,
 		MaxDurationSeconds:    15,
 		MaxVideos:             3,
-		SupportedTasks:        []string{OmniTaskExtend, OmniTaskUpscale},
-		Description:           "Gemini Omni 1.2 Flash (GA): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, 3-15s duration, up to 10 input images, up to 3 input videos, and the extend and upscale tasks.",
+		SupportedTasks:        []string{OmniTaskExtend, OmniTaskUpscale, OmniTaskReferenceToVideo},
+		Description:           "Gemini Omni 1.2 Flash (GA): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, 3-15s duration, up to 10 input images, up to 3 input videos, and the extend, upscale and reference_to_video tasks.",
 	},
 	"gemini-omni-1.1-flash-preview": {
 		CanonicalName:         "gemini-omni-1.1-flash-preview",
@@ -513,6 +514,7 @@ var SupportedOmniModels = map[string]OmniModelInfo{
 		MinDurationSeconds:    3,
 		MaxDurationSeconds:    10,
 		MaxVideos:             3,
+		SupportedTasks:        []string{OmniTaskReferenceToVideo},
 		Description:           "Gemini Omni 1.1 Flash (Preview): text/image/video in, text+video out, via the Vertex Interactions API (global only). Supports 360p/720p/1080p/4k video output, 16:9/9:16 aspect ratios, up to 10s duration, up to 10 input images, and up to 3 input videos.",
 	},
 	"gemini-omni-flash-preview": {

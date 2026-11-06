@@ -28,7 +28,7 @@ For video longer than the model's clip limit (Omni 1.2: 15 seconds; Veo: 8 secon
 
 | Need | Tool |
 | :--- | :--- |
-| Text-to-video, image-to-video, reference images (up to 10), editing a video (`videos`), 3-15s clips, 360p-4k, 16:9 or 9:16, speech/music/SFX in one pass | `omni_video_generation` |
+| Text-to-video, image-to-video (one image = the first frame), first/last frame (two `images`, in order), subject/style references (`images` with `task: "reference_to_video"`), editing a video (`videos`), 3-15s clips, 360p-4k, 16:9 or 9:16, speech/music/SFX in one pass | `omni_video_generation` |
 | Make an existing clip about 10s longer | `omni_video_generation` with `task: "extend"` (one video, no images, prompt describes the continuation; do not set `duration_seconds` or `aspect_ratio`) |
 | Re-render an existing clip at higher resolution | `omni_video_generation` with `task: "upscale"` (one video, **no prompt**, `resolution` `1080p` default or `4k`) |
 | Exact first-frame to last-frame transition | Veo `veo_first_last_to_video` |

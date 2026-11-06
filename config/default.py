@@ -56,7 +56,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.14.0"  # Fallback if package metadata is missing
+    VERSION: str = "1.15.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 

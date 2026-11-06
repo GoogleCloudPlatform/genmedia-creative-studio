@@ -179,11 +179,18 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
                 call_args["response_format"] = [video_format]
             if request.previous_interaction_id:
                 call_args["previous_interaction_id"] = request.previous_interaction_id
-            # Extend, upscale and first/last frame cannot be inferred from the
-            # inputs alone (two images could be read as references), so the
-            # task is sent explicitly. Other modes keep the plain request
-            # shape that is proven on every Omni model.
-            if request.omni_mode in EXPLICIT_TASK_MODES:
+            # Extend, upscale, first/last frame and reference-to-video cannot
+            # be reliably inferred from the inputs alone (images could be read
+            # as frames or as references), so the task is sent explicitly.
+            # Other modes keep the plain request shape that is proven on every
+            # Omni model. Chat follow-ups never carry a task: the API rejects
+            # ``previous_interaction_id`` together with a video task (400
+            # "previous_interaction_id is not allowed when video task is set",
+            # verified live on 1.1 and 1.2).
+            if (
+                request.omni_mode in EXPLICIT_TASK_MODES
+                and not request.previous_interaction_id
+            ):
                 call_args["generation_config"] = {
                     "video_config": {"task": OMNI_TASK_BY_MODE[request.omni_mode]},
                 }
@@ -214,11 +221,15 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
 # API needs ``generation_config.video_config.task`` for these. Maps the core
 # mode to the API task value. First/last frame has no task of its own: it is
 # ``image_to_video`` with two images (verified live on 1.1 and 1.2; the images
-# are used as the first and last frame in the order they are sent).
+# are used as the first and last frame in the order they are sent). Reference
+# to video is sent explicitly too: inferred from the inputs, a single reference
+# image is read as the literal first frame (image to video) instead of a
+# subject reference (verified live on 1.1 and 1.2).
 OMNI_TASK_BY_MODE = {
     "extend": "extend",
     "upscale": "upscale",
     "first_last": "image_to_video",
+    "ref2v": "reference_to_video",
 }
 EXPLICIT_TASK_MODES = tuple(OMNI_TASK_BY_MODE)
 

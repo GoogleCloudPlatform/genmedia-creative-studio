@@ -1131,6 +1131,76 @@ def test_generate_omni_video_first_last_sends_image_to_video_task(
     assert uris == ["gs://bucket/first.png", "gs://bucket/last.png"]
 
 
+@pytest.mark.parametrize("model", [OMNI_12, "gemini-omni-1.1-flash-preview"])
+@pytest.mark.parametrize("ref_count", [1, 2, 3])
+@patch("models.omni._save_video_to_gcs")
+@patch("models.omni.get_omni_client")
+def test_generate_omni_video_ref2v_sends_reference_to_video_task(
+    mock_get_client: MagicMock,
+    mock_save: MagicMock,
+    ref_count: int,
+    model: str,
+) -> None:
+    """Reference to video sends an explicit task for 1-3 references.
+
+    Inferred, a single reference image is treated as the literal first frame.
+    """
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    mock_client.interactions.create.return_value = _mock_video_interaction()
+    mock_save.return_value = "gs://bucket/videos/output.mp4"
+
+    refs = [
+        APIReferenceImage(gcs_uri=f"gs://bucket/ref{i}.png", mime_type="image/png")
+        for i in range(ref_count)
+    ]
+    req = _omni_request(
+        "ref2v",
+        model_version_id=model,
+        r2v_references=refs,
+    )
+    generate_omni_video(req)
+
+    _, kwargs = mock_client.interactions.create.call_args
+    assert kwargs["generation_config"] == {
+        "video_config": {"task": "reference_to_video"},
+    }
+    uris = [p["uri"] for p in kwargs["input"] if p["type"] == "image"]
+    assert uris == [r.gcs_uri for r in refs]
+
+
+@pytest.mark.parametrize("mode", ["first_last", "ref2v", "extend"])
+@patch("models.omni._save_video_to_gcs")
+@patch("models.omni.get_omni_client")
+def test_generate_omni_video_chat_follow_up_omits_task(
+    mock_get_client: MagicMock,
+    mock_save: MagicMock,
+    mode: str,
+) -> None:
+    """Follow-ups never send a task: the API rejects it with previous_interaction_id.
+
+    Live: "previous_interaction_id is not allowed when video task is set".
+    """
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    mock_client.interactions.create.return_value = _mock_video_interaction()
+    mock_save.return_value = "gs://bucket/videos/output.mp4"
+
+    req = _omni_request(
+        mode,
+        model_version_id=OMNI_12,
+        previous_interaction_id="int-prev",
+        chat_history_json=json.dumps(
+            [{"type": "user_input", "content": [{"type": "text", "text": "Start"}]}],
+        ),
+    )
+    generate_omni_video(req)
+
+    _, kwargs = mock_client.interactions.create.call_args
+    assert "generation_config" not in kwargs
+    assert kwargs["previous_interaction_id"] == "int-prev"
+
+
 @patch("models.omni.get_omni_client")
 @patch("models.omni.track_model_call")
 def test_generate_omni_video_first_last_missing_last_frame_not_billed(

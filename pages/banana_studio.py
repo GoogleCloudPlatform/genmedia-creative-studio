@@ -45,6 +45,7 @@ from components.gemini_image.events import (
 from components.gemini_image.upload_ui import gemini_image_upload_ui
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
+from components.omni_button.omni_button import omni_button
 from components.page_scaffold import page_frame, page_scaffold
 from components.pill import pill
 from components.snackbar import snackbar
@@ -280,6 +281,7 @@ def _actions_row():
                 type="stroked",
             )
             veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
+            omni_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
 
 
 @me.component

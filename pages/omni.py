@@ -15,6 +15,7 @@
 """UI pages and layout for the Gemini Omni Flash workspace."""
 
 import json
+import mimetypes
 import uuid
 from collections.abc import Generator
 
@@ -23,7 +24,7 @@ import mesop as me
 from common.analytics import get_logger
 from common.metadata import MediaItem, add_media_item_to_firestore
 from common.storage import generate_upload_signed_url, store_to_gcs
-from common.utils import create_display_url
+from common.utils import create_display_url, https_url_to_gcs_uri
 from components.dialog import dialog, dialog_actions
 from components.gcs_uploader.gcs_uploader import gcs_uploader
 from components.header import header
@@ -47,13 +48,42 @@ config = Default()
 MAX_R2V_REFERENCES = 3
 
 
+def resolve_image_path_param(image_path: str) -> str:
+    """Convert an `image_path` deep-link value into a `gs://` URI.
+
+    Accepts a signed/public `https://` URL, a full `gs://` URI, or a bare
+    `bucket/object` path (the convention used by the Veo/Omni send-to buttons).
+    """
+    if image_path.startswith("https://"):
+        return https_url_to_gcs_uri(image_path)
+    if image_path.startswith("gs://"):
+        return image_path
+    return f"gs://{image_path}"
+
+
 def on_omni_load(_e: me.LoadEvent) -> Generator[None]:
-    """Handle initial page load config for Gemini Omni."""
+    """Handle initial page load config for Gemini Omni.
+
+    If an `image_path` query parameter is present (e.g. from the "Omni" button
+    on the Nano Banana page), preload it as the first-frame image in i2v mode.
+    """
     state = me.state(PageState)
-    state.omni_mode = "t2v"
-    state.prompt = (
-        "A head-on shot of a neon sign that reads 'Omni' glowing against a brick wall."
-    )
+    image_path = me.query_params.get("image_path")
+    if image_path:
+        gcs_uri = resolve_image_path_param(image_path)
+        state.omni_mode = "i2v"
+        state.reference_image_gcs = gcs_uri
+        state.reference_image_uri = create_display_url(gcs_uri)
+        state.reference_image_mime_type = (
+            mimetypes.guess_type(gcs_uri)[0] or "image/png"
+        )
+        state.prompt = "Animate this image with subtle motion."
+    else:
+        state.omni_mode = "t2v"
+        state.prompt = (
+            "A head-on shot of a neon sign that reads 'Omni' glowing against a "
+            "brick wall."
+        )
     yield
 
 

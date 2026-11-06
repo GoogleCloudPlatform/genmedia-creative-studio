@@ -38,6 +38,10 @@ Reference to video sends its task explicitly because the inferred task depends o
 
 Once a conversation has started, all generation settings are locked so the thread stays consistent. Use **Reset Chat** to change them.
 
+## Sending an Image to Omni
+
+The selected image on the [Nano Banana](/genmedia-creative-studio/core/foundation-models/nano-banana/) page has an **Omni** button next to **Veo** (`components/omni_button/omni_button.py`). It opens `/gemini-omni?image_path=<bucket/object>` and `on_omni_load()` preloads the image as the first-frame input in **Image to video** mode with the prompt "Animate this image with subtle motion." (editable). `image_path` accepts a bare `bucket/object` path, a `gs://` URI or a signed `https://` URL (`resolve_image_path_param()`). Without the parameter the page opens in text-to-video mode as usual. The `omni_button(gcs_uri)` component can be dropped onto any other page that shows a generated image.
+
 ## Source Architecture
 
 | Layer | File Path | Responsibility |

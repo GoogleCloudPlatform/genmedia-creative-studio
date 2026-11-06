@@ -248,11 +248,11 @@ def get_config_table(app_state: AppState):
         config_data["Config"].append("Lyria Model Version")
         config_data["Value"].append(Default.LYRIA_MODEL_VERSION)
 
-    if hasattr(Default, "GEMINI_WRITERS_WORKSHOP_MODEL_ID"):
-        writers_model = getattr(Default, "GEMINI_WRITERS_WORKSHOP_MODEL_ID")
-        if writers_model != Default.MODEL_ID:
-            config_data["Config"].append("Writers Workshop Model ID")
-            config_data["Value"].append(writers_model)
+    if hasattr(Default, "GEMINI_WRITERS_WORKSHOP_MODELS"):
+        config_data["Config"].append("Writers Workshop Models")
+        config_data["Value"].append(", ".join(Default.GEMINI_WRITERS_WORKSHOP_MODELS))
+        config_data["Config"].append("Writers Workshop Default Model")
+        config_data["Value"].append(Default.GEMINI_WRITERS_WORKSHOP_MODEL_ID)
 
     if hasattr(Default, "GEMINI_CRITIQUE_MODEL_ID"):
         config_data["Config"].append("Critique Model ID")

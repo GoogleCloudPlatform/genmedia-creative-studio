@@ -77,9 +77,13 @@ PROJECT_ID=
 # Default: gemini-3.1-flash-lite
 # GEMINI_AUDIO_ANALYSIS_MODEL_ID=gemini-3.1-flash-lite
 
-# [OPTIONAL] The model used for the Gemini Writers Workshop page.
-# Default: Same as MODEL_ID
-# GEMINI_WRITERS_WORKSHOP_MODEL_ID=
+# [OPTIONAL] Comma-separated models offered in the Gemini Writers Workshop picker.
+# Default: gemini-4-argon,gemini-3.8-flash
+# GEMINI_WRITERS_WORKSHOP_MODELS=gemini-4-argon,gemini-3.8-flash
+
+# [OPTIONAL] The model preselected in the Gemini Writers Workshop picker.
+# Default: gemini-4-argon
+# GEMINI_WRITERS_WORKSHOP_MODEL_ID=gemini-4-argon
 
 # ==============================================================================
 # 🎥 Veo (Video Generation)

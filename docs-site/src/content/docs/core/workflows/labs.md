@@ -48,7 +48,7 @@ Labs workflows are functional prototypes designed for rapid iteration and custom
 
 ### Object Rotation (`/object-rotation`)
 * **Source Files:** `pages/object_rotation.py`
-* **Capabilities:** Generates 360-degree rotating product showcase videos from a single e-commerce product photograph using **Veo**.
+* **Capabilities:** Generates 360-degree rotating product showcase videos from a single e-commerce product photograph. Multi-angle views come from **Nano Banana 2.1** (`OBJECT_ROTATION_IMAGE_MODEL`, default `gemini-nano-banana-2.1`), and the video is rendered with **Veo**.
 
 ### Banana Studio (`/banana-studio`)
 * **Source Files:** `pages/banana_studio.py`, `config/banana_presets.json`

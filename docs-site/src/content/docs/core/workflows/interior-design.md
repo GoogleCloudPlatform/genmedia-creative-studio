@@ -3,7 +3,7 @@ title: "Interior Design"
 description: "Transform 2D floor plans into 3D isometric renders, extract rooms with Gemini, interactively restyle finishes, and stitch a Veo walkthrough tour."
 ---
 
-The **Interior Design** workflow (`/interior_design`) turns a flat 2D architectural floor plan into an interactive 3D interior design studio and guided video tour. It chains **Nano Banana (`gemini-2.5-flash-image` / `gemini-3.1-flash-image-preview`)**, **Gemini spatial room extraction**, **conversational room restyling**, and **Veo 3.1 + MoviePy tour assembly**.
+The **Interior Design** workflow (`/interior_design`) turns a flat 2D architectural floor plan into an interactive 3D interior design studio and guided video tour. It chains **Nano Banana 2.1 (`gemini-nano-banana-2.1`, configurable via `INTERIOR_DESIGN_IMAGE_MODEL`)**, **Gemini spatial room extraction**, **conversational room restyling**, and **Veo 3.1 + MoviePy tour assembly**.
 
 ![Interior Design Workflow Architecture](../assets/diagrams/workflow-interior-design-light.webp)
 

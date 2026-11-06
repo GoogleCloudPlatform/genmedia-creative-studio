@@ -26,6 +26,13 @@ from common.verified_identity import resolve_auth_mode, validate_identity_config
 load_dotenv(override=True)
 
 
+def _csv_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    """Read a comma-separated env var into a tuple, falling back to ``default``."""
+    raw = os.environ.get(name, "")
+    values = tuple(item.strip() for item in raw.split(",") if item.strip())
+    return values or default
+
+
 # Define ImageModel here
 class ImageModel(TypedDict):
     """Defines Models For Image Generation."""
@@ -56,7 +63,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.20.2"  # Fallback if package metadata is missing
+    VERSION: str = "1.21.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -106,9 +113,16 @@ class Default:
         "GEMINI_AUDIO_ANALYSIS_MODEL_ID",
         "gemini-3.1-flash-lite",
     )
+    # Gemini Writers Workshop: the model picker offers exactly these models, and
+    # GEMINI_WRITERS_WORKSHOP_MODEL_ID is the one preselected (it is added to the
+    # picker if it is not already listed).
+    GEMINI_WRITERS_WORKSHOP_MODELS: tuple[str, ...] = _csv_env(
+        "GEMINI_WRITERS_WORKSHOP_MODELS",
+        ("gemini-4-argon", "gemini-3.8-flash"),
+    )
     GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
         "GEMINI_WRITERS_WORKSHOP_MODEL_ID",
-        MODEL_ID,
+        "gemini-4-argon",
     )
     GEMINI_CRITIQUE_MODEL_ID: str = os.environ.get(
         "GEMINI_CRITIQUE_MODEL_ID",
@@ -243,7 +257,7 @@ class Default:
     )
     INTERIOR_DESIGN_IMAGE_MODEL: str = os.environ.get(
         "INTERIOR_DESIGN_IMAGE_MODEL",
-        "gemini-3-pro-image",
+        "gemini-nano-banana-2.1",
     )
     INTERIOR_DESIGN_VIDEO_DURATION: int = int(
         os.environ.get("INTERIOR_DESIGN_VIDEO_DURATION", 6),
@@ -269,7 +283,7 @@ class Default:
     )
     OBJECT_ROTATION_IMAGE_MODEL: str = os.environ.get(
         "OBJECT_ROTATION_IMAGE_MODEL",
-        "gemini-3.1-flash-image",
+        "gemini-nano-banana-2.1",
     )
 
     image_modifiers: list[str] = field(

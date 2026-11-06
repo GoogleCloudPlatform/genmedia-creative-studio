@@ -35,7 +35,8 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`GEMINI_IMAGE_GEN_MODEL`** | `gemini-nano-banana-2.1` | The default model used for image generation features (supports `gemini-nano-banana-2.1` (default), `gemini-3.1-flash-lite-image`, `gemini-3.1-flash-image`, or `gemini-3-pro-image`). |
 | **`GEMINI_IMAGE_GEN_LOCATION`** | `global` | The region for the Gemini Image Generation API. |
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-3.1-flash-lite` | The model used specifically for analyzing audio content. |
-| **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `MODEL_ID` | The model used for the Gemini Writers Workshop page. Defaults to `MODEL_ID`. |
+| **`GEMINI_WRITERS_WORKSHOP_MODELS`** | `gemini-4-argon,gemini-3.8-flash` | Comma-separated models offered in the Gemini Writers Workshop model picker. |
+| **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `gemini-4-argon` | The model preselected in the Gemini Writers Workshop picker (added to the picker if not listed in `GEMINI_WRITERS_WORKSHOP_MODELS`). |
 | **`GEMINI_CRITIQUE_MODEL_ID`** | `gemini-3-flash-preview` | The specific model used for the Imagen critique functionality. |
 | **`GEMINI_CRITIQUE_LOCATION`** | `global` | The region for the Gemini image critique model. |
 | **`CHARACTER_CONSISTENCY_GEMINI_MODEL`** | `MODEL_ID` | The model used for Character Consistency tasks. |
@@ -92,7 +93,7 @@ Specific configuration for the Object Rotation workflow.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | **`OBJECT_ROTATION_VIDEO_MODEL`** | `veo-3.1-generate-001` | The specific Veo model used for 360-degree rotation videos. |
-| **`OBJECT_ROTATION_IMAGE_MODEL`** | `gemini-3.1-flash-image` | The specific Gemini image model used for generating multi-angle views. |
+| **`OBJECT_ROTATION_IMAGE_MODEL`** | `gemini-nano-banana-2.1` | The specific Gemini image model used for generating multi-angle views. |
 
 ## 🛋️ Interior Design
 Specific configuration for the Interior Design workflow.
@@ -100,7 +101,7 @@ Specific configuration for the Interior Design workflow.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | **`INTERIOR_DESIGN_VIDEO_MODEL`** | `veo-3.1-lite-generate-001` | The specific Veo model used for 3D walkthrough video segments. |
-| **`INTERIOR_DESIGN_IMAGE_MODEL`** | `gemini-3-pro-image` | The specific Gemini image model used for floor plan to 3D and styled images. |
+| **`INTERIOR_DESIGN_IMAGE_MODEL`** | `gemini-nano-banana-2.1` | The specific Gemini image model used for floor plan to 3D and styled images. |
 | **`INTERIOR_DESIGN_VIDEO_DURATION`** | `6` | The duration in seconds for each generated video segment. |
 
 ## 🎵 Lyria (Music Generation)

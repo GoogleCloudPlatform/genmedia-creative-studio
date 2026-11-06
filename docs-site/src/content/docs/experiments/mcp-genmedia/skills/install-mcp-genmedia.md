@@ -1,7 +1,7 @@
 ---
 title: "Install MCP GenMedia"
 name: install-mcp-genmedia
-description: Installs Google's GenMedia MCP servers (Lyria, NanoBanana, Veo, Chirp, AVTool) via curl from pre-compiled release binaries and registers them in mcp_config.json. Use when the required media synthesis tools are missing or inactive.
+description: Installs Google's GenMedia MCP servers (Lyria, NanoBanana, Veo, Gemini Omni, Chirp, AVTool) via curl from pre-compiled release binaries and registers them in mcp_config.json. Use when the required media synthesis tools are missing or inactive.
 license: Apache-2.0
 ---
 

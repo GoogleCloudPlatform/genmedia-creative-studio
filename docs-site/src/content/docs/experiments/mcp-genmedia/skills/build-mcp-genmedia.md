@@ -1,7 +1,7 @@
 ---
 title: "Build MCP GenMedia"
 name: build-mcp-genmedia
-description: Builds the mcp-genmedia Go MCP servers (nanobanana, veo, lyria, gemini-multimodal, chirp3-hd, avtool) from source and wires them into settings.json. Use this skill whenever the MCP tools are missing or broken — typically at the start of a new session, after a container restart, or when /tmp has been wiped.
+description: Builds the mcp-genmedia Go MCP servers (nanobanana, veo, omni, lyria, gemini-multimodal, chirp3-hd, avtool) from source and wires them into settings.json. Use this skill whenever the MCP tools are missing or broken — typically at the start of a new session, after a container restart, or when /tmp has been wiped.
 license: Apache-2.0
 ---
 
@@ -9,7 +9,7 @@ license: Apache-2.0
 
 ## When to invoke this skill
 
-- MCP tools (nanobanana, veo, lyria, etc.) are not responding or missing from tool list
+- MCP tools (nanobanana, veo, omni, lyria, etc.) are not responding or missing from tool list
 - `/tmp` has been wiped (container restart, new session)
 - `settings.json` still points to `/workspace/.local/bin/` binaries (which are not executable)
 - Any `exec format error` or `permission denied` when Claude Code tries to start an MCP server

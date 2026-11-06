@@ -62,6 +62,15 @@ A `sample_settings.json` is provided for your convenience.
         "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
       }
     },
+    "omni": {
+      "command": "mcp-omni-go",
+      "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000",
+        "GENMEDIA_BUCKET": "YOUR_GOOGLE_CLOUD_STORAGE_BUCKET",
+        "GOOGLE_CLOUD_PROJECT": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+      }
+    },
     "nanobanana": {
       "command": "mcp-nanobanana-go",
       "env": {
@@ -169,6 +178,13 @@ Then, add to that directory a `gemini-extension.json`
   "mcpServers": {
     "veo": {
       "command": "mcp-veo-go",
+      "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000"
+      }
+    },
+    "omni": {
+      "command": "mcp-omni-go",
       "env": {
         "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
         "MCP_SERVER_REQUEST_TIMEOUT": "30000"

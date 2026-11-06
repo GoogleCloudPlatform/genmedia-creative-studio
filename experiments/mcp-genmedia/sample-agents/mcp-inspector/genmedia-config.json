@@ -8,6 +8,14 @@
         "PROJECT_ID": "YOUR_PROJECT"
       }
     },
+    "omni-go": {
+      "command": "mcp-omni-go",
+      "env": {
+        "MCP_SERVER_REQUEST_TIMEOUT": "55000",
+        "GENMEDIA_BUCKET": "YOUR_BUCKET_NAME",
+        "PROJECT_ID": "YOUR_PROJECT"
+      }
+    },
     "nanobanana-go": {
       "command": "mcp-nanobanana-go",
       "env": {

@@ -56,7 +56,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.13.1"  # Fallback if package metadata is missing
+    VERSION: str = "1.14.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -299,7 +299,7 @@ import importlib.metadata
 def load_package_version() -> None:
     try:
         Default.VERSION = importlib.metadata.version(
-            "vertex-ai-genmedia-creative-studio",
+            "genmedia-creative-studio",
         )
     except importlib.metadata.PackageNotFoundError:
         pass  # Keep default

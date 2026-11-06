@@ -6,6 +6,7 @@ from typing import Callable
 import mesop as me
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
+from components.omni_button.omni_button import omni_button
 from components.veo_button.veo_button import veo_button
 
 
@@ -66,3 +67,6 @@ def design_studio(
                 else:
                     me.text("Design")
         veo_button(gcs_uri=storyboard_item["styled_image_uri"] if storyboard_item else "")
+        omni_button(
+            gcs_uri=storyboard_item["styled_image_uri"] if storyboard_item else ""
+        )

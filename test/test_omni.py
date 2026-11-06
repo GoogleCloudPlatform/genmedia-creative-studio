@@ -436,6 +436,27 @@ def test_on_omni_load_without_image_path(mock_state: MagicMock) -> None:
     assert "Omni" in mock_page_state.prompt
 
 
+@pytest.mark.parametrize(
+    "module_name",
+    [
+        "pages.banana_studio",
+        "pages.gemini_image_generation",
+        "pages.vto",
+        "components.imagen.image_output",
+        "components.interior_design.design_studio",
+        "components.library.image_details",
+    ],
+)
+def test_pages_with_veo_button_also_offer_omni_button(module_name: str) -> None:
+    """Every surface that sends an image to Veo also imports the Omni button."""
+    import importlib
+
+    from components.omni_button.omni_button import omni_button
+
+    module = importlib.import_module(module_name)
+    assert module.omni_button is omni_button
+
+
 @patch("components.omni_button.omni_button.log_ui_click")
 @patch("components.omni_button.omni_button.me.navigate")
 @patch("components.omni_button.omni_button.me.state")

@@ -88,8 +88,8 @@ func ParseOmniToolArgs(args map[string]interface{}, cfg *Config) (OmniToolArgs, 
 	if rawTask, ok := args["task"].(string); ok {
 		task = strings.ToLower(strings.TrimSpace(rawTask))
 	}
-	if task != "" && task != OmniTaskExtend && task != OmniTaskUpscale {
-		return out, fmt.Errorf("unsupported task %q (supported: %s, %s)", task, OmniTaskExtend, OmniTaskUpscale)
+	if task != "" && !slices.Contains(OmniTasks, task) {
+		return out, fmt.Errorf("unsupported task %q (supported: %s)", task, strings.Join(OmniTasks, ", "))
 	}
 	prompt, _ := args["prompt"].(string)
 	prompt = strings.TrimSpace(prompt)
@@ -270,14 +270,14 @@ func OmniVideoToolOptions() []mcp.ToolOption {
 	return []mcp.ToolOption{
 		mcp.WithDescription("Generates video (with optional embedded audio) from a text prompt, optionally conditioned on input images and/or videos, using Google's Gemini Omni model via the Vertex Interactions API. Also edits videos and, on models that support them, extends or upscales an input video (see the task argument). Returns MP4(s) saved locally and/or to GCS."),
 		mcp.WithString("prompt", mcp.Description("The text prompt describing the video to generate, edit, or how to extend an input video. Required, except for task=upscale, which is video-only and must not include a prompt.")),
-		mcp.WithString("task", mcp.Enum(OmniTaskExtend, OmniTaskUpscale), mcp.Description("Optional. Explicit video task, for models that support it (see the model description). 'extend' continues the single input video guided by the prompt (output is the input plus a fixed extra span; no aspect_ratio/duration_seconds). 'upscale' re-renders the single input video at 1080p or 4k (default 1080p) with no prompt. Both require exactly one entry in videos and no images. Omit for text-to-video, image-to-video, reference-to-video and editing, which the model infers from the inputs.")),
+		mcp.WithString("task", mcp.Enum(OmniTasks...), mcp.Description("Optional. Explicit video task, for models that support it (see the model description). 'extend' continues the single input video guided by the prompt (output is the input plus a fixed extra span; no aspect_ratio/duration_seconds). 'upscale' re-renders the single input video at 1080p or 4k (default 1080p) with no prompt. Both require exactly one entry in videos and no images. 'reference_to_video' uses the entries in images as subject/style references (prompt and at least one image required, no videos; aspect_ratio and duration_seconds allowed). Omit for text-to-video, image-to-video, first/last frame and editing, which the model infers from the inputs: with no task one image is the literal first frame and two images are the first and last frame, in the order given.")),
 		mcp.WithString("model", mcp.Description(BuildOmniModelDescription())),
 		mcp.WithString("resolution", mcp.Description("Optional. Video output resolution: 360p, 720p, 1080p, or 4k (model-dependent; see the model description). Sent in response_format.")),
 		mcp.WithString("aspect_ratio", mcp.Description("Optional. Video output aspect ratio: 16:9 or 9:16. Sent in response_format.")),
 		mcp.WithNumber("duration_seconds", mcp.Description("Optional. Video output duration in seconds, at least 3 (the maximum is model-dependent: 15 for gemini-omni-1.2-flash, 10 for older models; see the model description). Sent in response_format.")),
 		mcp.WithArray("images",
 			mcp.Items(map[string]any{"type": "string"}),
-			mcp.Description("Optional. Up to 10 input images to condition generation on. Each entry is a local file path (<=20 MB) or a gs:// URI (<=30 MB; image/png, image/jpeg, image/webp, image/heic, image/heif).")),
+			mcp.Description("Optional. Up to 10 input images to condition generation on. Each entry is a local file path (<=20 MB) or a gs:// URI (<=30 MB; image/png, image/jpeg, image/webp, image/heic, image/heif). Meaning depends on task: with no task, one image is the literal first frame (image-to-video) and two images are the first and last frame, in the order given (first entry = first frame, second = last frame; no frame wording is needed in the prompt). With task=reference_to_video the images are subject/style references instead.")),
 		mcp.WithArray("videos",
 			mcp.Items(map[string]any{"type": "string"}),
 			mcp.Description("Optional. Up to 3 input videos to reference, edit, or extend (exactly 1 for task=extend or task=upscale). Each entry is a local file path (<=20 MB) or a gs:// URI (video/mp4, video/webm, video/quicktime, video/mpeg, video/x-flv, video/wmv, video/3gpp).")),

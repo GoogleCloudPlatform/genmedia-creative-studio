@@ -38,6 +38,7 @@ const (
 func TestParseOmniToolArgsTasks(t *testing.T) {
 	cfg := &Config{GenmediaBucket: "my-bucket"}
 	vid := []interface{}{"gs://bucket/clip.mp4"}
+	imgs2 := []interface{}{"gs://bucket/first.png", "gs://bucket/last.png"}
 
 	cases := map[string]struct {
 		args    map[string]interface{}
@@ -128,6 +129,46 @@ func TestParseOmniToolArgsTasks(t *testing.T) {
 				}
 			},
 		},
+		"no task with two images stays inferred (first/last frame)": {
+			args: map[string]interface{}{"model": omni12, "prompt": "day to night", "images": imgs2},
+			check: func(t *testing.T, p OmniParams) {
+				if p.Task != "" || len(p.Images) != 2 {
+					t.Errorf("params = %+v, want no task and two images", p)
+				}
+			},
+		},
+		"reference_to_video with images, aspect and duration": {
+			args: map[string]interface{}{"task": "reference_to_video", "model": omni12, "prompt": "the ball rolls", "images": imgs2, "aspect_ratio": "9:16", "duration_seconds": float64(5)},
+			check: func(t *testing.T, p OmniParams) {
+				if p.Task != OmniTaskReferenceToVideo || len(p.Images) != 2 || p.AspectRatio != "9:16" || p.DurationSeconds != 5 {
+					t.Errorf("params = %+v", p)
+				}
+			},
+		},
+		"reference_to_video is supported on 1.1": {
+			args: map[string]interface{}{"task": "Reference_To_Video", "model": omni11, "prompt": "the ball rolls", "images": imgs2[:1]},
+			check: func(t *testing.T, p OmniParams) {
+				if p.Task != OmniTaskReferenceToVideo || p.Model != omni11 {
+					t.Errorf("params = %+v, want reference_to_video on %s", p, omni11)
+				}
+			},
+		},
+		"reference_to_video requires an image": {
+			args:    map[string]interface{}{"task": "reference_to_video", "model": omni12, "prompt": "the ball rolls"},
+			wantErr: "at least one reference image",
+		},
+		"reference_to_video requires a prompt": {
+			args:    map[string]interface{}{"task": "reference_to_video", "model": omni12, "images": imgs2},
+			wantErr: "prompt must be a non-empty string",
+		},
+		"reference_to_video rejects videos": {
+			args:    map[string]interface{}{"task": "reference_to_video", "model": omni12, "prompt": "x", "images": imgs2, "videos": vid},
+			wantErr: "does not accept input videos",
+		},
+		"reference_to_video is not supported on the legacy model": {
+			args:    map[string]interface{}{"task": "reference_to_video", "model": "gemini-omni-flash-preview", "prompt": "x", "images": imgs2},
+			wantErr: "not supported by model",
+		},
 	}
 
 	for name, tc := range cases {
@@ -206,7 +247,55 @@ func TestBuildOmniRequestTasks(t *testing.T) {
 		}
 	})
 
+	t.Run("two images with no task keep their order and send no task", func(t *testing.T) {
+		req, err := buildOmniRequest(omni12, OmniParams{
+			Prompt: "day to night",
+			Images: []OmniMediaRef{
+				{URI: "gs://bucket/first.png", MimeType: "image/png"},
+				{URI: "gs://bucket/last.png", MimeType: "image/png"},
+			},
+		})
+		if err != nil {
+			t.Fatalf("buildOmniRequest: %v", err)
+		}
+		parts := req.Input[0].Content
+		if len(parts) != 3 || parts[0].Type != "text" || parts[1].Type != "image" || parts[2].Type != "image" {
+			t.Fatalf("content = %+v, want text, image, image", parts)
+		}
+		if !strings.HasSuffix(parts[1].URI, "first.png") || !strings.HasSuffix(parts[2].URI, "last.png") {
+			t.Errorf("image order = %q, %q, want first then last", parts[1].URI, parts[2].URI)
+		}
+		raw, _ := json.Marshal(req)
+		if strings.Contains(string(raw), "video_config") {
+			t.Errorf("first/last frame must not send a task: %s", raw)
+		}
+	})
+
+	t.Run("reference_to_video sends the task with prompt then images", func(t *testing.T) {
+		req, err := buildOmniRequest(omni12, OmniParams{
+			Task:        OmniTaskReferenceToVideo,
+			Prompt:      "the ball rolls",
+			Images:      []OmniMediaRef{{URI: "gs://bucket/ball.png", MimeType: "image/png"}},
+			AspectRatio: "16:9",
+		})
+		if err != nil {
+			t.Fatalf("buildOmniRequest: %v", err)
+		}
+		parts := req.Input[0].Content
+		if len(parts) != 2 || parts[0].Type != "text" || parts[1].Type != "image" {
+			t.Errorf("content = %+v, want text then image", parts)
+		}
+		raw, _ := json.Marshal(req)
+		if !strings.Contains(string(raw), `"video_config":{"task":"reference_to_video"}`) {
+			t.Errorf("body missing reference_to_video task: %s", raw)
+		}
+		if !strings.Contains(string(raw), `"aspect_ratio":"16:9"`) {
+			t.Errorf("body missing aspect_ratio: %s", raw)
+		}
+	})
+
 	t.Run("invalid tasks are rejected", func(t *testing.T) {
+		img := []OmniMediaRef{{URI: "gs://b/a.png", MimeType: "image/png"}}
 		for name, p := range map[string]OmniParams{
 			"no video":         {Task: OmniTaskUpscale},
 			"two videos":       {Task: OmniTaskExtend, Prompt: "x", Videos: append(slices.Clone(video), video...)},
@@ -214,6 +303,9 @@ func TestBuildOmniRequestTasks(t *testing.T) {
 			"upscale prompt":   {Task: OmniTaskUpscale, Prompt: "x", Videos: video},
 			"aspect with task": {Task: OmniTaskExtend, Prompt: "x", Videos: video, AspectRatio: "16:9"},
 			"unknown task":     {Task: "loop", Prompt: "x", Videos: video},
+			"ref2v no image":   {Task: OmniTaskReferenceToVideo, Prompt: "x"},
+			"ref2v no prompt":  {Task: OmniTaskReferenceToVideo, Images: img},
+			"ref2v with video": {Task: OmniTaskReferenceToVideo, Prompt: "x", Images: img, Videos: video},
 		} {
 			if _, err := buildOmniRequest(omni12, p); err == nil {
 				t.Errorf("%s: expected error", name)
@@ -331,7 +423,7 @@ func TestInteractionsClientCreateVideoTaskAPIError(t *testing.T) {
 
 func TestOmniModelDescriptionMentionsTasksAndDuration(t *testing.T) {
 	desc := BuildOmniModelDescription()
-	for _, want := range []string{"Supported tasks (task argument): extend, upscale", "Duration: 3-15s"} {
+	for _, want := range []string{"Supported tasks (task argument): extend, upscale, reference_to_video", "Supported tasks (task argument): reference_to_video.", "Duration: 3-15s"} {
 		if !strings.Contains(desc, want) {
 			t.Errorf("model description missing %q:\n%s", want, desc)
 		}
@@ -345,7 +437,7 @@ func TestOmniVideoToolOptionsSchema(t *testing.T) {
 		t.Fatalf("task property missing from schema: %v", tool.InputSchema.Properties)
 	}
 	enum, _ := taskProp["enum"].([]string)
-	if !slices.Equal(enum, []string{OmniTaskExtend, OmniTaskUpscale}) {
+	if !slices.Equal(enum, []string{OmniTaskExtend, OmniTaskUpscale, OmniTaskReferenceToVideo}) {
 		t.Errorf("task enum = %v", taskProp["enum"])
 	}
 	if slices.Contains(tool.InputSchema.Required, "prompt") {

@@ -63,6 +63,7 @@ from fastapi.staticfiles import StaticFiles
 from google.auth import impersonated_credentials
 from google.cloud import storage
 from pydantic import BaseModel
+from starlette.responses import Response
 
 import pages.brand_adherence
 import pages.character_sheet
@@ -76,6 +77,15 @@ from common.identity import (
     INTERNAL_VERIFIED_EMAIL_HEADER,
     LOCAL_APP_ENVS,
     set_internal_scope_headers,
+)
+from common.http_security import (
+    CORRELATION_ID_HEADER,
+    HSTS_HEADER,
+    HSTS_VALUE,
+    correlation_id_var,
+    public_error_body,
+    resolve_correlation_id,
+    should_send_hsts,
 )
 from common.prompt_template_service import PromptTemplate
 from common.utils import create_display_url, https_url_to_gcs_uri
@@ -217,9 +227,9 @@ def convert_to_gif(gcs_uri: str, request: Request):
 
         return {"url": create_display_url(uri)}
     except Exception as e:
-        error_message = str(e)
-        print(f"Error generating GIF: {error_message}")
-        return {"error": error_message}, 500
+        # Log the detail server-side; never echo internal error text to the client.
+        print(f"Error generating GIF [{correlation_id_var.get()}]: {e}")
+        return JSONResponse({"error": "Failed to generate GIF"}, status_code=500)
 
 
 @app.get("/api/get_signed_url")
@@ -235,7 +245,7 @@ def get_signed_url(request: Request, gcs_uri: str):
     if config.Default.APP_ENV not in LOCAL_APP_ENVS and (
         not user_email or user_email == ANONYMOUS_USER_EMAIL
     ):
-        return JSONResponse({"error": "Authentication required"}, status_code=401)
+        return JSONResponse({"error": "Forbidden"}, status_code=403)
 
     # Accept gs:// URIs (and GCS https/proxy URLs, normalized to gs://).
     normalized_uri = https_url_to_gcs_uri(gcs_uri)
@@ -273,7 +283,9 @@ def get_signed_url(request: Request, gcs_uri: str):
         return {"signed_url": signed_url}
     except Exception as e:
         error_message = str(e)
-        print(f"Error generating signed url: {error_message}")
+        print(
+            f"Error generating signed url [{correlation_id_var.get()}]: {error_message}",
+        )
         if "private key" in error_message:
             print(
                 "This error often occurs in a local development environment. "
@@ -297,6 +309,10 @@ async def add_global_csp(request: Request, call_next):
         "media-src 'self' https://deepmind.google https://storage.cloud.google.com https://storage.googleapis.com https://*.googleusercontent.com; "
         "worker-src 'self' blob:;"
     )
+    # HSTS only in deployed environments over a real host: a browser that sees it
+    # on localhost would refuse plain-HTTP local testing for a year.
+    if should_send_hsts(config.Default.APP_ENV, request.url.hostname):
+        response.headers[HSTS_HEADER] = HSTS_VALUE
     return response
 
 
@@ -314,10 +330,9 @@ async def set_request_context(request: Request, call_next):
         and identity is None
         and not _is_public_path(request.url.path)
     ):
-        return JSONResponse(
-            {"detail": "Authentication required"},
-            status_code=401,
-        )
+        # App-level denial: IAP already intercepts truly unauthenticated users, so
+        # a request reaching here without a verified identity is forbidden (403).
+        return JSONResponse({"detail": "Forbidden"}, status_code=403)
 
     # Generate the session id ONCE and use the same value everywhere below (scope
     # key, internal bridge header, and the response cookie) so AppState, the ASGI
@@ -359,6 +374,43 @@ async def set_request_context(request: Request, call_next):
         samesite="Lax",
     )
     return response
+
+
+@app.middleware("http")
+async def set_correlation_id(request: Request, call_next) -> Response:  # noqa: ANN001
+    """Tag every request with a correlation id (gmcs-0lo.6).
+
+    Defined after ``set_request_context`` so it is the outermost of the
+    decorator middlewares and therefore also tags that middleware's early
+    rejections. A well-formed incoming ``X-Correlation-ID`` is honored (so a
+    caller or upstream proxy can trace a request end to end); otherwise a new
+    UUID4 is generated. This is intentionally NOT the Mesop session id: it
+    identifies one HTTP request, not a user's sequence of actions.
+    """
+    correlation_id = resolve_correlation_id(request.headers.get(CORRELATION_ID_HEADER))
+    request.state.correlation_id = correlation_id
+    token = correlation_id_var.set(correlation_id)
+    try:
+        response = await call_next(request)
+    finally:
+        correlation_id_var.reset(token)
+    response.headers[CORRELATION_ID_HEADER] = correlation_id
+    return response
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Return a generic 500 in deployed envs; full detail only in local dev."""
+    correlation_id = getattr(request.state, "correlation_id", "-")
+    print(
+        f"Unhandled error [{correlation_id}] {request.method} {request.url.path}: "
+        f"{type(exc).__name__}: {exc}",
+    )
+    return JSONResponse(
+        public_error_body(exc, config.Default.APP_ENV, correlation_id),
+        status_code=500,
+        headers={CORRELATION_ID_HEADER: correlation_id},
+    )
 
 
 # Test page routes are left as is, they don't need the scaffold
@@ -445,7 +497,7 @@ def get_media_proxy(request: Request, bucket_name: str, object_path: str):
     if config.Default.APP_ENV not in LOCAL_APP_ENVS and (
         not user_email or user_email == ANONYMOUS_USER_EMAIL
     ):
-        raise HTTPException(status_code=401, detail="Authentication required")
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     # Bucket allowlist enforcement (READ-SWEEP-B, defense-in-depth): the bucket
     # name arrives from the request path, so without this check an authenticated
@@ -478,7 +530,7 @@ def get_media_proxy(request: Request, bucket_name: str, object_path: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error proxying GCS object: {e}")
+        print(f"Error proxying GCS object [{correlation_id_var.get()}]: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

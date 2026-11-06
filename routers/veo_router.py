@@ -15,8 +15,10 @@
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from common.identity import ANONYMOUS_USER_EMAIL, require_authenticated_user
 from common.metadata import get_media_item_by_id
 from common.task_auth import TaskAuthError, authorize_cloud_task_caller
 from config.default import Default as cfg
@@ -85,13 +87,14 @@ async def generate_veo_async(
     Initiates an asynchronous Veo video generation task.
     Returns a job ID immediately.
     """
-    # Extract user email from the request scope, set by middleware
-    user_email = req.scope.get("MESOP_USER_EMAIL")
-    if not user_email:
-        # Fallback or error if auth is strictly required.
-        # For now, we'll use a placeholder if missing to avoid hard crashes during dev,
-        # but in prod this should likely be a 401.
-        user_email = "unknown_user@example.com"
+    # Extract the verified user email set by the request-context middleware.
+    # No made-up identity: outside local dev a missing/anonymous identity is
+    # forbidden; local dev falls back to the shared anonymous identity.
+    user_email = req.scope.get("MESOP_USER_EMAIL") or ANONYMOUS_USER_EMAIL
+    if user_email == ANONYMOUS_USER_EMAIL and require_authenticated_user(
+        cfg().APP_ENV,
+    ):
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     # 1. Create the "Tracking Record" immediately
     job_id = create_initial_job(request, user_email)
@@ -120,7 +123,7 @@ async def get_veo_job_status(job_id: str, req: Request):
     user_email = req.scope.get("MESOP_USER_EMAIL")
     item = get_media_item_by_id(job_id, caller_email=user_email)
     if not item:
-        return {"error": "Job not found"}, 404
+        return JSONResponse({"error": "Job not found"}, status_code=404)
 
     response = {"job_id": job_id, "status": item.status}
     if item.status == "complete":

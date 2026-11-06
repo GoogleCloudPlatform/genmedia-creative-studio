@@ -1,4 +1,4 @@
-// Storyboarder workflow: narrative JSON -> scene frames -> Veo clips -> MoviePy assembly.
+// Storyboarder workflow: narrative JSON -> scene frames -> Omni/Veo clips -> MoviePy assembly.
 digraph workflow_storyboarder {
   label = "Storyboarder · multi-scene narrative video workflow";
   rankdir = LR;
@@ -23,7 +23,7 @@ digraph workflow_storyboarder {
   subgraph cluster_scenes {
     label = "3. Per-scene generation";
     frames [label="Scene keyframes\nNano Banana", class="agent-blue"];
-    clips  [label="Inline scene video\nVeo 3.1 I2V", class="agent-violet"];
+    clips  [label="Inline scene video\nGemini Omni 1.2 I2V (or Veo)", class="agent-violet"];
   }
 
   subgraph cluster_post {

@@ -33,13 +33,16 @@ from config.gemini_image_models import (
     GEMINI_IMAGE_MODELS,
     get_gemini_image_model_config,
 )
-from config.veo_models import VEO_MODELS, get_veo_model_config, DEFAULT_VEO_VERSION_ID
 from models.gemini import (
     generate_image_from_prompt_and_images,
     describe_image,
     generate_storyboard_narrative,
 )
-from models.veo import generate_video, VideoGenerationRequest
+from models.storyboard_video import (
+    generate_storyboard_clip,
+    supported_aspect_ratios,
+    video_model_options,
+)
 from models.video_processing import process_videos
 from state.storyboarder_state import PageState
 from state.state import AppState
@@ -253,10 +256,10 @@ def storyboarder_content():
                         on_selection_change=on_image_model_change,
                     )
 
-                    # Video Gen Model Select
+                    # Video Gen Model Select (Gemini Omni first, then Veo)
                     video_options = [
-                        me.SelectOption(label=v.display_name, value=v.version_id)
-                        for v in VEO_MODELS
+                        me.SelectOption(label=label, value=version_id)
+                        for label, version_id in video_model_options()
                     ]
                     me.select(
                         label="Video Model",
@@ -269,9 +272,10 @@ def storyboarder_content():
                         label="Storyboard Aspect Ratio",
                         value=state.aspect_ratio,
                         options=[
-                            me.SelectOption(label="16:9", value="16:9"),
-                            me.SelectOption(label="9:16", value="9:16"),
-                            me.SelectOption(label="1:1", value="1:1"),
+                            me.SelectOption(label=ratio, value=ratio)
+                            for ratio in supported_aspect_ratios(
+                                state.selected_video_model
+                            )
                         ],
                         on_selection_change=on_aspect_ratio_change,
                     )
@@ -657,6 +661,11 @@ def on_image_model_change(e: me.SelectSelectionChangeEvent):
 def on_video_model_change(e: me.SelectSelectionChangeEvent):
     state = me.state(PageState)
     state.selected_video_model = e.value
+    # Keep the storyboard aspect ratio valid for the newly selected model
+    # (Gemini Omni animates 16:9 and 9:16 only).
+    allowed = supported_aspect_ratios(e.value)
+    if state.aspect_ratio not in allowed:
+        state.aspect_ratio = allowed[0]
 
 
 def on_aspect_ratio_change(e: me.SelectSelectionChangeEvent):
@@ -881,30 +890,21 @@ def on_animate_single_frame(e: me.ClickEvent, idx: int):
             else state.prompt
         )
 
-        request = VideoGenerationRequest(
-            model_version_id=state.selected_video_model,
-            reference_image_gcs=image_uri,
-            reference_image_mime_type="image/png",
-            duration_seconds=4,
-            prompt=video_prompt,
-            aspect_ratio=state.aspect_ratio,
-            video_count=1,
-            resolution="720p",
-            enhance_prompt=True,
-            generate_audio=True,
-            person_generation="Allow (Adults only)",
+        clip_uri = generate_storyboard_clip(
+            state.selected_video_model,
+            image_uri,
+            video_prompt,
+            state.aspect_ratio,
         )
-
-        video_uris, _ = generate_video(request)
-        if video_uris:
+        if clip_uri:
             # Align sizes
             while len(state.generated_video_clips) <= idx:
                 state.generated_video_clips.append("")
                 state.generated_video_clips_display_urls.append("")
 
-            state.generated_video_clips[idx] = video_uris[0]
+            state.generated_video_clips[idx] = clip_uri
             state.generated_video_clips_display_urls[idx] = create_display_url(
-                video_uris[0]
+                clip_uri
             )
         else:
             yield from show_snackbar(state, "Failed to generate video for this frame.")
@@ -937,30 +937,21 @@ def on_generate_video_click(e: me.ClickEvent):
                 else state.prompt
             )
 
-            request = VideoGenerationRequest(
-                model_version_id=state.selected_video_model,
-                reference_image_gcs=image_uri,
-                reference_image_mime_type="image/png",
-                duration_seconds=4,
-                prompt=video_prompt,
-                aspect_ratio=state.aspect_ratio,
-                video_count=1,
-                resolution="720p",
-                enhance_prompt=True,
-                generate_audio=True,
-                person_generation="Allow (Adults only)",
+            clip_uri = generate_storyboard_clip(
+                state.selected_video_model,
+                image_uri,
+                video_prompt,
+                state.aspect_ratio,
             )
-
-            video_uris, _ = generate_video(request)
 
             while len(state.generated_video_clips) <= i:
                 state.generated_video_clips.append("")
                 state.generated_video_clips_display_urls.append("")
 
-            if video_uris:
-                state.generated_video_clips[i] = video_uris[0]
+            if clip_uri:
+                state.generated_video_clips[i] = clip_uri
                 state.generated_video_clips_display_urls[i] = create_display_url(
-                    video_uris[0]
+                    clip_uri
                 )
             else:
                 print(f"Failed to generate video for image {i}")

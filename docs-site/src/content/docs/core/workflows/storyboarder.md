@@ -1,9 +1,9 @@
 ---
 title: "Storyboarder"
-description: "Multi-scene narrative planning, character-consistent keyframe synthesis, Veo scene animation, and MoviePy master film assembly."
+description: "Multi-scene narrative planning, character-consistent keyframe synthesis, Gemini Omni or Veo scene animation, and MoviePy master film assembly."
 ---
 
-The **Storyboarder** workflow (`/storyboarder`) transforms a single story premise and optional character reference photo into a multi-scene short film. It chains **Gemini structured narrative planning**, **Nano Banana sequential keyframe generation**, **Veo Image-to-Video (I2V) animation**, and **MoviePy timeline assembly**.
+The **Storyboarder** workflow (`/storyboarder`) transforms a single story premise and optional character reference photo into a multi-scene short film. It chains **Gemini structured narrative planning**, **Nano Banana sequential keyframe generation**, **Gemini Omni (default) or Veo Image-to-Video (I2V) animation**, and **MoviePy timeline assembly**.
 
 ![Storyboarder Workflow Architecture](../assets/diagrams/workflow-storyboarder-light.webp)
 
@@ -11,9 +11,10 @@ The **Storyboarder** workflow (`/storyboarder`) transforms a single story premis
 
 | Layer | File Path | Responsibility |
 | :--- | :--- | :--- |
-| **Mesop Page & Orchestrator** | `pages/storyboarder.py` (`PageState`, `NarrativeStructure`, `SceneDetail`) | End-to-end 4-stage pipeline UI, per-scene prompt & keyframe editor, individual scene regeneration, Veo video loop, and final MoviePy compilation. |
+| **Mesop Page & Orchestrator** | `pages/storyboarder.py` (`PageState`, `NarrativeStructure`, `SceneDetail`) | End-to-end 4-stage pipeline UI, per-scene prompt & keyframe editor, individual scene regeneration, scene video loop, and final MoviePy compilation. |
 | **Image Synthesis** | `models/gemini.py` (`generate_image_from_prompt_and_images`) | Synthesizes 16:9 scene keyframes conditioned on the character asset and previous scene frames. |
-| **Video Synthesis** | `models/veo.py` (`generate_video`, `VideoGenerationRequest`) | Animates each scene keyframe into an `8s` HD video clip with native audio. |
+| **Video Model Routing** | `models/storyboard_video.py` (`video_model_options`, `supported_aspect_ratios`, `generate_storyboard_clip`) | Builds the video-model dropdown from the Omni and Veo registries and routes each keyframe to the right model. |
+| **Video Synthesis** | `models/omni.py` (`generate_omni_video`) and `models/veo.py` (`generate_video`) | Animates each scene keyframe into a `4s` `720p` clip with native audio, using Gemini Omni (default) or Veo. |
 | **Video Assembly** | `models/video_processing.py` (`process_and_concatenate_videos`) | Concatenates all scene clips into a single master MP4 and uploads it to Cloud Storage. |
 
 ## Step-by-Step Pipeline
@@ -39,9 +40,11 @@ To maintain visual continuity from scene to scene, Storyboarder generates keyfra
 * **Scene $k$ ($k > 1$):** Conditioned on `scene[k].image_prompt` + `character_image_gcs` + the generated keyframe from Scene $k-1$ (`previous_scene_image`) so lighting, environment, and character wardrobe carry forward.
 * Users can inspect the storyboard grid, edit any individual `image_prompt`, and click **Regenerate Image** on any single scene before proceeding to video generation.
 
-### Step 3: Scene-by-Scene Veo Animation
-* Clicking **Generate Videos for All Scenes** iterates through every storyboard card and submits an Image-to-Video (`i2v`) `VideoGenerationRequest` to **Veo** (`veo-3.1-fast-generate-001` or `veo-3.1-generate-001`) using the scene's keyframe (`reference_image_gcs`) and `video_prompt`.
+### Step 3: Scene-by-Scene Video Animation
+* The **Video Model** setting defaults to **Gemini Omni 1.2 Flash**. The dropdown lists every Omni model that supports image-to-video, followed by the Veo models, and is built from the model registries (`config/omni_models.py`, `config/veo_models.py`).
+* Clicking **Generate Videos for All Scenes** iterates through every storyboard card and animates the scene's keyframe (`reference_image_gcs`) with its `video_prompt` through `generate_storyboard_clip`. Omni models receive an `i2v` `OmniVideoGenerationRequest`; Veo models receive an `i2v` `VideoGenerationRequest`. Every clip is `4s` at `720p` with native audio so clips from either model stitch together.
+* Gemini Omni animates `16:9` and `9:16` only. Selecting an Omni model snaps a `1:1` storyboard back to `16:9`, and the aspect-ratio selector lists only the ratios the chosen model supports.
 * Users can also regenerate any individual scene's video clip independently if they tweak its `video_prompt`.
 
 ### Step 4: MoviePy Master Video Assembly
-* Once all scenes have rendered their Veo video clips, clicking **Create Final Movie** downloads the scene MP4s from GCS, concatenates them in sequence via `models/video_processing.py`, uploads the stitched master film to `gs://<GENMEDIA_BUCKET>/storyboarder_movies/`, and logs a complete `MediaItem` in Firestore.
+* Once all scenes have rendered their video clips, clicking **Create Final Movie** downloads the scene MP4s from GCS, concatenates them in sequence via `models/video_processing.py` (clips of a different size are letterboxed to the first clip's size), uploads the stitched master film to `gs://<GENMEDIA_BUCKET>/storyboarder_movies/`, and logs a complete `MediaItem` in Firestore.

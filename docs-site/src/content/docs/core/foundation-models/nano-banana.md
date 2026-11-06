@@ -30,6 +30,7 @@ The **Gemini Image Generation (Nano Banana)** workspace (`/nano-banana`) provide
 ### 1. Multi-Image Reference Conditioning & Conversational Editing
 * Users can upload up to **14 reference images** (with Nano Banana 2 / Pro) or select existing images from the Studio Library.
 * Any generated image in the output gallery includes a **"Continue Editing"** action that promotes the generated image into the reference slot so users can iteratively refine lighting, outfits, backgrounds, or typography across turns.
+* The selected image also has **Veo** and **Omni** buttons that send it to video generation; **Omni** opens the [Gemini Omni](/genmedia-creative-studio/core/foundation-models/gemini-omni/) page in image-to-video mode with the image preloaded as the first frame.
 
 ### 2. Ultra-Wide & Panoramic Aspect Ratios + `4K` Sizing
 * Nano Banana 2 (`gemini-3.1-flash-image-preview`) expands beyond standard photographic ratios to support extreme banner and vertical ratios (`1:4`, `4:1`, `1:8`, `8:1`) alongside native `1K`, `2K`, and `4K` output resolution settings (`types.ImageConfig(aspect_ratio=..., image_size=...)`).

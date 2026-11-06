@@ -1,57 +1,75 @@
 ---
 title: "Gemini Omni"
-description: "Interleaved multimodal text, image, and audio generation workspace powered by the Vertex AI Interactions API."
+description: "Video generation and editing workspace powered by Gemini Omni and the Vertex AI Interactions API: text, image and reference to video, edit, extend, upscale, and multi-turn refinement."
 ---
 
-The **Gemini Omni** workspace (`/gemini-omni`) provides a unified canvas for **interleaved multimodal generation** using `gemini-omni-1.2-flash`. Unlike single-modality endpoints, Gemini Omni accepts mixed combinations of text, reference images, and audio inputs and produces interleaved responses containing rich markdown text, synthesized images, and audio outputs in a single turn.
+The **Gemini Omni** workspace (`/gemini-omni`) is a video generation and editing studio built on the Vertex AI **Interactions API**. It defaults to `gemini-omni-1.2-flash`; Gemini Omni 1.1 (`gemini-omni-1.1-flash-preview`) stays selectable from the model dropdown. One page covers six modes, and every result can be refined in a multi-turn chat thread.
 
 ![Gemini Omni Interaction Architecture](../assets/diagrams/foundation-gemini-omni-light.webp)
 
-## Video Modes (`gemini-omni-1.2-flash`)
+## Modes
 
-`gemini-omni-1.2-flash` is the default model on the `/gemini-omni` page. Gemini Omni 1.1 (`gemini-omni-1.1-flash-preview`) remains selectable from the model dropdown. The mode list is model-aware (`config/omni_models.py`):
+The mode list is model-aware (`modes_for_model()` in `config/omni_models.py`):
 
 | Mode | Inputs | Notes |
 | :--- | :--- | :--- |
-| Text to video | Prompt | |
-| Image to video | Prompt + image | |
-| Reference to video | Prompt + reference images | |
-| Edit video | Prompt + video | Output length matches the input video. |
-| Extend video | Prompt + video | 1.2 only. Sends `generation_config.video_config.task="extend"`. |
-| Upscale video | Video only | 1.2 only. Sends `video_config.task="upscale"`, no text part. Terminal: no chat follow-up. Target resolution `1080p` or `4k`. |
+| Text to video (`t2v`) | Prompt | |
+| Image to video (`i2v`) | Prompt + one image | The image is required. |
+| Reference to video (`ref2v`) | Prompt + reference images | At least one image is required. The page accepts up to 3 (`MAX_R2V_REFERENCES`). |
+| Edit video (`edit`) | Prompt + video | A base video is required. Output length matches the input video. |
+| Extend video (`extend`) | Prompt + video | 1.2 only. Sends `generation_config.video_config.task="extend"`. Output is the input plus a fixed extra span. |
+| Upscale video (`upscale`) | Video only | 1.2 only. Sends `video_config.task="upscale"` and **no text part** (the API rejects text for this task). Output is `1080p` or `4k`. Terminal: no chat follow-up. |
 
-Duration is 3–15 seconds on 1.2 (3–10 seconds on 1.1). Aspect ratios are `16:9` and `9:16`. Resolutions are `360p`, `720p` (default), `1080p`, and `4k`.
+Only `extend` and `upscale` send an explicit task (`EXPLICIT_TASK_MODES`). For every other mode the model infers the task from the inputs. Media inputs are validated before any billable call by `find_missing_required_media()`, which also disables the **Generate Video** button.
+
+## Controls
+
+| Control | Values | Notes |
+| :--- | :--- | :--- |
+| Model | 1.2 Flash (default), 1.1 Flash (Preview) | Switching model keeps the current mode and duration if the new model supports them; otherwise it falls back to `t2v` and clamps the duration (`clamp_duration()`). |
+| Resolution | `360p`, `720p` (default), `1080p`, `4k` | Always sent. For upscale it is the target resolution. |
+| Aspect ratio | `16:9`, `9:16` | Disabled for `extend` and `upscale` (the framing follows the input video). |
+| Duration | 3–15 s on 1.2, 3–10 s on 1.1 | Disabled for `extend`, hidden for `upscale` (the length follows the input video). |
+
+Once a conversation has started, all generation settings are locked so the thread stays consistent. Use **Reset Chat** to change them.
 
 ## Source Architecture
 
 | Layer | File Path | Responsibility |
 | :--- | :--- | :--- |
-| **Mesop Page & State** | `pages/omni.py` (`OmniPageState`) | Interactive workspace UI, multimodal uploaders (images & audio), resolution selector, and interleaved output renderer. |
-| **Model Adapter** | `models/omni.py` (`generate_omni_content`) | Translates multimodal inputs into Vertex AI Interactions API payloads (`client.interactions.create`), streams or unpacks interleaved output turns, and uploads generated media to GCS. |
-| **Configuration** | `config/default.py` | Configures the Interactions API client (`api_version="v1beta1"`) and default GCS bucket (`GENMEDIA_BUCKET`). |
+| **Mesop page** | `pages/omni.py` | Workspace UI: mode, model and settings panel, media uploaders, result player, and the chat thread (`on_send_chat_turn`, `on_reset_chat`). |
+| **Page state** | `state/omni_state.py` (`PageState`) | Mode, model, resolution, aspect ratio, duration, reference media, `previous_interaction_id`, and the chat history as JSON strings (`chat_history_json`, `chat_messages_json`). |
+| **Model adapter** | `models/omni.py` | `generate_omni_video()`, `get_omni_client()`, `_build_input_parts()`, `_build_video_response_format()`, `_extract_video_payload()`, `_save_video_to_gcs()`. |
+| **Model registry** | `config/omni_models.py` | `OMNI_MODELS` is the single source of truth for each model's modes, aspect ratios, resolutions and duration range. The UI builds its dropdowns from it. |
+| **Request contract** | `models/requests.py` (`OmniVideoGenerationRequest`) | Prompt, duration, aspect ratio, resolution, mode, model, reference media URIs, and multi-turn context. |
+| **Configuration** | `config/default.py` | `OMNI_MODEL_ID`, `DEFAULT_OMNI_MODEL_NAME`, `OMNI_PROJECT_ID`, `OMNI_LOCATION`, `OMNI_TIMEOUT_MS`. |
 
-## Key Capabilities & Controls
+## Request Lifecycle
 
-### 1. Multimodal Reference Inputs
-Users can combine a natural-language prompt with multiple reference assets uploaded from disk or selected from the Studio Library:
-* **Image Inputs:** Up to multiple reference images (`image/png`, `image/jpeg`, `image/webp`) converted from `gs://` URIs and passed as inline byte payloads (`{"type": "image", "data": ..., "mime_type": ...}`).
-* **Audio Inputs:** Reference voice or audio clips (`audio/wav`, `audio/mpeg`, `audio/mp3`) passed as `{"type": "audio", "data": ..., "mime_type": ...}` for audio-conditioned reasoning or response synthesis.
+`generate_omni_video()` runs synchronously inside `track_model_call()`:
 
-### 2. Output Resolution Selector (`360p` to `4k`)
-When generating visual assets within an interleaved turn, the workspace exposes an output resolution selector in `OmniPageState.resolution`:
-* Supported tiers: `360p`, `720p`, `1080p` (default), and `4k`.
-* Passed via `generation_config={"image_config": {"image_size": resolution}}` inside `client.interactions.create()`.
+1. **Validate.** The model must exist in the registry and support the requested mode, and the mode's required media must be present (`MissingMediaError`, `GenerationError` with `INVALID_ARGUMENT`).
+2. **Client.** `get_omni_client()` returns a cached `genai.Client(enterprise=True, project=OMNI_PROJECT_ID, location=OMNI_LOCATION)` (default `global`) with an `OMNI_TIMEOUT_MS` timeout (default 10 minutes).
+3. **Input.** `_build_input_parts()` builds the input list: the prompt (omitted for upscale) followed by the mode's media as `gs://` URI parts. Multi-turn requests instead replay `chat_history_json` and append the new prompt.
+4. **Output format.** `_build_video_response_format()` sends `resolution` for every mode. For text, image, reference and multi-turn requests it also sends `aspect_ratio` and `duration` (as `"<N>s"`). Edit, extend and upscale send resolution only, because their framing and length come from the input video (an edit with a mismatched duration is rejected with a 400). Aspect ratio and duration are never written into the prompt text.
+5. **Call.** `client.interactions.create(model=..., input=..., response_format=[...], previous_interaction_id=..., generation_config=...)`. `generation_config` carries `video_config.task` only for extend and upscale.
+6. **Extract.** `_extract_video_payload()` first raises a `GenerationError` for failed interactions (`failed`, `cancelled`, `incomplete` or `budget_exceeded`) using the API's `errors` detail. Otherwise it reads the video from the `model_output` steps. `errors` on a completed interaction is diagnostic only.
+7. **Persist.** `_save_video_to_gcs()` decodes the MP4 and uploads it with `store_to_gcs()`. The page then records a `MediaItem` (`mime_type="video/mp4"`, with the prompt, aspect ratio, resolution and model) via `add_media_item_to_firestore()`, so every result appears in the Studio Library.
 
-### 3. Thought Summaries (`thought` Turns)
-Gemini Omni exposes intermediate reasoning steps before emitting its final interleaved media:
-* Any output block marked with `output.type == "thought"` or `getattr(output, "thought", False)` is captured into `thought_text` and displayed in a collapsible **Model Thoughts** accordion in the UI so users can inspect how the model planned its visual and textual layout.
+Errors surface as `GenerationError` and are shown in the page's error dialog.
 
-## Request Lifecycle (`models/omni.py`)
+## Multi-turn Chat Thread
 
-1. **Client Initialization:** `get_omni_client()` initializes a `genai.Client(vertexai=True, project=cfg.PROJECT_ID, location="global", http_options=HttpOptions(api_version="v1beta1"))`.
-2. **Input Assembly:** `generate_omni_content()` downloads any referenced `gs://` images or audio clips into memory, base64-encodes the binary payloads, and appends the user's text prompt to the `inputs` list.
-3. **Interactions API Call:** Invokes `client.interactions.create(model="gemini-omni-1.2-flash", input=inputs, response_modalities=["text", "image"], generation_config=...)` inside `track_model_call()`.
-4. **Interleaved Output Parsing & Persistence:**
-   * `text` blocks are appended in order (`{"type": "text", "text": ...}`).
-   * `image` and `audio` blocks are decoded from base64, uploaded to `gs://<GENMEDIA_BUCKET>/omni_outputs/` via `store_to_gcs()`, and returned as ordered items in `outputs`.
-   * The complete interleaved sequence (`outputs` JSON, `thought_text`, input references, and generation duration) is persisted as a single `MediaItem` (`media_type="omni"`) in Firestore so the entire multimodal turn can be replayed from the Studio Library.
+After a non-upscale generation the page keeps the returned interaction ID in `previous_interaction_id` and the turn history in `chat_history_json`. Each follow-up (**Send**) calls the same `generate_omni_video()` with `previous_interaction_id` set; earlier model videos are re-read from GCS and resent as base64 (`_resolve_gcs_uris_in_history()`). Per-mode media requirements do not apply to follow-up turns. **Upscale** is terminal: it produces a library item but starts no thread.
+
+## Configuration
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `DEFAULT_OMNI_MODEL_NAME` | `gemini-omni-1.2-flash` | Model preselected on the page (resolved through the registry). |
+| `OMNI_MODEL_ID` | `gemini-omni-1.2-flash` | Defined in config but not read by the page; the preselected model comes from `DEFAULT_OMNI_MODEL_NAME`. |
+| `OMNI_PROJECT_ID` | `PROJECT_ID` | Project that owns the Omni quota and billing. |
+| `OMNI_LOCATION` | `global` | Omni is served from the `global` endpoint. |
+| `OMNI_TIMEOUT_MS` | `600000` | Client and request timeout. |
+
+To add a new Omni model version, add an `OmniModelConfig` entry to `OMNI_MODELS` in `config/omni_models.py`; the mode, resolution and duration controls follow automatically.

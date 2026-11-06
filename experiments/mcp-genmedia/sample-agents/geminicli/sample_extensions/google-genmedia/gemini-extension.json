@@ -9,6 +9,13 @@
         "MCP_SERVER_REQUEST_TIMEOUT": "30000"
       }
     },
+    "omni": {
+      "command": "mcp-omni-go",
+      "env": {
+        "MCP_REQUEST_MAX_TOTAL_TIMEOUT": "240000",
+        "MCP_SERVER_REQUEST_TIMEOUT": "30000"
+      }
+    },
     "chirp3-hd": {
       "command": "mcp-chirp3-go",
       "env": {

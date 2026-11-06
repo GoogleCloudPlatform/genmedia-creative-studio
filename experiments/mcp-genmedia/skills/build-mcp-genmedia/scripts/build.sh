@@ -1,8 +1,3 @@
-
----
-
-**`scripts/build.sh`**
-```bash
 #!/usr/bin/env bash
 # build-mcp-genmedia/scripts/build.sh
 # Builds all mcp-genmedia Go MCP servers from source into /tmp/bin/
@@ -26,6 +21,7 @@ SETTINGS="/workspace/.claude/settings.json"
 SERVERS=(
   "mcp-nanobanana-go"
   "mcp-veo-go"
+  "mcp-omni-go"
   "mcp-lyria-go"
   "mcp-gemini-go"
   "mcp-chirp3-go"
@@ -73,6 +69,7 @@ echo "${LOG} Patching settings.json..."
 declare -A KEY_MAP=(
   [mcp-nanobanana-go]="nanobanana"
   [mcp-veo-go]="veo"
+  [mcp-omni-go]="omni"
   [mcp-lyria-go]="lyria"
   [mcp-gemini-go]="gemini-multimodal"
   [mcp-chirp3-go]="chirp3-hd"
@@ -89,6 +86,7 @@ out_dir = sys.argv[2]
 bin_map = {
     "nanobanana":        f"{out_dir}/mcp-nanobanana-go",
     "veo":               f"{out_dir}/mcp-veo-go",
+    "omni":              f"{out_dir}/mcp-omni-go",
     "lyria":             f"{out_dir}/mcp-lyria-go",
     "gemini-multimodal": f"{out_dir}/mcp-gemini-go",
     "chirp3-hd":         f"{out_dir}/mcp-chirp3-go",

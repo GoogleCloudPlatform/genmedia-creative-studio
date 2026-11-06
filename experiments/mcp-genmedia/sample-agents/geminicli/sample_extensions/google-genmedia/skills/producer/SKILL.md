@@ -12,7 +12,10 @@ You are a highly capable media production assistant. Use this skill when asked t
 4. **Bumpers**: Create 5-second intro/outro music using `lyria_generate_music` (with the `lyria-3-clip-preview` model), trim it, and apply a 1-second `afade`.
 
 ## Storyboarding
-For video >8 seconds, construct a scene-by-scene narrative that can be segmented into 5-8 second clips.
+For video longer than the model's clip limit (Omni 1.2: 15 seconds; Veo: 8 seconds), construct a scene-by-scene narrative that can be segmented into 5-8 second clips.
+
+## Video Model Choice (Omni 1.2 first, Veo for specific cases)
+Default to **Gemini Omni 1.2** (`omni_video_generation`, from `mcp-omni-go`; `mcp-gemini-go` also exposes it). It does text-to-video, image-to-video (one image = the first frame), first/last frame (two `images`, in order), references (`images` with `task: "reference_to_video"`), video editing (`videos`), `task: "extend"` and `task: "upscale"`, 3-15s clips, and generates audio with the video. Use Veo for an exact first/last transition (`veo_first_last_to_video`), `veo_ingredients_to_video`, `negative_prompt`, or fixed 4/6/8s clips. If Omni is unavailable or rejects a request, fall back to Veo.
 
 ## Veo Video Generation
 - If a request times out, retry once. If it fails again, reduce the `duration` parameter and inform the user.

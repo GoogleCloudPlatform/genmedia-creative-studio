@@ -76,6 +76,7 @@ def omni_page() -> None:
                         "Gemini Omni supports cutting-edge multi-modal generation and video editing capabilities:\n\n"
                         "* **Text-to-Video (T2V)**: Generate videos from detailed prompt descriptions.\n"
                         "* **Image-to-Video (I2V)**: Bring a still image to life using an initial starting frame.\n"
+                        "* **First/Last Frame**: Generate the video that connects a first-frame image to a last-frame image.\n"
                         "* **Reference-to-Video (Ref2V)**: Guide video character and style consistency with up to 3 reference images.\n"
                         "* **Video Editing**: Perform multi-turn conversational video edits on an existing base video.\n"
                         "* **Extend Video** (1.2+): Continue an existing video with additional seconds.\n"
@@ -213,6 +214,10 @@ def render_single_turn_workspace(state: PageState) -> None:
             # Conditionally show components based on mode
             if state.omni_mode == "i2v":
                 render_image_uploader(state, "Upload Starting Frame Image")
+            elif state.omni_mode == "first_last":
+                render_image_uploader(state, "Upload First Frame Image")
+                me.box(style=me.Style(height=8))
+                render_last_image_uploader(state, "Upload Last Frame Image")
             elif state.omni_mode == "ref2v":
                 render_reference_images_gallery(state)
             elif state.omni_mode == "edit":
@@ -462,6 +467,7 @@ def render_settings_panel(state: PageState, _app_state: AppState) -> None:
             has_image=bool(state.reference_image_gcs),
             has_video=bool(state.reference_video_gcs),
             reference_count=len(json.loads(state.r2v_references_json)),
+            has_last_image=bool(state.last_image_gcs),
         )
         me.button(
             "Generate Video",
@@ -522,6 +528,43 @@ def render_image_uploader(state: PageState, label: str) -> None:
                 ),
             )
             me.button("Remove", type="flat", on_click=on_remove_uploaded_image)
+
+
+def render_last_image_uploader(state: PageState, label: str) -> None:
+    """Render the last-frame image uploader for First/Last Frame mode."""
+    me.text(label, type="body-2")
+    with me.box(
+        style=me.Style(
+            display="flex",
+            flex_direction="row",
+            gap=12,
+            align_items="center",
+            flex_wrap="wrap",
+        ),
+    ):
+        me.uploader(
+            label="Upload Image",
+            accepted_file_types=["image/png", "image/jpeg", "image/webp"],
+            on_upload=on_upload_last_image,
+            key=f"last_{state.last_image_file_key}",
+        )
+        library_chooser_button(
+            on_library_select=on_last_image_select,
+            button_label="Choose from Library",
+            media_type=["images"],
+            disabled=state.is_loading,
+            key="omni_last_image_library",
+        )
+        if state.last_image_uri:
+            me.image(
+                src=state.last_image_uri,
+                style=me.Style(
+                    height="64px",
+                    border_radius=6,
+                    border=me.Border.all(me.BorderSide(color="#ccc", width=1)),
+                ),
+            )
+            me.button("Remove", type="flat", on_click=on_remove_last_image)
 
 
 def render_video_uploader(state: PageState, label: str) -> None:
@@ -749,6 +792,44 @@ def on_remove_uploaded_image(_e: me.ClickEvent) -> None:
     yield
 
 
+def on_upload_last_image(e: me.UploadEvent) -> Generator[None]:
+    """Upload the last-frame image to GCS."""
+    state = me.state(PageState)
+    try:
+        gcs_path = store_to_gcs(
+            "uploads",
+            e.file.name,
+            e.file.mime_type,
+            e.file.getvalue(),
+        )
+        state.last_image_gcs = gcs_path
+        state.last_image_uri = create_display_url(gcs_path)
+        state.last_image_mime_type = e.file.mime_type
+    except Exception as ex:  # noqa: BLE001
+        state.error_message = f"Failed to upload image: {ex}"
+        state.show_error_dialog = True
+    yield
+
+
+def on_last_image_select(e: LibrarySelectionChangeEvent) -> Generator[None]:
+    """Handle selecting the last-frame image from the library."""
+    state = me.state(PageState)
+    state.last_image_gcs = e.gcs_uri
+    state.last_image_uri = create_display_url(e.gcs_uri)
+    state.last_image_mime_type = "image/png"
+    yield
+
+
+def on_remove_last_image(_e: me.ClickEvent) -> Generator[None]:
+    """Remove the last-frame image from state."""
+    state = me.state(PageState)
+    state.last_image_gcs = ""
+    state.last_image_uri = ""
+    state.last_image_mime_type = ""
+    state.last_image_file_key += 1
+    yield
+
+
 def on_request_signed_url_video(e: me.WebEvent) -> Generator[None]:
     """Generate GCS Signed URL for video upload."""
     state = me.state(PageState)
@@ -912,6 +993,7 @@ def on_click_generate(_e: me.ClickEvent) -> Generator[None]:
         has_image=bool(state.reference_image_gcs),
         has_video=bool(state.reference_video_gcs),
         reference_count=len(json.loads(state.r2v_references_json)),
+        has_last_image=bool(state.last_image_gcs),
     )
     if missing_media:
         state.error_message = missing_media
@@ -940,6 +1022,10 @@ def on_click_generate(_e: me.ClickEvent) -> Generator[None]:
         else None,
         reference_image_mime_type=state.reference_image_mime_type
         if state.reference_image_mime_type
+        else None,
+        last_reference_image_gcs=state.last_image_gcs if state.last_image_gcs else None,
+        last_reference_image_mime_type=state.last_image_mime_type
+        if state.last_image_mime_type
         else None,
         reference_video_gcs=state.reference_video_gcs
         if state.reference_video_gcs

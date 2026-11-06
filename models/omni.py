@@ -53,6 +53,7 @@ def find_missing_required_media(
     has_image: bool,
     has_video: bool,
     reference_count: int,
+    has_last_image: bool = False,
 ) -> str | None:
     """Return a message describing missing required media for a mode, else None.
 
@@ -62,6 +63,7 @@ def find_missing_required_media(
     Per-mode required media (based on the Omni UI contract):
       - ``t2v``:   no media required.
       - ``i2v``:   a reference image is required.
+      - ``first_last``: both a first-frame and a last-frame image are required.
       - ``ref2v``: at least one reference image is required.
       - ``edit``:  a base video to edit is required (image is optional).
       - ``extend``: a base video to extend is required.
@@ -69,6 +71,8 @@ def find_missing_required_media(
     """
     if omni_mode == "i2v" and not has_image:
         return "Image-to-Video requires a reference image."
+    if omni_mode == "first_last" and not (has_image and has_last_image):
+        return "First/Last Frame requires both a first and a last frame image."
     if omni_mode == "ref2v" and reference_count < 1:
         return "Reference-to-Video requires at least one reference image."
     if omni_mode == "edit" and not has_video:
@@ -95,6 +99,7 @@ def _validate_required_media(request: OmniVideoGenerationRequest) -> None:
         has_image=bool(request.reference_image_gcs),
         has_video=bool(request.reference_video_gcs),
         reference_count=len(request.r2v_references or []),
+        has_last_image=bool(request.last_reference_image_gcs),
     )
     if missing:
         raise MissingMediaError(missing)
@@ -174,12 +179,13 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
                 call_args["response_format"] = [video_format]
             if request.previous_interaction_id:
                 call_args["previous_interaction_id"] = request.previous_interaction_id
-            # Extend and upscale cannot be inferred from the inputs alone, so
-            # the task is sent explicitly. Other modes keep the plain request
+            # Extend, upscale and first/last frame cannot be inferred from the
+            # inputs alone (two images could be read as references), so the
+            # task is sent explicitly. Other modes keep the plain request
             # shape that is proven on every Omni model.
             if request.omni_mode in EXPLICIT_TASK_MODES:
                 call_args["generation_config"] = {
-                    "video_config": {"task": request.omni_mode},
+                    "video_config": {"task": OMNI_TASK_BY_MODE[request.omni_mode]},
                 }
 
             logger.info(
@@ -205,14 +211,22 @@ def generate_omni_video(request: OmniVideoGenerationRequest) -> tuple[str, str]:
 
 
 # Modes whose task cannot be inferred from the inputs alone; the Interactions
-# API needs ``generation_config.video_config.task`` for these.
-EXPLICIT_TASK_MODES = ("extend", "upscale")
+# API needs ``generation_config.video_config.task`` for these. Maps the core
+# mode to the API task value. First/last frame has no task of its own: it is
+# ``image_to_video`` with two images (verified live on 1.1 and 1.2; the images
+# are used as the first and last frame in the order they are sent).
+OMNI_TASK_BY_MODE = {
+    "extend": "extend",
+    "upscale": "upscale",
+    "first_last": "image_to_video",
+}
+EXPLICIT_TASK_MODES = tuple(OMNI_TASK_BY_MODE)
 
 # Modes whose output keeps the input video's framing and length. Sending an
 # aspect ratio or duration for these is wrong at best and a 400 at worst
 # (verified live: edit with a duration that differs from the input length is
 # rejected with "Edited video duration ... does not match config duration").
-INPUT_DERIVED_MODES = ("edit", *EXPLICIT_TASK_MODES)
+INPUT_DERIVED_MODES = ("edit", "extend", "upscale")
 
 
 def _build_video_response_format(
@@ -335,6 +349,34 @@ def _append_single_turn_media(
                 "mime_type": request.reference_image_mime_type or "image/png",
                 "uri": request.reference_image_gcs,
             },
+        )
+
+    elif request.omni_mode == "first_last":
+        if not request.reference_image_gcs or not request.last_reference_image_gcs:
+            raise GenerationError(
+                "First and last frame image GCS URIs are required for "
+                "First/Last Frame.",
+            )
+        logger.info(
+            "Mode: First/Last Frame. "
+            f"First: {request.reference_image_gcs} "
+            f"Last: {request.last_reference_image_gcs}",
+        )
+        # Order matters: the first image becomes the first frame and the
+        # second image the last frame.
+        input_parts.extend(
+            [
+                {
+                    "type": "image",
+                    "mime_type": request.reference_image_mime_type or "image/png",
+                    "uri": request.reference_image_gcs,
+                },
+                {
+                    "type": "image",
+                    "mime_type": request.last_reference_image_mime_type or "image/png",
+                    "uri": request.last_reference_image_gcs,
+                },
+            ],
         )
 
     elif request.omni_mode == "ref2v":

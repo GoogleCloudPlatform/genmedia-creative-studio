@@ -75,6 +75,10 @@ class OmniVideoGenerationRequest(BaseModel):
     reference_image_gcs: Optional[str] = None
     reference_image_mime_type: Optional[str] = None
 
+    # Last frame image (first_last mode; reference_image_gcs is the first frame)
+    last_reference_image_gcs: Optional[str] = None
+    last_reference_image_mime_type: Optional[str] = None
+
     # Reference Video GCS URIs (for editing)
     reference_video_gcs: Optional[str] = None
     reference_video_mime_type: Optional[str] = None

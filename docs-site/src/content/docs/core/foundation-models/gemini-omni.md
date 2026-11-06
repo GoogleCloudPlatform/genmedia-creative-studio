@@ -1,9 +1,9 @@
 ---
 title: "Gemini Omni"
-description: "Video generation and editing workspace powered by Gemini Omni and the Vertex AI Interactions API: text, image and reference to video, edit, extend, upscale, and multi-turn refinement."
+description: "Video generation and editing workspace powered by Gemini Omni and the Vertex AI Interactions API: text, image, first/last frame and reference to video, edit, extend, upscale, and multi-turn refinement."
 ---
 
-The **Gemini Omni** workspace (`/gemini-omni`) is a video generation and editing studio built on the Vertex AI **Interactions API**. It defaults to `gemini-omni-1.2-flash`; Gemini Omni 1.1 (`gemini-omni-1.1-flash-preview`) stays selectable from the model dropdown. One page covers six modes, and every result can be refined in a multi-turn chat thread.
+The **Gemini Omni** workspace (`/gemini-omni`) is a video generation and editing studio built on the Vertex AI **Interactions API**. It defaults to `gemini-omni-1.2-flash`; Gemini Omni 1.1 (`gemini-omni-1.1-flash-preview`) stays selectable from the model dropdown. One page covers seven modes, and every result can be refined in a multi-turn chat thread.
 
 ![Gemini Omni Interaction Architecture](../assets/diagrams/foundation-gemini-omni-light.webp)
 
@@ -15,12 +15,15 @@ The mode list is model-aware (`modes_for_model()` in `config/omni_models.py`):
 | :--- | :--- | :--- |
 | Text to video (`t2v`) | Prompt | |
 | Image to video (`i2v`) | Prompt + one image | The image is required. |
+| First/Last frame (`first_last`) | Prompt + first image + last image | Both images are required (1.2 and 1.1 only). They are sent in order: the first image is the first frame and the second is the last frame. Sends `video_config.task="image_to_video"`. |
 | Reference to video (`ref2v`) | Prompt + reference images | At least one image is required. The page accepts up to 3 (`MAX_R2V_REFERENCES`). |
 | Edit video (`edit`) | Prompt + video | A base video is required. Output length matches the input video. |
 | Extend video (`extend`) | Prompt + video | 1.2 only. Sends `generation_config.video_config.task="extend"`. Output is the input plus a fixed extra span. |
 | Upscale video (`upscale`) | Video only | 1.2 only. Sends `video_config.task="upscale"` and **no text part** (the API rejects text for this task). Output is `1080p` or `4k`. Terminal: no chat follow-up. |
 
-Only `extend` and `upscale` send an explicit task (`EXPLICIT_TASK_MODES`). For every other mode the model infers the task from the inputs. Media inputs are validated before any billable call by `find_missing_required_media()`, which also disables the **Generate Video** button.
+Only `first_last`, `extend` and `upscale` send an explicit task (`OMNI_TASK_BY_MODE` / `EXPLICIT_TASK_MODES`: `image_to_video`, `extend` and `upscale`). For every other mode the model infers the task from the inputs.
+
+The Interactions API has no dedicated first/last-frame task (`first_last_frame` is rejected with a 400). A live probe (`scripts/spikes/omni_first_last_probe.py`) showed that two images supplied in order are honored as the first and last frame on both 1.2 and 1.1, with or without "first frame / last frame" wording in the prompt, and that an explicit `image_to_video` task behaves identically to the inferred one. An explicit `reference_to_video` task with two images does not: it treats them as references instead. Media inputs are validated before any billable call by `find_missing_required_media()`, which also disables the **Generate Video** button.
 
 ## Controls
 

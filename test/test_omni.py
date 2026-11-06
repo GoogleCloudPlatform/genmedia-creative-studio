@@ -328,8 +328,8 @@ def test_generate_omni_video_success(
 
 
 def test_build_video_response_format_generative_modes() -> None:
-    """t2v/i2v/ref2v send resolution, aspect ratio and a 'Ns' duration."""
-    for mode in ("t2v", "i2v", "ref2v"):
+    """t2v/i2v/first_last/ref2v send resolution, aspect ratio and a 'Ns' duration."""
+    for mode in ("t2v", "i2v", "first_last", "ref2v"):
         req = _omni_request(
             mode,
             resolution="360p",
@@ -568,6 +568,7 @@ def test_modes_for_model_gates_extend_and_upscale() -> None:
     assert modes_for_model("gemini-omni-1.2-flash") == [
         "t2v",
         "i2v",
+        "first_last",
         "ref2v",
         "edit",
         "extend",
@@ -576,9 +577,12 @@ def test_modes_for_model_gates_extend_and_upscale() -> None:
     assert modes_for_model("gemini-omni-1.1-flash-preview") == [
         "t2v",
         "i2v",
+        "first_last",
         "ref2v",
         "edit",
     ]
+    # The legacy model has not been verified for first/last frame.
+    assert "first_last" not in modes_for_model("gemini-omni-flash-preview")
     # Unknown models fall back to the four common modes.
     assert modes_for_model("no-such-model") == ["t2v", "i2v", "ref2v", "edit"]
 
@@ -1036,6 +1040,136 @@ def test_generate_omni_video_sends_explicit_task(
     assert kwargs["response_format"] == [{"type": "video", "resolution": "1080p"}]
     if mode == "upscale":
         assert all(p["type"] != "text" for p in kwargs["input"])
+
+
+def test_find_missing_required_media_first_last() -> None:
+    """First/Last Frame needs both images; a video or references don't help."""
+    assert (
+        find_missing_required_media(
+            "first_last",
+            has_image=True,
+            has_last_image=False,
+            has_video=True,
+            reference_count=3,
+        )
+        is not None
+    )
+    assert (
+        find_missing_required_media(
+            "first_last",
+            has_image=False,
+            has_last_image=True,
+            has_video=False,
+            reference_count=0,
+        )
+        is not None
+    )
+    assert (
+        find_missing_required_media(
+            "first_last",
+            has_image=True,
+            has_last_image=True,
+            has_video=False,
+            reference_count=0,
+        )
+        is None
+    )
+
+
+def test_build_input_parts_first_last_orders_first_then_last() -> None:
+    """The first-frame image is sent before the last-frame image, after the prompt."""
+    req = _omni_request(
+        "first_last",
+        prompt="Day turns to night",
+        model_version_id=OMNI_12,
+        reference_image_gcs="gs://bucket/first.png",
+        reference_image_mime_type="image/png",
+        last_reference_image_gcs="gs://bucket/last.jpg",
+        last_reference_image_mime_type="image/jpeg",
+    )
+    assert _build_input_parts(req) == [
+        {"type": "text", "text": "Day turns to night"},
+        {"type": "image", "mime_type": "image/png", "uri": "gs://bucket/first.png"},
+        {"type": "image", "mime_type": "image/jpeg", "uri": "gs://bucket/last.jpg"},
+    ]
+
+
+@patch("models.omni._save_video_to_gcs")
+@patch("models.omni.get_omni_client")
+def test_generate_omni_video_first_last_sends_image_to_video_task(
+    mock_get_client: MagicMock,
+    mock_save: MagicMock,
+) -> None:
+    """First/Last Frame is image_to_video with two images, aspect and duration."""
+    mock_client = MagicMock()
+    mock_get_client.return_value = mock_client
+    mock_client.interactions.create.return_value = _mock_video_interaction()
+    mock_save.return_value = "gs://bucket/videos/output.mp4"
+
+    req = _omni_request(
+        "first_last",
+        resolution="360p",
+        aspect_ratio="16:9",
+        duration_seconds=5,
+        model_version_id=OMNI_12,
+        reference_image_gcs="gs://bucket/first.png",
+        last_reference_image_gcs="gs://bucket/last.png",
+    )
+    generate_omni_video(req)
+
+    _, kwargs = mock_client.interactions.create.call_args
+    assert kwargs["generation_config"] == {"video_config": {"task": "image_to_video"}}
+    assert kwargs["response_format"] == [
+        {
+            "type": "video",
+            "resolution": "360p",
+            "aspect_ratio": "16:9",
+            "duration": "5s",
+        },
+    ]
+    uris = [p["uri"] for p in kwargs["input"] if p["type"] == "image"]
+    assert uris == ["gs://bucket/first.png", "gs://bucket/last.png"]
+
+
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_first_last_missing_last_frame_not_billed(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+) -> None:
+    """A missing last frame never reaches the billable API."""
+    req = _omni_request(
+        "first_last",
+        model_version_id=OMNI_12,
+        reference_image_gcs="gs://bucket/first.png",
+    )
+
+    with pytest.raises(MissingMediaError, match="first and a last frame"):
+        generate_omni_video(req)
+
+    mock_track.assert_not_called()
+    mock_get_client.assert_not_called()
+
+
+@patch("models.omni.get_omni_client")
+@patch("models.omni.track_model_call")
+def test_generate_omni_video_first_last_rejected_on_legacy_model(
+    mock_track: MagicMock,
+    mock_get_client: MagicMock,
+) -> None:
+    """A model without first/last frame is rejected before any billable call."""
+    req = _omni_request(
+        "first_last",
+        model_version_id="gemini-omni-flash-preview",
+        reference_image_gcs="gs://bucket/first.png",
+        last_reference_image_gcs="gs://bucket/last.png",
+    )
+
+    with pytest.raises(GenerationError, match="first_last"):
+        generate_omni_video(req)
+
+    mock_track.assert_not_called()
+    mock_get_client.assert_not_called()
 
 
 @patch("models.omni._save_video_to_gcs")

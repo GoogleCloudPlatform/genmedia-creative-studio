@@ -76,7 +76,7 @@ Once the user approves the story bible, format the scene-by-scene scripts in a s
 *   **music_prompt**: Specific background music prompt for Lyria.
     *   *Rule*: Music prompts must automatically append the strict instrumental negative filter: `, strictly instrumental, no vocals, no voice, no singing, ambient background score` to avoid synthetic vocal artifacts.
 *   **image_prompt**: Nano Banana visual prompt incorporating the character descriptions and visual medium.
-*   **motion_prompt**: Veo 3.1 motion prompt describing camera movement and subject action.
+*   **motion_prompt**: Motion prompt for the video model (Gemini Omni 1.2 by default, Veo 3.1 Lite as a fallback) describing camera movement and subject action. The scripts append "ambient sound effects only, no speech, no dialogue, no narration, no music" for Omni, since it generates audio with the video and narration and music are mixed in separately.
 
 ---
 
@@ -93,8 +93,12 @@ Always run TTS generation first and retrieve the exact duration of the voice fil
 ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 voice.wav
 ```
 
-#### 2. Query Veo Video with Optimal Sizing
-Compare the voice duration ($D_{voice}$) and request a matching video length from Veo (either 4, 6, or 8 seconds):
+#### 2. Query Video with Optimal Sizing
+Compare the voice duration ($D_{voice}$) and request a matching video length. **Gemini Omni 1.2** (`omni_video_generation`, default) takes any whole number of seconds from 3 to 15, so request the voiceover plus a small tail, with the scene image as the first frame (`images` with one entry and no `task`):
+$$\text{clip} = \min(15, \max(3, \lceil D_{voice} + 0.25 \rceil))$$
+Use a 720p, 16:9 clip (set `resolution` and `aspect_ratio`) and keep the clip's own audio to ambient sound: add "ambient sound effects only, no speech, no dialogue, no narration, no music" to the prompt.
+
+If you use **Veo** instead (fallback, `veo_i2v`), only 4, 6 or 8 seconds are available:
 *   $D_{voice} \le 4.2\text{s} \rightarrow$ Generate a **4-second** video clip.
 *   $D_{voice} \le 6.2\text{s} \rightarrow$ Generate a **6-second** video clip.
 *   $D_{voice} > 6.2\text{s} \rightarrow$ Generate an **8-second** video clip.
@@ -174,6 +178,8 @@ python3 story-generator/scripts/generate_scene.py \
   --out_dir /path/to/project_dir
 ```
 *(This script automatically handles the voiceover-first ffprobe checks, dynamic video duration mapping, speed-clamping at 1.25x with auto-looping, vocal negative filtering, and explicit mathematical duration capping).*
+
+Video is generated with Gemini Omni 1.2 by default, using `mcp-omni-go` (or `mcp-gemini-go`, which exposes the same tool, when `mcp-omni-go` is not on `PATH`). Pass `--video_engine veo` to use Veo 3.1 Lite instead, and `--resolution` (default `720p`) to change the Omni output resolution. The raw clip is saved as `videos/scene<N>_video.mp4` for either engine, which the Editor's QC Room reads to size its tempo estimate.
 
 #### 2. Assemble and Stitch the Final Storybook
 Run `assemble_story.py` to normalize the generated clips and stitch them into the final storybook:

@@ -280,8 +280,17 @@ def _actions_row():
                 on_click=on_continue_click,
                 type="stroked",
             )
-            veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
-            omni_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
+            # Stack the video actions so the row fits the narrow left panel.
+            with me.box(
+                style=me.Style(
+                    display="flex",
+                    flex_direction="column",
+                    align_items="stretch",
+                    gap=8,
+                ),
+            ):
+                omni_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
+                veo_button(gcs_uri=https_url_to_gcs_uri(state.selected_image_url))
 
 
 @me.component

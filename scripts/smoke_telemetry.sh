@@ -126,7 +126,7 @@ EXPECTED_MODELS = {
     "imagen": "Imagen Image Generation (/imagen)",
     "banana": "Gemini Image / Nano Banana (/nano-banana)",
     "veo": "Veo Video Generation (/veo)",
-    "omni": "Gemini Omni 1.1 Flash (/gemini-omni)",
+    "omni": "Gemini Omni 1.2 Flash (/gemini-omni)",
 }
 
 observed_names = [str(c.get("model_name", "")).lower() for c in model_calls]

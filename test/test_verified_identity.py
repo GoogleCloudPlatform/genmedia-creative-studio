@@ -335,7 +335,7 @@ def _build_app():
             and identity is None
             and not _is_public_path(request.url.path)
         ):
-            return JSONResponse({"detail": "Authentication required"}, status_code=401)
+            return JSONResponse({"detail": "Forbidden"}, status_code=403)
         request.scope["MESOP_USER_EMAIL"] = user_email
         return await call_next(request)
 
@@ -356,14 +356,14 @@ def _client(app):
     return TestClient(app)
 
 
-def test_middleware_401_on_spoofed_header_without_assertion(deployed_env) -> None:
+def test_middleware_403_on_spoofed_header_without_assertion(deployed_env) -> None:
     with _client(_build_app()) as client:
         resp = client.get("/protected", headers={"X-Email": SPOOFED_USER})
 
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
 
-def test_middleware_401_on_invalid_assertion(
+def test_middleware_403_on_invalid_assertion(
     deployed_env, patch_certs, mint_token
 ) -> None:
     with _client(_build_app()) as client:
@@ -372,7 +372,7 @@ def test_middleware_401_on_invalid_assertion(
             headers={IAP_ASSERTION_HEADER: mint_token(exp_delta=-60)},
         )
 
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
 
 def test_middleware_attributes_verified_email_over_spoof(
@@ -420,12 +420,12 @@ def test_public_path_boundary_rejects_lookalike() -> None:
     assert _is_public_path("/admin") is False
 
 
-def test_middleware_lookalike_public_path_still_401s(deployed_env) -> None:
+def test_middleware_lookalike_public_path_still_403s(deployed_env) -> None:
     """A path that only *looks* like a public one is gated (LOW-2), not bypassed."""
     with _client(_build_app()) as client:
         resp = client.get("/healthzXYZ", headers={"X-Email": SPOOFED_USER})
 
-    assert resp.status_code == 401
+    assert resp.status_code == 403
 
 
 def test_middleware_public_subpath_allows_anonymous(deployed_env) -> None:

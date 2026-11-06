@@ -153,7 +153,7 @@ def test_requires_authentication_outside_local_dev(client, gcs, monkeypatch):
         "/api/get_signed_url", params={"gcs_uri": f"gs://{LEGIT_BUCKET}/a/b.png"}
     )
 
-    assert resp.status_code == 401
+    assert resp.status_code == 403
     gcs.storage_client.bucket.assert_not_called()
 
 

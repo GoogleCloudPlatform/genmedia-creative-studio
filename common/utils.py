@@ -15,9 +15,12 @@
 from __future__ import annotations
 
 import base64
+import concurrent.futures
 import io
 import json
 import re
+import threading
+import time
 from typing import Any
 import datetime
 
@@ -32,21 +35,167 @@ import os
 from config.default import Default as cfg
 
 
+def _unsigned_display_url(gcs_uri: str) -> str:
+    """Return the plain (unsigned) storage.cloud.google.com link for a gs:// URI."""
+    return gcs_uri.replace("gs://", "https://storage.cloud.google.com/")
+
+
+# --- Cached V4 signed display URLs -----------------------------------------
+#
+# Signing through an impersonated service account costs an IAM ``signBlob``
+# round trip per URL, and building the credentials/storage client is slow too.
+# Both are therefore created once per process, and the resulting URLs are cached
+# for slightly less than their lifetime so that every Mesop re-render (and the
+# browser HTTP cache) sees the exact same URL for an asset.
+DISPLAY_URL_VALID_MINUTES = 60
+DISPLAY_URL_CACHE_TTL_SECONDS = 50 * 60
+# A failed signing attempt falls back to the unsigned link; remember the failure
+# briefly so a misconfigured environment is not retried on every render.
+DISPLAY_URL_FAILURE_TTL_SECONDS = 60
+DISPLAY_URL_CACHE_MAX_ENTRIES = 5000
+DISPLAY_URL_WARM_MAX_WORKERS = 8
+_SIGNING_SCOPES = ["https://www.googleapis.com/auth/devstorage.read_only"]
+
+_display_url_cache: dict[tuple[str, str], tuple[str, float]] = {}
+_display_url_cache_lock = threading.Lock()
+_signing_resources: dict[str, tuple[storage.Client, Any]] = {}
+_signing_resources_lock = threading.Lock()
+
+
+def _now() -> float:
+    """Monotonic clock used for cache expiry (patched in tests)."""
+    return time.monotonic()
+
+
+def _get_signing_resources(service_account_email: str) -> tuple[storage.Client, Any]:
+    """Return the process-wide (storage client, signing credentials) pair.
+
+    Created once per ``service_account_email`` and reused for every signature.
+    """
+    with _signing_resources_lock:
+        resources = _signing_resources.get(service_account_email)
+        if resources is None:
+            source_credentials, _ = google.auth.default()
+            signing_credentials = impersonated_credentials.Credentials(
+                source_credentials=source_credentials,
+                target_principal=service_account_email,
+                target_scopes=_SIGNING_SCOPES,
+            )
+            resources = (storage.Client(), signing_credentials)
+            _signing_resources[service_account_email] = resources
+        return resources
+
+
+def _prune_display_url_cache(now: float) -> None:
+    """Bounds the cache: drops expired entries, then the oldest if still full."""
+    for key in [k for k, (_, expires) in _display_url_cache.items() if expires <= now]:
+        del _display_url_cache[key]
+    overflow = len(_display_url_cache) - DISPLAY_URL_CACHE_MAX_ENTRIES
+    if overflow > 0:
+        oldest = sorted(_display_url_cache, key=lambda k: _display_url_cache[k][1])
+        for key in oldest[:overflow]:
+            del _display_url_cache[key]
+
+
+def _cached_display_url(key: tuple[str, str]) -> str | None:
+    with _display_url_cache_lock:
+        entry = _display_url_cache.get(key)
+    if entry and entry[1] > _now():
+        return entry[0]
+    return None
+
+
+def get_signed_display_url(gcs_uri: str) -> str:
+    """Return a cached V4 signed GET URL for a ``gs://`` URI.
+
+    Signs as ``SERVICE_ACCOUNT_EMAIL`` and caches the URL for
+    ``DISPLAY_URL_CACHE_TTL_SECONDS``. If signing fails (for example locally,
+    without impersonation rights) it logs a warning and falls back to the
+    unsigned link, so rendering never breaks.
+    """
+    service_account_email = cfg().SERVICE_ACCOUNT_EMAIL or ""
+    key = (service_account_email, gcs_uri)
+    cached = _cached_display_url(key)
+    if cached:
+        return cached
+
+    try:
+        bucket_name, _, blob_name = gcs_uri.removeprefix("gs://").partition("/")
+        client, signing_credentials = _get_signing_resources(service_account_email)
+        url = client.bucket(bucket_name).blob(blob_name).generate_signed_url(
+            version="v4",
+            expiration=datetime.timedelta(minutes=DISPLAY_URL_VALID_MINUTES),
+            method="GET",
+            credentials=signing_credentials,
+        )
+        ttl = DISPLAY_URL_CACHE_TTL_SECONDS
+    except Exception as e:  # noqa: BLE001 - never break rendering over signing
+        logging.warning("Could not sign display URL for %s: %s", gcs_uri, e)
+        url = _unsigned_display_url(gcs_uri)
+        ttl = DISPLAY_URL_FAILURE_TTL_SECONDS
+
+    now = _now()
+    with _display_url_cache_lock:
+        _display_url_cache[key] = (url, now + ttl)
+        if len(_display_url_cache) > DISPLAY_URL_CACHE_MAX_ENTRIES:
+            _prune_display_url_cache(now)
+    return url
+
+
+def warm_display_urls(gcs_uris: list[str | None]) -> None:
+    """Pre-signs not-yet-cached display URLs in parallel.
+
+    A page of results would otherwise sign each asset serially (one IAM round
+    trip each). This is a no-op when signed URLs are not in use.
+    """
+    cfg_ = cfg()
+    if cfg_.USE_MEDIA_PROXY or not cfg_.SERVICE_ACCOUNT_EMAIL:
+        return
+    email = cfg_.SERVICE_ACCOUNT_EMAIL
+    pending = list(
+        dict.fromkeys(
+            uri
+            for uri in gcs_uris
+            if uri
+            and uri.startswith("gs://")
+            and _cached_display_url((email, uri)) is None
+        ),
+    )
+    if not pending:
+        return
+    # Create the shared client/credentials once, before the workers race for it.
+    try:
+        _get_signing_resources(email)
+    except Exception as e:  # noqa: BLE001
+        logging.warning("Could not initialize signing credentials: %s", e)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=min(DISPLAY_URL_WARM_MAX_WORKERS, len(pending)),
+    ) as pool:
+        list(pool.map(get_signed_display_url, pending))
+
+
 def create_display_url(gcs_uri: str) -> str:
     """
     Creates a cacheable display URL for a GCS asset.
-    Switches between a direct GCS link and the app proxy based on config.
+
+    * ``USE_MEDIA_PROXY=true``: the app's ``/media`` proxy path.
+    * otherwise, with ``SERVICE_ACCOUNT_EMAIL`` configured: a cached V4 signed
+      ``storage.googleapis.com`` URL, so users who cannot be granted bucket
+      access (for example cross-tenant IAP users) can still load the asset.
+    * otherwise: the plain ``storage.cloud.google.com`` link.
     """
     if not gcs_uri or not gcs_uri.startswith("gs://"):
         return ""
 
-    if cfg().USE_MEDIA_PROXY:
+    cfg_ = cfg()
+    if cfg_.USE_MEDIA_PROXY:
         # Use the fast, simple proxy URL
         proxy_path = gcs_uri.replace("gs://", "")
         return f"/media/{proxy_path}"
-    else:
-        # Use the direct GCS URL
-        return gcs_uri.replace("gs://", "https://storage.cloud.google.com/")
+    if cfg_.SERVICE_ACCOUNT_EMAIL:
+        return get_signed_display_url(gcs_uri)
+    # Use the direct GCS URL
+    return _unsigned_display_url(gcs_uri)
 
 
 

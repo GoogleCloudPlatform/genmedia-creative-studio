@@ -22,7 +22,12 @@ import mesop as me
 
 from common.analytics import log_ui_click
 from common.metadata import MediaItem, get_media_for_page, get_media_item_by_id
-from common.utils import create_display_url, get_media_type, https_url_to_gcs_uri
+from common.utils import (
+    create_display_url,
+    get_media_type,
+    https_url_to_gcs_uri,
+    warm_display_urls,
+)
 from components.header import header
 from components.interior_design.storyboard_video_tile import storyboard_video_tile
 from components.library.image_details import CarouselState
@@ -249,6 +254,18 @@ def library_content():
                 ):
                     me.text("No media items found for the selected filters.")
             else:
+                # Sign the whole page's display URLs in parallel (cached); a
+                # no-op when the media proxy is in use.
+                warm_display_urls(
+                    [
+                        uri
+                        for item in media_items
+                        for uri in (
+                            item.gcsuri or (item.gcs_uris[0] if item.gcs_uris else None),
+                            getattr(item, "thumbnail_uri", None),
+                        )
+                    ],
+                )
                 for item in media_items:
                     gcs_uri = (
                         item.gcsuri
@@ -269,8 +286,10 @@ def library_content():
                     display_url = https_url
                     display_type = render_type
                     if render_type == "video" and thumbnail_url:
+                        # Judge the extension on the path only: signed URLs
+                        # carry a query string.
                         if not any(
-                            thumbnail_url.lower().endswith(ext)
+                            thumbnail_url.split("?")[0].lower().endswith(ext)
                             for ext in [".mp4", ".mov", ".avi", ".webm", ".mkv"]
                         ):
                             display_url = thumbnail_url

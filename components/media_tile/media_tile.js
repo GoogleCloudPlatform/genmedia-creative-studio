@@ -122,6 +122,14 @@ class MediaTile extends LitElement {
   }
 
   renderPreview() {
+    // Failed or empty generations have no media URL: show a clean fallback icon
+    // instead of an <img>/<video> with an empty src.
+    if (
+      (this.mediaType === "image" || this.mediaType === "video") &&
+      !this.thumbnailSrc
+    ) {
+      return html`<div class="icon"><svg-icon .iconName=${'broken_image'}></svg-icon></div>`;
+    }
     switch (this.mediaType) {
       case "image":
         return html`<img .src=${this.thumbnailSrc} />`;

@@ -130,7 +130,7 @@ Defines where data and media assets are stored.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | **`LIBRARY_MEDIA_PER_PAGE`** | `15` | Controls how many items appear per page in the media library. |
-| **`USE_MEDIA_PROXY`** | `true` | If `true`, media URLs are proxied to avoid CORS/hotlinking issues. |
+| **`USE_MEDIA_PROXY`** | `true` | If `true`, media URLs are proxied through the app's `/media` route. If `false` and `SERVICE_ACCOUNT_EMAIL` is set, media URLs are cached V4 signed `storage.googleapis.com` URLs (50 minute cache, 60 minute validity) signed by that service account, which needs `roles/iam.serviceAccountTokenCreator` on itself; this works for users who cannot be granted bucket access, such as cross-tenant IAP users. If `false` without a service account, plain `storage.cloud.google.com` links are used. |
 
 ## 📦 Build Metadata
 The application can display detailed build information on the **Config** page. This is populated from an optional JSON file:

@@ -15,6 +15,7 @@
 
 import datetime
 import json
+from collections.abc import Generator
 from dataclasses import asdict, dataclass, field, fields
 
 import mesop as me
@@ -408,6 +409,25 @@ def on_veo_click(e: me.WebEvent):
     yield
 
 
+def on_omni_click(e: me.WebEvent) -> Generator[None]:
+    """Event handler for when the Omni button is clicked in the detail viewer."""
+    app_state = me.state(AppState)
+    log_ui_click(
+        element_id="media_detail_viewer_omni_button",
+        page_name=app_state.current_page,
+        session_id=app_state.session_id,
+    )
+    # The viewer sends a proxy (/media/bucket/object) or signed URL; normalize to
+    # gs:// and pass the bare path, the same convention as the Veo button.
+    gcs_uri = https_url_to_gcs_uri(e.value["url"])
+    if gcs_uri:
+        me.navigate(
+            url="/gemini-omni",
+            query_params={"image_path": gcs_uri.replace("gs://", "", 1)},
+        )
+    yield
+
+
 def json_default_serializer(o):
     """A default serializer for json.dumps to handle datetimes."""
     if isinstance(o, (datetime.datetime, datetime.date)):
@@ -626,6 +646,7 @@ def render_default_detail_dialog(item: MediaItem):
         ),
         on_edit_click=handle_edit_click,
         on_veo_click=on_veo_click,
+        on_omni_click=on_omni_click,
         on_extend_click=on_extend_click,
     )
 

@@ -457,6 +457,54 @@ def test_pages_with_veo_button_also_offer_omni_button(module_name: str) -> None:
     assert module.omni_button is omni_button
 
 
+@pytest.mark.parametrize(
+    ("viewer_url", "expected_path"),
+    [
+        ("/media/bucket/dir/img.png", "bucket/dir/img.png"),
+        (
+            "https://storage.googleapis.com/bucket/dir/img.png?X-Goog-Signature=abc",
+            "bucket/dir/img.png",
+        ),
+    ],
+)
+@patch("pages.library_v2.log_ui_click")
+@patch("pages.library_v2.me.navigate")
+@patch("pages.library_v2.me.state")
+def test_library_v2_on_omni_click(
+    _mock_state: MagicMock,
+    mock_navigate: MagicMock,
+    mock_log: MagicMock,
+    viewer_url: str,
+    expected_path: str,
+) -> None:
+    """The Library v2 viewer's Omni button deep-links the image into Omni."""
+    from pages.library_v2 import on_omni_click
+
+    event = MagicMock()
+    event.value = {"url": viewer_url}
+
+    list(on_omni_click(event))
+
+    mock_navigate.assert_called_once_with(
+        url="/gemini-omni",
+        query_params={"image_path": expected_path},
+    )
+    mock_log.assert_called_once()
+
+
+def test_media_detail_viewer_wires_omni_event() -> None:
+    """The web component declares the omniClickEvent property and button."""
+    import inspect
+    from pathlib import Path
+
+    from components.media_detail_viewer import media_detail_viewer as mdv
+
+    assert "on_omni_click" in inspect.signature(mdv.media_detail_viewer).parameters
+    js = (Path(mdv.__file__).parent / "media_detail_viewer.js").read_text()
+    assert "omniClickEvent: { type: String }" in js
+    assert "this._dispatch(this.omniClickEvent" in js
+
+
 @patch("components.omni_button.omni_button.log_ui_click")
 @patch("components.omni_button.omni_button.me.navigate")
 @patch("components.omni_button.omni_button.me.state")

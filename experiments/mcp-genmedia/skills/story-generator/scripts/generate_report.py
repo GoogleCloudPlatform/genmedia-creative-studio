@@ -49,7 +49,7 @@ html_template = """<!DOCTYPE html>
     <section id="dailys">
       <h2>The Dailys (Scene-by-Scene)</h2>
       <p class="section-desc">
-        Each scene was generated using Nano Banana (Images), Veo 3.1 Lite (Video), Gemini TTS (Voice), and Lyria (Music).
+        Each scene was generated using Nano Banana (Images), Gemini Omni (Video), Gemini TTS (Voice), and Lyria (Music).
       </p>
       <div class="dailys-list">
 {scenes_html}

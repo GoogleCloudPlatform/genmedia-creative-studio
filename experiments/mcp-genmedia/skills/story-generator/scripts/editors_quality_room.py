@@ -101,11 +101,22 @@ def main():
         voice_duration = 0.0
         tempo_factor = 1.0
         
+        # Raw generated clip (standardized by generate_scene.py). Its real length
+        # depends on the video model (Veo 4/6/8s, Omni 3-15s).
+        raw_video = os.path.join(videos_dir, f"scene{scene_id}_video.mp4")
+        raw_duration = get_duration(raw_video) if os.path.exists(raw_video) else 0.0
+        if raw_duration <= 0:
+            raw_duration = 6.0  # Legacy projects: assume a 6s clip
+        
         if voice_files:
             voice_duration = get_duration(voice_files[0])
-            # Estimate speedfit factor if voice was longer than Veo (approx 6.0s duration base)
-            if voice_duration > 6.0:
-                tempo_factor = voice_duration / 5.5  # 5.5s is target speedfit limit
+            # Estimate the speed-fit needed if the voice is longer than the clip
+            # (same 0.5s tail as generate_scene.py).
+            if voice_duration > raw_duration:
+                target = raw_duration - 0.5
+                if target < 1.0:
+                    target = raw_duration
+                tempo_factor = voice_duration / target
                 if tempo_factor > 2.0:
                     tempo_factor = 2.0
         
@@ -132,7 +143,7 @@ def main():
             status = "WARNING" if status == "PASS" else status
             issues.append(
                 f"Tempo Warning: Narration speed-fit tempo is extremely high ({tempo_factor:.2f}x). "
-                f"Spoken script is too wordy ({voice_duration:.1f}s) for a 6s clip. Narrator will sound rushed."
+                f"Spoken script is too wordy ({voice_duration:.1f}s) for a {raw_duration:.0f}s clip. Narrator will sound rushed."
             )
             warning_count += 1
             report["warnings"].append({

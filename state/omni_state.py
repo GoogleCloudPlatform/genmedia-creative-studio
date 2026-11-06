@@ -41,6 +41,13 @@ class PageState:
     reference_image_uri: str = ""
     reference_image_mime_type: str = ""
 
+    # Last-frame image for First/Last Frame mode (reference_image_* is the
+    # first frame).
+    last_image_file_key: int = 0
+    last_image_gcs: str = ""
+    last_image_uri: str = ""
+    last_image_mime_type: str = ""
+
     # Editing base Video
     reference_video_file: me.UploadedFile = None
     reference_video_file_key: int = 0

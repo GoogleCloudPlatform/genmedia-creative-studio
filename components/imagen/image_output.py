@@ -17,6 +17,7 @@ import mesop as me
 from common.utils import create_display_url
 from components.edit_button.edit_button import edit_button
 from components.imagen.generation_controls import on_click_retry_critique
+from components.omni_button.omni_button import omni_button
 from components.styles import _BOX_STYLE
 from components.svg_icon.svg_icon import svg_icon
 from components.veo_button.veo_button import veo_button
@@ -91,6 +92,7 @@ def image_output():
                                 ):
                                     edit_button(gcs_uri=img_uri)
                                     veo_button(gcs_uri=img_uri)
+                                    omni_button(gcs_uri=img_uri)
                 if state.imagen_watermark:
                     with me.box(
                         style=me.Style(

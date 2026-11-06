@@ -57,6 +57,7 @@ def on_prev(e: me.ClickEvent) -> None:
     state.current_index -= 1
 
 
+from components.omni_button.omni_button import omni_button
 from components.veo_button.veo_button import veo_button
 
 
@@ -242,6 +243,7 @@ def image_details(item: MediaItem, on_click_permalink: Callable) -> None:
             filename = os.path.basename(gcs_uri.split("?")[0])
             download_button(url=gcs_uri, filename=filename)
             veo_button(gcs_uri=gcs_uri)
+            omni_button(gcs_uri=gcs_uri)
 
             # Add the new reusable edit button
             edit_button(gcs_uri=gcs_uri)

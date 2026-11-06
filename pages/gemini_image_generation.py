@@ -476,6 +476,9 @@ def gemini_image_gen_page_content():
                             veo_button(
                                 gcs_uri=https_url_to_gcs_uri(state.selected_image_url),
                             )
+                            omni_button(
+                                gcs_uri=https_url_to_gcs_uri(state.selected_image_url),
+                            )
 
                 # Image presets
                 if state.generated_image_urls or state.uploaded_image_gcs_uris:
@@ -1208,6 +1211,7 @@ def close_info_dialog(e: me.ClickEvent):
     yield
 
 
+from components.omni_button.omni_button import omni_button
 from components.veo_button.veo_button import veo_button
 
 

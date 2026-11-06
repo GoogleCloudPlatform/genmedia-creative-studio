@@ -41,6 +41,7 @@ from config.default import ABOUT_PAGE_CONTENT
 from components.dialog import dialog
 from components.edit_button.edit_button import edit_button
 from components.snackbar import snackbar
+from components.omni_button.omni_button import omni_button
 from components.veo_button.veo_button import veo_button
 
 config = Default()
@@ -572,6 +573,7 @@ def page():
                             ):
                                 edit_button(gcs_uri=gcs_uri)
                                 veo_button(gcs_uri=gcs_uri)
+                                omni_button(gcs_uri=gcs_uri)
                             if critique:
                                 is_accurate = bool(critique.get("accurate", True))
                                 with me.box(

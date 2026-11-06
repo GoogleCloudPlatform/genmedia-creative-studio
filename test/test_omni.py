@@ -529,6 +529,38 @@ def test_omni_registry_default_config_matches_registry() -> None:
     assert get_omni_model_config(cfg.OMNI_MODEL_ID) is not None
 
 
+def test_omni_page_state_defaults_to_1_2() -> None:
+    """A fresh Omni page session starts on 1.2 with settings it supports."""
+    import dataclasses
+
+    from config.omni_models import get_omni_model_config, modes_for_model
+    from state.omni_state import PageState
+
+    defaults = {f.name: f.default for f in dataclasses.fields(PageState)}
+
+    assert defaults["omni_model"] == "gemini-omni-1.2-flash"
+
+    # The remaining defaults must be valid for the default model so the page
+    # never opens in a state that on_model_change would have to repair.
+    config = get_omni_model_config(defaults["omni_model"])
+    assert config is not None
+    assert defaults["omni_mode"] in modes_for_model(defaults["omni_model"])
+    assert defaults["resolution"] in config.resolutions
+    assert defaults["aspect_ratio"] in config.supported_aspect_ratios
+    assert config.min_duration <= defaults["video_length"] <= config.max_duration
+    assert (defaults["resolution"], defaults["video_length"]) == ("720p", 10)
+
+
+def test_omni_modes_offered_by_default_model_include_extend_and_upscale() -> None:
+    """The default model exposes the full 1.2 mode list in the page selector."""
+    from config.omni_models import modes_for_model
+    from state.omni_state import PageState
+
+    default_modes = modes_for_model(PageState.omni_model)
+    assert "extend" in default_modes
+    assert "upscale" in default_modes
+
+
 def test_modes_for_model_gates_extend_and_upscale() -> None:
     """Extend and upscale are offered only by models that support them."""
     from config.omni_models import modes_for_model

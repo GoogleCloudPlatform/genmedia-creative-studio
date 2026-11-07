@@ -66,7 +66,7 @@ def design_studio(
                     me.progress_spinner(diameter=18)
                 else:
                     me.text("Design")
-        veo_button(gcs_uri=storyboard_item["styled_image_uri"] if storyboard_item else "")
         omni_button(
             gcs_uri=storyboard_item["styled_image_uri"] if storyboard_item else ""
         )
+        veo_button(gcs_uri=storyboard_item["styled_image_uri"] if storyboard_item else "")

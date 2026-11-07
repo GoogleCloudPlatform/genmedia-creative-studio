@@ -572,8 +572,8 @@ def page():
                                 )
                             ):
                                 edit_button(gcs_uri=gcs_uri)
-                                veo_button(gcs_uri=gcs_uri)
                                 omni_button(gcs_uri=gcs_uri)
+                                veo_button(gcs_uri=gcs_uri)
                             if critique:
                                 is_accurate = bool(critique.get("accurate", True))
                                 with me.box(

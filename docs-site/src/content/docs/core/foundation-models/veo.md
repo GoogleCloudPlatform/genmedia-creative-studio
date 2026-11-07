@@ -3,7 +3,7 @@ title: "Veo Video Generation"
 description: "High-definition video generation, frame interpolation, reference-to-video conditioning, and clip extension with Veo 2, 3, and 3.1."
 ---
 
-The **Veo** workspace (`/veo`) is GenMedia Creative Studio's flagship video synthesis environment. It exposes all capabilities of the Vertex AI Veo model family (`veo-2.0`, `veo-3.0`, and `veo-3.1`) through a capability-driven UI backed by asynchronous Long-Running Operation (LRO) polling and an async FastAPI router.
+The **Veo** workspace (`/veo`) is GenMedia Creative Studio's flagship video synthesis environment. It exposes all capabilities of the Vertex AI Veo model family (`veo-2.0`, `veo-3.0`, and `veo-3.1`) through a capability-driven UI backed by asynchronous Long-Running Operation (LRO) polling and an async FastAPI router. A **Try Gemini Omni** banner (`components/omni_hint/omni_hint.py`) at the top of the page links to the [Gemini Omni](/genmedia-creative-studio/core/foundation-models/gemini-omni/) workspace, which is the recommended starting point for new video work.
 
 ![Veo Interaction Architecture](../assets/diagrams/foundation-veo-light.webp)
 

@@ -17,7 +17,7 @@ Labs workflows are functional prototypes designed for rapid iteration and custom
 | **[Brand Adherence](#brand-adherence)** | `/brand_adherence` | Gemini (`BrandBrief` PDF parser & `EvaluationResult` critic) + Nano Banana |
 | **[Character Asset Sheet](#character-asset-sheet)** | `/character_sheet` | Nano Banana (`gemini-2.5-flash-image` / `gemini-3.1-flash-image-preview`) |
 | **[Guideline Analysis](#guideline-analysis)** | `/guideline-analysis` | Gemini (`GUIDELINE_CRITERIA_TEMPLATE` multimodal QA rubric) |
-| **[Object Rotation](#object-rotation)** | `/object-rotation` | Veo (360° product showcase video) |
+| **[Object Rotation](#object-rotation)** | `/object-rotation` | Nano Banana 2.1 + Gemini Omni 1.2 / Veo (360° product showcase video) |
 | **[Banana Studio](#banana-studio)** | `/banana-studio` | Nano Banana + `config/banana_presets.json` |
 | **[VTO Composite Card Generator](#vto-composite-card-generator)** | `/test_vto_prompt_generator` | `VirtualModelGenerator` (Imagen / Nano Banana) |
 
@@ -48,7 +48,7 @@ Labs workflows are functional prototypes designed for rapid iteration and custom
 
 ### Object Rotation (`/object-rotation`)
 * **Source Files:** `pages/object_rotation.py`
-* **Capabilities:** Generates 360-degree rotating product showcase videos from a single e-commerce product photograph. Multi-angle views come from **Nano Banana 2.1** (`OBJECT_ROTATION_IMAGE_MODEL`, default `gemini-nano-banana-2.1`), and the video is rendered with **Veo**.
+* **Capabilities:** Generates 360-degree rotating product showcase videos from a single e-commerce product photograph. Multi-angle views come from **Nano Banana 2.1** (`OBJECT_ROTATION_IMAGE_MODEL`, default `gemini-nano-banana-2.1`), and the video is rendered with **Gemini Omni 1.2** reference-to-video by default (`OBJECT_ROTATION_VIDEO_MODEL`, which also accepts a `veo-*` model). The page is hidden unless `EDIT_IMAGES_ENABLED=true`.
 
 ### Banana Studio (`/banana-studio`)
 * **Source Files:** `pages/banana_studio.py`, `config/banana_presets.json`

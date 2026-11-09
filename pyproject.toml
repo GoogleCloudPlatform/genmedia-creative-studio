@@ -1,6 +1,6 @@
 [project]
 name = "genmedia-creative-studio"
-version = "1.22.1"
+version = "1.23.0"
 description = "GenMedia Creative Studio - Veo, Lyria, Nano Banana, Gemini, Gemini TTS"
 readme = "README.md"
 requires-python = ">=3.14, <3.15"

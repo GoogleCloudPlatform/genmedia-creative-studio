@@ -63,7 +63,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.22.1"  # Fallback if package metadata is missing
+    VERSION: str = "1.23.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -253,7 +253,7 @@ class Default:
     # Interior Design
     INTERIOR_DESIGN_VIDEO_MODEL: str = os.environ.get(
         "INTERIOR_DESIGN_VIDEO_MODEL",
-        "veo-3.1-lite-generate-001",
+        "gemini-omni-1.2-flash",
     )
     INTERIOR_DESIGN_IMAGE_MODEL: str = os.environ.get(
         "INTERIOR_DESIGN_IMAGE_MODEL",
@@ -279,7 +279,7 @@ class Default:
 
     OBJECT_ROTATION_VIDEO_MODEL: str = os.environ.get(
         "OBJECT_ROTATION_VIDEO_MODEL",
-        "veo-3.1-generate-001",
+        "gemini-omni-1.2-flash",
     )
     OBJECT_ROTATION_IMAGE_MODEL: str = os.environ.get(
         "OBJECT_ROTATION_IMAGE_MODEL",

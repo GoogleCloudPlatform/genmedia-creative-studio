@@ -101,22 +101,19 @@ async def generate_product_views(product_description: str, image_uri: str, image
     return result
 
 
-from models.requests import VideoGenerationRequest, APIReferenceImage
-from models.veo import generate_video
-from config.veo_models import get_veo_model_config, get_version_id_by_model_name
+from models.workflow_video import generate_workflow_reference_video
+
 
 def generate_rotation_video(product_views: dict[str, str], video_model: str) -> str:
-    """Generates a 360 rotation video from the front, back, and left views."""
+    """Generates a 360 rotation video from the front, back, and left views.
+
+    ``video_model`` is a configured model name: a Gemini Omni model
+    (reference-to-video) or a Veo model that supports reference images.
+    """
     logger.info("Generating 360 rotation video from views.")
 
     if not all(k in product_views for k in ["front", "back", "left"]):
         raise ValueError("Missing required views (front, back, left) for video generation.")
-
-    # Use a model version that supports r2v, driven by config
-    model_version = get_version_id_by_model_name(video_model) or "3.1"
-    model_config = get_veo_model_config(model_version)
-    if not model_config:
-        raise ValueError(f"Could not find configuration for VEO model version: {model_version}")
 
     prompt = (
         "Create a seamless, 360-degree rotating video of the product. "
@@ -124,31 +121,20 @@ def generate_rotation_video(product_views: dict[str, str], video_model: str) -> 
         "The video should smoothly transition between these views to create a full rotation."
     )
 
-    references = [
-        APIReferenceImage(gcs_uri=product_views["front"], mime_type="image/png"),
-        APIReferenceImage(gcs_uri=product_views["back"], mime_type="image/png"),
-        APIReferenceImage(gcs_uri=product_views["left"], mime_type="image/png"),
-    ]
-
-    video_request = VideoGenerationRequest(
+    video_uri = generate_workflow_reference_video(
+        model_name=video_model,
+        reference_gcs_uris=[
+            product_views["front"],
+            product_views["back"],
+            product_views["left"],
+        ],
         prompt=prompt,
-        duration_seconds=model_config.default_duration,
-        video_count=1,
-        aspect_ratio=model_config.supported_aspect_ratios[0], # Use the first supported ratio
-        resolution="720p",
-        enhance_prompt=True,
-        generate_audio=True,
-        model_version_id=model_version,
-        person_generation="dont_allow",
-        r2v_references=references,
     )
 
-    video_uris, _ = generate_video(video_request)
-
-    if not video_uris:
+    if not video_uri:
         raise Exception("Failed to generate rotation video.")
 
-    return video_uris[0]
+    return video_uri
 
 
 

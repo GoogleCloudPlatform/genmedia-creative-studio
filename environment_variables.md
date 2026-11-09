@@ -92,7 +92,7 @@ Specific configuration for the Object Rotation workflow.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`OBJECT_ROTATION_VIDEO_MODEL`** | `veo-3.1-generate-001` | The specific Veo model used for 360-degree rotation videos. |
+| **`OBJECT_ROTATION_VIDEO_MODEL`** | `gemini-omni-1.2-flash` | The video model used for 360-degree rotation videos. A `gemini-omni-*` name uses Gemini Omni reference-to-video; a `veo-*` name (for example `veo-3.1-generate-001`) uses Veo. |
 | **`OBJECT_ROTATION_IMAGE_MODEL`** | `gemini-nano-banana-2.1` | The specific Gemini image model used for generating multi-angle views. |
 
 ## 🛋️ Interior Design
@@ -100,7 +100,7 @@ Specific configuration for the Interior Design workflow.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| **`INTERIOR_DESIGN_VIDEO_MODEL`** | `veo-3.1-lite-generate-001` | The specific Veo model used for 3D walkthrough video segments. |
+| **`INTERIOR_DESIGN_VIDEO_MODEL`** | `gemini-omni-1.2-flash` | The video model used for 3D walkthrough video segments. A `gemini-omni-*` name uses Gemini Omni image-to-video; a `veo-*` name (for example `veo-3.1-lite-generate-001`) uses Veo. |
 | **`INTERIOR_DESIGN_IMAGE_MODEL`** | `gemini-nano-banana-2.1` | The specific Gemini image model used for floor plan to 3D and styled images. |
 | **`INTERIOR_DESIGN_VIDEO_DURATION`** | `6` | The duration in seconds for each generated video segment. |
 

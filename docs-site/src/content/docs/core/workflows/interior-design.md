@@ -1,9 +1,9 @@
 ---
 title: "Interior Design"
-description: "Transform 2D floor plans into 3D isometric renders, extract rooms with Gemini, interactively restyle finishes, and stitch a Veo walkthrough tour."
+description: "Transform 2D floor plans into 3D isometric renders, extract rooms with Gemini, interactively restyle finishes, and stitch a Gemini Omni walkthrough tour."
 ---
 
-The **Interior Design** workflow (`/interior_design`) turns a flat 2D architectural floor plan into an interactive 3D interior design studio and guided video tour. It chains **Nano Banana 2.1 (`gemini-nano-banana-2.1`, configurable via `INTERIOR_DESIGN_IMAGE_MODEL`)**, **Gemini spatial room extraction**, **conversational room restyling**, and **Veo 3.1 + MoviePy tour assembly**.
+The **Interior Design** workflow (`/interior_design`) turns a flat 2D architectural floor plan into an interactive 3D interior design studio and guided video tour. It chains **Nano Banana 2.1 (`gemini-nano-banana-2.1`, configurable via `INTERIOR_DESIGN_IMAGE_MODEL`)**, **Gemini spatial room extraction**, **conversational room restyling**, and **Gemini Omni 1.2 (`gemini-omni-1.2-flash`, configurable via `INTERIOR_DESIGN_VIDEO_MODEL`, Veo also supported) + MoviePy tour assembly**.
 
 ![Interior Design Workflow Architecture](../assets/diagrams/workflow-interior-design-light.webp)
 
@@ -11,9 +11,9 @@ The **Interior Design** workflow (`/interior_design`) turns a flat 2D architectu
 
 | Layer | File Path | Responsibility |
 | :--- | :--- | :--- |
-| **Mesop Page & State** | `pages/interior_design_v2.py`, `state/interior_design_v2_state.py` (`PageState`) | Floor plan uploader, 3D view & room storyboarder, interactive Design Studio drawer, per-room Veo video generator, and final tour compiler. |
+| **Mesop Page & State** | `pages/interior_design_v2.py`, `state/interior_design_v2_state.py` (`PageState`) | Floor plan uploader, 3D view & room storyboarder, interactive Design Studio drawer, per-room video generator (Omni or Veo), and final tour compiler. |
 | **UI Components** | `components/interior_design/` (`floor_plan_uploader.py`, `room_View.py`, `design_studio.py`, `tour_video.py`) | Modular UI panels for each stage of the architectural pipeline. |
-| **Models Used** | `models/gemini.py`, `models/veo.py`, `models/video_processing.py` | Multimodal image synthesis, room name extraction (`extract_room_names_from_image`), Veo I2V animation, and MoviePy concatenation. |
+| **Models Used** | `models/gemini.py`, `models/workflow_video.py`, `models/omni.py`, `models/veo.py`, `models/video_processing.py` | Multimodal image synthesis, room name extraction (`extract_room_names_from_image`), Omni (default) or Veo image-to-video animation routed by `generate_workflow_image_to_video`, and MoviePy concatenation. |
 
 ## Step-by-Step Pipeline
 
@@ -26,6 +26,6 @@ The **Interior Design** workflow (`/interior_design`) turns a flat 2D architectu
 * Clicking any detected room button triggers **Zoom In (`on_zoom_in`)**, which passes both the original 2D floor plan and the 3D isometric render to Nano Banana with instructions to synthesize a photorealistic **first-person eye-level interior photograph** (`16:9`) of that specific room while preserving the exact furniture placement from the 3D view.
 * **Interactive Design Studio (`on_design_room`):** Once a room view is generated, users can enter modification prompts (e.g., *"Replace the sofa with cognac leather and add pendant lighting over the island"*) and attach reference furniture/material swatch images to iteratively restyle the room (`styled_image_uri`).
 
-### Step 3: Veo Room Walkthroughs & Full-Home Tour Assembly
-* **Single-Room Video (`on_generate_video`):** Generates an `8s` **Veo 3.1** camera walkthrough clip (`video_uri`) for any styled room.
-* **Full-Home Guided Tour (`on_generate_full_tour`):** Iterates through all styled rooms, generates Veo walkthrough clips for any room that does not yet have one, and stitches all room clips together via `process_and_concatenate_videos()` (`models/video_processing.py`) into a seamless master property tour (`final_video_uri`).
+### Step 3: Walkthrough Videos & Full-Home Tour Assembly
+* **Single-Room Video (`on_generate_video`):** Generates a camera walkthrough clip (`INTERIOR_DESIGN_VIDEO_DURATION` seconds, `16:9`, `720p`) for any styled room with **Gemini Omni 1.2** image-to-video by default. Set `INTERIOR_DESIGN_VIDEO_MODEL` to a `veo-*` model to use Veo instead. Omni clips carry native audio; Veo clips are generated silent.
+* **Full-Home Guided Tour (`on_generate_full_tour`):** Iterates through all styled rooms, generates walkthrough clips for any room that does not yet have one, and stitches all room clips together via `process_and_concatenate_videos()` (`models/video_processing.py`) into a seamless master property tour (`final_video_uri`).

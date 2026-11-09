@@ -42,14 +42,12 @@ from components.library.events import LibrarySelectionChangeEvent
 from components.page_scaffold import page_frame, page_scaffold
 from components.snackbar import snackbar
 from config.default import Default as cfg
-from config.veo_models import get_version_id_by_model_name
 from models.gemini import (
     extract_room_names_from_image,
     generate_image_from_prompt_and_images,
 )
-from models.requests import VideoGenerationRequest
-from models.veo import generate_video
 from models.video_processing import process_videos
+from models.workflow_video import generate_workflow_image_to_video
 from state.interior_design_v2_state import PageState
 from state.state import AppState
 
@@ -628,24 +626,16 @@ def on_generate_video_click(e: me.ClickEvent):
                     f"Generating video for {item['room_name']}..."
                 )
                 yield
-                request = VideoGenerationRequest(
-                    model_version_id=get_version_id_by_model_name(cfg.INTERIOR_DESIGN_VIDEO_MODEL) or "3.1-lite",
-                    reference_image_gcs=item["styled_image_uri"],
-                    reference_image_mime_type="image/png",
-                    duration_seconds=cfg.INTERIOR_DESIGN_VIDEO_DURATION,
+                video_uri = generate_workflow_image_to_video(
+                    model_name=cfg.INTERIOR_DESIGN_VIDEO_MODEL,
+                    image_gcs_uri=item["styled_image_uri"],
                     prompt="A slow, gentle panning shot of the room.",
-                    aspect_ratio="16:9",
-                    video_count=1,
-                    enhance_prompt=False,
-                    generate_audio=False,
-                    resolution="720p",
-                    person_generation="Allow (Adults only)",
+                    duration_seconds=cfg.INTERIOR_DESIGN_VIDEO_DURATION,
                 )
-                video_uris, _ = generate_video(request=request)
-                if video_uris:
-                    item["generated_video_uri"] = video_uris[0]
+                if video_uri:
+                    item["generated_video_uri"] = video_uri
                     item["generated_video_display_url"] = create_display_url(
-                        video_uris[0]
+                        video_uri
                     )
 
         # Step 2: Concatenate the video

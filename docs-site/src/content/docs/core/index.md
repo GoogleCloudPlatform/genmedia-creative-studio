@@ -47,9 +47,6 @@ title: "GenMedia Creative Studio | Google Cloud AI"
 
 ## GenMedia Creative Studio
 
-> [!IMPORTANT]
-> **Git History Reset Notice**: The repository history on `main` was scrubbed in August 2026 to remove legacy compiled binaries, reducing clone size by ~60%. If you have an existing clone, please see the [Git History Reset Instructions on our Changelog](/core/changelog/) for steps to synchronize your local checkout.
-
 > **Browser Compatibility:** For the best experience, we recommend using Google Chrome. Some features may not work as expected on other browsers, such as Safari or Firefox.
 
 

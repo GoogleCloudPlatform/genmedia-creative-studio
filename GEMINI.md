@@ -102,6 +102,7 @@ Therefore:
 ## 4. Dependency and Version Management
 
 *   **Version Bumping:** When updating the Core application version number in `pyproject.toml`, you **MUST** also update the hardcoded `VERSION` fallback string in `config/default.py` (e.g., `VERSION: str = "1.13.1"`). This fallback is critical for local development environments where the package is not installed as an editable module via `uv`, which causes `importlib.metadata` to fail.
+*   **Changelog Curation (`changelog-manager`):** When bumping the Core application version or cutting a release/recap, curate and update both `CHANGELOG.md` and `docs-site/src/content/docs/core/changelog.md` using the `changelog-manager` skill (Keep a Changelog v1.1.0 + Common Changelog format).
 
 ---
 
@@ -113,6 +114,7 @@ The project uses Starlight (Astro) in `docs-site/` as its primary documentation 
 *   **Target Directory:** All Starlight markdown files reside in `docs-site/src/content/docs/`.
 *   **Mirrored Documentation Files (Crucial):** Certain key documentation files exist at both the root level and within `docs-site/`. When updating one, you MUST update its twin in tandem to prevent documentation drift:
     *   `README.md` ↔ `docs-site/src/content/docs/core/index.md` (Primary landing page and featureset list)
+    *   `CHANGELOG.md` ↔ `docs-site/src/content/docs/core/changelog.md` (Core application release history)
     *   `environment_variables.md` ↔ `docs-site/src/content/docs/core/installation/environment_variables.md`
     *   `FAQ.md` ↔ `docs-site/src/content/docs/core/FAQ.md`
     *   `developers_guide.md` ↔ `docs-site/src/content/docs/core/developers_guide.md`

@@ -42,9 +42,6 @@ This is built using [Mesop](https://mesop-dev.github.io/mesop/), an open source 
 
 **For comprehensive guides, deployment instructions, architecture details, and developer workflows, please visit our [Documentation Hub](https://googlecloudplatform.github.io/genmedia-creative-studio/).**
 
-> [!IMPORTANT]
-> **Git History Reset Notice**: The repository history on `main` was scrubbed in August 2026 to remove legacy compiled binaries, reducing clone size by ~60%. If you have an existing clone, please see the [Git History Reset Instructions on our Changelog](https://googlecloudplatform.github.io/genmedia-creative-studio/core/changelog/) for steps to synchronize your local checkout.
-
 Stay up-to-date with upcoming breaking changes and releases on our **[Changelog & Notices](https://googlecloudplatform.github.io/genmedia-creative-studio/core/changelog/)** page.
 
 

@@ -28,11 +28,56 @@ from components.header import header
 from components.image_thumbnail import image_thumbnail
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_chooser_button import library_chooser_button
-from components.library.library_dialog import library_dialog
 from components.snackbar import snackbar
 
+# Each uploader placeholder needs its own chooser key: the shared library
+# chooser opens the dialog whose key matches the clicked button, and reports it
+# back as ``LibrarySelectionChangeEvent.chooser_id``.
+MAIN_IMAGE_CHOOSER_ID = "object_rotation_main"
+VIEW_CHOOSER_IDS = {
+    "front": "object_rotation_front",
+    "back": "object_rotation_back",
+    "left": "object_rotation_left",
+    "right": "object_rotation_right",
+}
+
+
+def apply_library_selection(
+    project: dict, chooser_id: str, gcs_uri: str, user_email: str | None
+) -> dict | None:
+    """Records a library selection on a rotation project.
+
+    Args:
+        project: The current rotation project (may be empty before step 1).
+        chooser_id: The chooser that produced the selection.
+        gcs_uri: The selected asset.
+        user_email: Owner to stamp on a newly created project.
+
+    Returns:
+        The updated project, or None if the selection was ignored (empty URI
+        or unknown chooser).
+    """
+    if not gcs_uri:
+        return None
+    if chooser_id == MAIN_IMAGE_CHOOSER_ID:
+        if not project:
+            project = {
+                "user_email": user_email,
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            }
+        project["main_product_image_uri"] = gcs_uri
+        return project
+    for view_name, view_chooser_id in VIEW_CHOOSER_IDS.items():
+        if chooser_id == view_chooser_id:
+            project.setdefault("product_views", {})[view_name] = gcs_uri
+            return project
+    return None
+
+
 @me.component
-def _uploader_placeholder(on_upload: Callable, on_library_select: Callable):
+def _uploader_placeholder(
+    on_upload: Callable, on_library_select: Callable, chooser_key: str
+):
     with me.box(
         style=me.Style(
             height=100,
@@ -53,7 +98,11 @@ def _uploader_placeholder(on_upload: Callable, on_library_select: Callable):
         me.uploader(
             label="Upload", on_upload=on_upload, style=me.Style(flex_grow=1)
         )
-        library_chooser_button(on_library_select=on_library_select, button_type="icon", key="step1_library_chooser")
+        library_chooser_button(
+            on_library_select=on_library_select,
+            button_type="icon",
+            key=chooser_key,
+        )
 from components.page_scaffold import page_frame, page_scaffold
 
 from components.dialog import dialog
@@ -89,10 +138,6 @@ class PageState:
     max_completed_step: int = 1
     is_generating_views: bool = False
     is_generating_video: bool = False
-    library_items: list = field(default_factory=list)  # pylint: disable=E3701:invalid-field-call
-    is_loading_library: bool = False
-    show_library: bool = False
-    show_library_for_view: str | None = None
     initial_load_complete: bool = False
     show_snackbar: bool = False
     info_dialog_open: bool = False
@@ -190,9 +235,6 @@ def page_content():
             with me.box(style=me.Style(margin=me.Margin(top=16))):
                 me.button("Close", on_click=close_info_dialog, type="flat")
 
-    show_library_dialog()
-
-
     with me.box(style=me.Style(margin=me.Margin(top=24))):
         stepper(
             steps=[
@@ -242,7 +284,11 @@ def step1_content():
                     icon_size=18,
                 )
             else:
-                _uploader_placeholder(on_upload=on_main_image_upload, on_library_select=open_library_dialog)
+                _uploader_placeholder(
+                    on_upload=on_main_image_upload,
+                    on_library_select=on_select_from_library,
+                    chooser_key=MAIN_IMAGE_CHOOSER_ID,
+                )
 
     with me.box(
         style=me.Style(
@@ -289,66 +335,22 @@ def on_main_image_upload(e: me.UploadEvent):
     yield
 
 
-def open_library_dialog(e: me.ClickEvent, view_name: str | None = None):
-    """Opens the library dialog and fetches the initial data."""
+def on_select_from_library(e: LibrarySelectionChangeEvent):
+    """Applies a library selection to the main image or the chosen view."""
     state = me.state(PageState)
     app_state = me.state(AppState)
-    state.show_library_for_view = view_name
-    state.is_loading_library = True
-    state.show_library = True
-    yield
 
-    # Fail closed: get_media_for_page's owner filter short-circuits to "return
-    # everything" when filter_by_user_email is falsy, so never call it without a
-    # server-derived identity. Mirror the explicit guard in guideline_analysis
-    # get_all_media_for_chooser: no identity -> show nothing, never all.
-    if not app_state.user_email:
-        state.library_items = []
-        state.is_loading_library = False
+    project = apply_library_selection(
+        state.rotation_project, e.chooser_id, e.gcs_uri, app_state.user_email
+    )
+    if project is None:
         yield
         return
 
-    try:
-        from common.metadata import get_media_for_page
-
-        # Owner-scope the library listing to the server-derived caller so a user
-        # can only browse their own media (read-side IDOR fix).
-        state.library_items = get_media_for_page(
-            1,
-            50,
-            type_filters=["images"],
-            filter_by_user_email=app_state.user_email,
-        )
-    except Exception as ex:
-        print(f"Error loading library items: {ex}")
-    finally:
-        state.is_loading_library = False
-        yield
-
-def on_close_library(e: me.ClickEvent):
-    state = me.state(PageState)
-    state.show_library = False
+    state.rotation_project = project
     yield
 
-def on_select_from_library(e: LibrarySelectionChangeEvent):
-    state = me.state(PageState)
-    app_state = me.state(AppState)
-    view_name = state.show_library_for_view
-
-    if view_name:
-        if "product_views" not in state.rotation_project:
-            state.rotation_project["product_views"] = {}
-        state.rotation_project["product_views"][view_name] = e.gcs_uri
-    else:
-        if not state.rotation_project:
-            state.rotation_project = {
-                "user_email": app_state.user_email,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            }
-        state.rotation_project["main_product_image_uri"] = e.gcs_uri
-
-    state.show_library = False
-    state.show_library_for_view = None
+    state.rotation_project = save_object_rotation_project(state.rotation_project)
     yield
 
 
@@ -415,7 +417,11 @@ def step2_content():
                         icon_size=18,
                     )
                 else:
-                    _uploader_placeholder(on_upload=on_front_view_upload, on_library_select=on_front_view_library_select)
+                    _uploader_placeholder(
+                        on_upload=on_front_view_upload,
+                        on_library_select=on_select_from_library,
+                        chooser_key=VIEW_CHOOSER_IDS["front"],
+                    )
 
             # Back View
             with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, align_items="center")):
@@ -428,7 +434,11 @@ def step2_content():
                         icon_size=18,
                     )
                 else:
-                    _uploader_placeholder(on_upload=on_back_view_upload, on_library_select=on_back_view_library_select)
+                    _uploader_placeholder(
+                        on_upload=on_back_view_upload,
+                        on_library_select=on_select_from_library,
+                        chooser_key=VIEW_CHOOSER_IDS["back"],
+                    )
 
             # Left View
             with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, align_items="center")):
@@ -441,7 +451,11 @@ def step2_content():
                         icon_size=18,
                     )
                 else:
-                    _uploader_placeholder(on_upload=on_left_view_upload, on_library_select=on_left_view_library_select)
+                    _uploader_placeholder(
+                        on_upload=on_left_view_upload,
+                        on_library_select=on_select_from_library,
+                        chooser_key=VIEW_CHOOSER_IDS["left"],
+                    )
 
             # Right View
             with me.box(style=me.Style(display="flex", flex_direction="column", gap=8, align_items="center")):
@@ -454,7 +468,11 @@ def step2_content():
                         icon_size=18,
                     )
                 else:
-                    _uploader_placeholder(on_upload=on_right_view_upload, on_library_select=on_right_view_library_select)
+                    _uploader_placeholder(
+                        on_upload=on_right_view_upload,
+                        on_library_select=on_select_from_library,
+                        chooser_key=VIEW_CHOOSER_IDS["right"],
+                    )
 
     with me.box(
         style=me.Style(
@@ -492,22 +510,6 @@ def on_front_view_remove(e: me.ClickEvent): yield from on_remove_view(e, "front"
 def on_back_view_remove(e: me.ClickEvent): yield from on_remove_view(e, "back")
 def on_left_view_remove(e: me.ClickEvent): yield from on_remove_view(e, "left")
 def on_right_view_remove(e: me.ClickEvent): yield from on_remove_view(e, "right")
-
-
-def on_front_view_library_select(e: me.ClickEvent):
-    yield from open_library_dialog(e, "front")
-
-
-def on_back_view_library_select(e: me.ClickEvent):
-    yield from open_library_dialog(e, "back")
-
-
-def on_left_view_library_select(e: me.ClickEvent):
-    yield from open_library_dialog(e, "left")
-
-
-def on_right_view_library_select(e: me.ClickEvent):
-    yield from open_library_dialog(e, "right")
 
 
 async def on_generate_views(e: me.ClickEvent):
@@ -551,27 +553,6 @@ def on_view_upload(e: me.UploadEvent, view_name: str):
     state.rotation_project["product_views"][view_name] = gcs_uri
     state.rotation_project = save_object_rotation_project(state.rotation_project)
     yield
-
-
-def on_view_library_select(e: me.ClickEvent, view_name: str):
-    state = me.state(PageState)
-    state.show_library_for_view = view_name
-    state.show_library = True
-    yield
-
-
-def show_library_dialog():
-    state = me.state(PageState)
-    if state.show_library:
-        # Determine which handler to use based on the context
-        on_select_handler = on_select_from_library
-        library_dialog(
-            is_open=True,
-            on_select=on_select_handler,
-            on_close=on_close_library,
-            media_items=state.library_items,
-            is_loading=state.is_loading_library,
-        )
 
 
 def on_step2_next(e: me.ClickEvent):

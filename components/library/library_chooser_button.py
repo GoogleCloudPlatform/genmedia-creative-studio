@@ -12,18 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import field
+import json
+from dataclasses import asdict, field
 from functools import partial
 from typing import Callable, Optional
 
 import mesop as me
 
 from common.metadata import MediaItem, get_media_for_page_optimized
-from common.utils import create_display_url
+from common.utils import create_display_url, warm_display_urls
 from components.dialog import dialog
 from components.library.events import LibrarySelectionChangeEvent
 from components.library.library_image_selector import library_image_selector
 from state.state import AppState
+
+
+def selectable_gcs_uri(item: MediaItem) -> str | None:
+    """Return the item's primary GCS URI, or None if it can't be chosen.
+
+    Failed generations (``error_message`` set, or no stored asset) are not
+    selectable and must not take up a slot in the chooser page.
+    """
+    if item.error_message:
+        return None
+    if item.gcsuri:
+        return item.gcsuri
+    return item.gcs_uris[0] if item.gcs_uris else None
+
+
+def load_chooser_items_json(
+    media_type: list[str],
+    user_email: str | None,
+    page_size: int = 20,
+) -> str:
+    """Fetch one page of selectable library items as a JSON string.
+
+    Failed generations are dropped, and the page's display URLs are signed in
+    parallel here (while the dialog shows its spinner) so the render that
+    follows hits the URL cache instead of signing each asset serially.
+    """
+    items, _ = get_media_for_page_optimized(
+        page_size,
+        media_type,
+        filter_by_user_email=user_email,
+    )
+    items = [item for item in items if selectable_gcs_uri(item)]
+    warm_display_urls([selectable_gcs_uri(item) for item in items])
+    return json.dumps([asdict(item) for item in items], default=str)
 
 
 @me.stateclass
@@ -64,18 +99,9 @@ def library_chooser_button(
         user_email = app_state.user_email if state.show_only_my_items else None
         # Use the media_type stored in state, which was set when opening the dialog
         print(f"DEBUG: fetching items with media_type={state.media_type}")
-        items, _ = get_media_for_page_optimized(
-            20,
+        state.media_items_json = load_chooser_items_json(
             state.media_type,
-            filter_by_user_email=user_email,
-        )
-
-        import json
-        from dataclasses import asdict
-
-        state.media_items_json = json.dumps(
-            [asdict(item) for item in items],
-            default=str,
+            user_email,
         )
         state.is_loading = False
         yield
@@ -188,8 +214,6 @@ def library_chooser_button(
                         ):
                             me.progress_spinner()
                     else:
-                        import json
-
                         items_dicts = (
                             json.loads(state.media_items_json)
                             if state.media_items_json
@@ -201,13 +225,7 @@ def library_chooser_button(
                             valid_keys = MediaItem.__dataclass_fields__.keys()
                             clean_d = {k: v for k, v in d.items() if k in valid_keys}
                             item = MediaItem(**clean_d)
-                            gcs_uri = (
-                                item.gcsuri
-                                if item.gcsuri
-                                else (item.gcs_uris[0] if item.gcs_uris else None)
-                            )
-                            from common.utils import create_display_url
-
+                            gcs_uri = selectable_gcs_uri(item)
                             item.signed_url = (
                                 create_display_url(gcs_uri) if gcs_uri else ""
                             )

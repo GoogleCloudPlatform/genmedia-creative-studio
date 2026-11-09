@@ -37,6 +37,8 @@ Controls which versions of the Gemini models are used for various tasks.
 | **`GEMINI_AUDIO_ANALYSIS_MODEL_ID`** | `gemini-3.1-flash-lite` | The model used specifically for analyzing audio content. |
 | **`GEMINI_WRITERS_WORKSHOP_MODELS`** | `gemini-4-argon,gemini-3.8-flash` | Comma-separated models offered in the Gemini Writers Workshop model picker. |
 | **`GEMINI_WRITERS_WORKSHOP_MODEL_ID`** | `gemini-4-argon` | The model preselected in the Gemini Writers Workshop picker (added to the picker if not listed in `GEMINI_WRITERS_WORKSHOP_MODELS`). |
+| **`GEMINI_STORYBOARDER_NARRATIVE_MODELS`** | `gemini-3.8-flash,gemini-4-argon,gemini-3.5-flash-lite` | Comma-separated models offered in the Storyboarder "Narrative Writer Model" picker. |
+| **`GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID`** | `gemini-3.8-flash` | The model preselected in the Storyboarder Narrative Writer picker (added to the picker if not listed in `GEMINI_STORYBOARDER_NARRATIVE_MODELS`). |
 | **`GEMINI_CRITIQUE_MODEL_ID`** | `gemini-3-flash-preview` | The specific model used for the Imagen critique functionality. |
 | **`GEMINI_CRITIQUE_LOCATION`** | `global` | The region for the Gemini image critique model. |
 | **`CHARACTER_CONSISTENCY_GEMINI_MODEL`** | `MODEL_ID` | The model used for Character Consistency tasks. |

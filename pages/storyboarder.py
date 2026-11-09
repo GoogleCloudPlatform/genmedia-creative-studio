@@ -59,6 +59,34 @@ def page():
             storyboarder_content()
 
 
+NARRATIVE_MODEL_LABELS = {
+    "gemini-3.8-flash": "Gemini 3.8 Flash",
+    "gemini-4-argon": "Gemini 4 Argon",
+    "gemini-3.5-flash-lite": "Gemini 3.5 Flash Lite",
+    "gemini-3.5-flash": "Gemini 3.5 Flash",
+}
+
+
+def narrative_model_options() -> list[tuple[str, str]]:
+    """Return ``(label, model_id)`` pairs for the Narrative Writer picker.
+
+    The configured default is always included, listed first and labelled
+    "(Default)", even if an operator left it out of
+    ``GEMINI_STORYBOARDER_NARRATIVE_MODELS``.
+    """
+    default = cfg.GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID
+    models = list(cfg.GEMINI_STORYBOARDER_NARRATIVE_MODELS)
+    if default and default not in models:
+        models.insert(0, default)
+    options = []
+    for model_id in models:
+        label = NARRATIVE_MODEL_LABELS.get(model_id, model_id)
+        if model_id == default:
+            label = f"{label} (Default)"
+        options.append((label, model_id))
+    return options
+
+
 def storyboarder_content():
     state = me.state(PageState)
     snackbar(is_visible=state.show_snackbar, label=state.snackbar_message)
@@ -233,13 +261,8 @@ def storyboarder_content():
                         label="Narrative Writer Model",
                         value=state.selected_narrative_model,
                         options=[
-                            me.SelectOption(
-                                label="Gemini 3.5 Flash (Default)",
-                                value="gemini-3.5-flash",
-                            ),
-                            me.SelectOption(
-                                label="Gemini 3.0 Pro", value="gemini-3.0-pro"
-                            ),
+                            me.SelectOption(label=label, value=value)
+                            for label, value in narrative_model_options()
                         ],
                         on_selection_change=on_narrative_model_change,
                     )

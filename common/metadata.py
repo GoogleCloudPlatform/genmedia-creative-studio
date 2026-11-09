@@ -422,6 +422,9 @@ def get_media_item_by_id(
     for the active request, or an explicit ``caller_email`` a caller already
     derived server-side). The item is returned **only** when the caller owns it
     (or it is a legacy ownerless document, per :func:`common.authz.is_owner`).
+    When the ``SHARED_LIBRARY`` setting is enabled (the default), any
+    authenticated caller may also read it so "All Users" Library items open in
+    the detail viewer; this is read-only and never widens write paths.
 
     Returns ``None`` when the document does not exist **or** the caller is not
     authorized — the two cases are deliberately indistinguishable so a non-owner
@@ -438,7 +441,11 @@ def get_media_item_by_id(
         caller = authz.resolve_caller_email(caller_email)
         doc_ref = db.collection(config.GENMEDIA_COLLECTION_NAME).document(item_id)
         data = authz.authorize_read(
-            doc_ref, "user_email", caller, resource="media item"
+            doc_ref,
+            "user_email",
+            caller,
+            resource="media item",
+            allow_shared=config.SHARED_LIBRARY,
         )
         if data is None:
             # Not found OR not authorized — indistinguishable by design.

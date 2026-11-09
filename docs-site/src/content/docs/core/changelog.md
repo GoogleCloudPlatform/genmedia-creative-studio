@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.25.0] - 2026-11-09
+
+### Added
+- **Shared Library Setting:** Add the `SHARED_LIBRARY` admin setting (default `true`) so items from the Library's "All Users" view open in the detail viewer for any authenticated user instead of failing with "Could not load media item details". Reads stay fail-closed for unauthenticated callers, and edit, overwrite and delete remain owner-only. Set `SHARED_LIBRARY=false` for strict owner-only reads, which also hides the "All Users" toggle (`gmcs-gh6`, [#2170]).
+
 ## [1.24.0] - 2026-11-09
 
 ### Changed
@@ -260,6 +265,7 @@ git rebase --onto origin/main <old-base-commit> <your-feature-branch>
 [1.7.6]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/e8f687ca
 [1.6.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/45f3d87e
 [1.4.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/c58dd1e0
+[#2170]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2170
 [#2168]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2168
 [#2166]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2166
 [#2163]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2163

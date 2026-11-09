@@ -201,6 +201,7 @@ def authorize_read(
     caller_email: str | None,
     *,
     resource: str = "document",  # noqa: ARG001 (kept for call-site symmetry)
+    allow_shared: bool = False,
 ) -> dict | None:
     """Owner-scoped single-document read for load-by-client-supplied-id paths.
 
@@ -213,11 +214,20 @@ def authorize_read(
 
     Use this for reads keyed by a client-controllable id (for example a
     ``storyboard_id`` / ``object_rotation_id`` URL query param).
+
+    ``allow_shared`` is the opt-in for the shared Library (the ``SHARED_LIBRARY``
+    admin setting): when ``True`` any *authenticated* caller (non-empty
+    ``caller_email``) may read the document, not just its owner. It is
+    read-only by construction and still fails closed on a missing identity. The
+    default is ``False`` so existing owner-only callers are unchanged; write
+    paths never consult it.
     """
     snapshot = doc_ref.get()
     if snapshot is None or not getattr(snapshot, "exists", False):
         return None
     data = snapshot.to_dict() or {}
+    if allow_shared and caller_email:
+        return data
     if not is_owner(data.get(owner_field), caller_email):
         return None
     return data

@@ -63,7 +63,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.24.0"  # Fallback if package metadata is missing
+    VERSION: str = "1.25.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -260,6 +260,16 @@ class Default:
     IMAGEN_PROMPTS_JSON = "prompts/imagen_prompts.json"
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
+
+    # Shared Library: when true (default) any authenticated user can open items
+    # from the "All Users" Library view in the detail viewer (read-only). When
+    # false, reads are owner-only and the Library hides the "All Users" toggle.
+    # Writes/deletes are always owner-scoped regardless of this setting.
+    SHARED_LIBRARY: bool = os.environ.get("SHARED_LIBRARY", "true").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 
     # Interior Design
     INTERIOR_DESIGN_VIDEO_MODEL: str = os.environ.get(

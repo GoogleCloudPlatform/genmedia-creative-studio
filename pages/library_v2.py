@@ -86,6 +86,10 @@ def on_load(e: me.LoadEvent):
 def _load_media(pagestate: PageState, is_filter_change: bool = False):
     """Central function to load media based on current filters and pagination."""
     app_state = me.state(AppState)
+    if not cfg().SHARED_LIBRARY:
+        # Shared Library disabled: the Library is strictly owner-scoped, so never
+        # honor a stale/forged "all" filter from client state.
+        pagestate.user_filter = "mine"
     user_email_to_filter = (
         app_state.user_email if pagestate.user_filter == "mine" else None
     )
@@ -204,14 +208,15 @@ def library_content():
                 multiple=True,
                 on_change=on_type_filter_change,
             )
-            me.button_toggle(
-                value=pagestate.user_filter,
-                buttons=[
-                    me.ButtonToggleButton(label="All Users", value="all"),
-                    me.ButtonToggleButton(label="Mine Only", value="mine"),
-                ],
-                on_change=on_user_filter_change,
-            )
+            if cfg().SHARED_LIBRARY:
+                me.button_toggle(
+                    value=pagestate.user_filter,
+                    buttons=[
+                        me.ButtonToggleButton(label="All Users", value="all"),
+                        me.ButtonToggleButton(label="Mine Only", value="mine"),
+                    ],
+                    on_change=on_user_filter_change,
+                )
             me.button_toggle(
                 value=pagestate.error_filter,
                 buttons=[

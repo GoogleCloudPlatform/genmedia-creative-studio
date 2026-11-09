@@ -20,7 +20,7 @@ The **Storyboarder** workflow (`/storyboarder`) transforms a single story premis
 ## Step-by-Step Pipeline
 
 ### Step 1: Story Concept & Structured Script Generation (`NarrativeStructure`)
-1. The user enters a **Story Concept** (or clicks **Random Prompt** to have Gemini invent one), selects a visual style (e.g., *Cinematic*, *Anime*, *Claymation*, *Noir*) and aspect ratio (`16:9` or `9:16`), and optionally uploads or selects a **Character Reference Image**.
+1. The user enters a **Story Concept** (or clicks **Random Prompt** to have Gemini invent one), selects a visual style (e.g., *Cinematic*, *Anime*, *Claymation*, *Noir*) and aspect ratio (`16:9` or `9:16`), and optionally uploads or selects a **Character Reference Image**. The **Narrative Writer Model** picker defaults to **Gemini 3.8 Flash** and also offers **Gemini 4 Argon** and **Gemini 3.5 Flash Lite**; the list and default are configurable via `GEMINI_STORYBOARDER_NARRATIVE_MODELS` and `GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID`.
 2. `pages/storyboarder.py` calls `client.models.generate_content()` with `response_schema=NarrativeStructure`:
    ```python
    class SceneDetail(BaseModel):

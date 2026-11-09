@@ -16,6 +16,7 @@ from dataclasses import field
 
 import mesop as me
 
+from config.default import Default as cfg  # noqa: N813
 from config.omni_models import DEFAULT_OMNI_VERSION_ID
 
 
@@ -62,7 +63,7 @@ class PageState:
     aspect_ratio: str = "16:9"
     num_images: int = 4
     selected_image_model: str = "nano-banana-2.1"
-    selected_narrative_model: str = "gemini-3.5-flash"
+    selected_narrative_model: str = cfg.GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID
     selected_video_model: str = DEFAULT_OMNI_VERSION_ID
 
     # UI

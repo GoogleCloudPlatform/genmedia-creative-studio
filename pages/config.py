@@ -254,6 +254,14 @@ def get_config_table(app_state: AppState):
         config_data["Config"].append("Writers Workshop Default Model")
         config_data["Value"].append(Default.GEMINI_WRITERS_WORKSHOP_MODEL_ID)
 
+    if hasattr(Default, "GEMINI_STORYBOARDER_NARRATIVE_MODELS"):
+        config_data["Config"].append("Storyboarder Narrative Models")
+        config_data["Value"].append(
+            ", ".join(Default.GEMINI_STORYBOARDER_NARRATIVE_MODELS)
+        )
+        config_data["Config"].append("Storyboarder Narrative Default Model")
+        config_data["Value"].append(Default.GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID)
+
     if hasattr(Default, "GEMINI_CRITIQUE_MODEL_ID"):
         config_data["Config"].append("Critique Model ID")
         config_data["Value"].append(Default.GEMINI_CRITIQUE_MODEL_ID)

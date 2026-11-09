@@ -1434,9 +1434,13 @@ class StoryboardNarrative(BaseModel):
 
 def generate_storyboard_narrative(
     user_prompt: str,
-    model_name: str = "gemini-3.5-flash",
+    model_name: str | None = None,
 ) -> StoryboardNarrative:
-    """Generates a coherent 4-scene storyboard narrative from a user idea."""
+    """Generates a coherent 4-scene storyboard narrative from a user idea.
+
+    ``model_name`` defaults to ``GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID``.
+    """
+    model_name = model_name or cfg.GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=StoryboardNarrative.model_json_schema(),

@@ -63,7 +63,7 @@ class NavConfig(BaseModel):
 class Default:
     """Defaults class."""
 
-    VERSION: str = "1.23.0"  # Fallback if package metadata is missing
+    VERSION: str = "1.24.0"  # Fallback if package metadata is missing
     BUILD_COMMIT: str = ""
     BUILD_DATE: str = ""
 
@@ -123,6 +123,17 @@ class Default:
     GEMINI_WRITERS_WORKSHOP_MODEL_ID: str = os.environ.get(
         "GEMINI_WRITERS_WORKSHOP_MODEL_ID",
         "gemini-4-argon",
+    )
+    # Storyboarder Narrative Writer: the model picker offers exactly these
+    # models, and GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID is the one preselected
+    # (it is added to the picker if it is not already listed).
+    GEMINI_STORYBOARDER_NARRATIVE_MODELS: tuple[str, ...] = _csv_env(
+        "GEMINI_STORYBOARDER_NARRATIVE_MODELS",
+        ("gemini-3.8-flash", "gemini-4-argon", "gemini-3.5-flash-lite"),
+    )
+    GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID: str = os.environ.get(
+        "GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID",
+        "gemini-3.8-flash",
     )
     GEMINI_CRITIQUE_MODEL_ID: str = os.environ.get(
         "GEMINI_CRITIQUE_MODEL_ID",

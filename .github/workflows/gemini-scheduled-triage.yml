@@ -108,15 +108,15 @@ jobs:
         uses: 'google-github-actions/run-gemini-cli@f77273f4c914e4bf38440cf36a0369cb64a37489' # v0
         env:
           GITHUB_TOKEN: '' # Do not pass any auth token here since this runs on untrusted inputs
-          ISSUES_TO_TRIAGE: '${{ steps.find_issues.outputs.issues_to_triage }}'
-          REPOSITORY: '${{ github.repository }}'
-          AVAILABLE_LABELS: '${{ steps.get_labels.outputs.available_labels }}'
           # Headless Gemini CLI exits 1 ("not running in a trusted directory") when
           # this is 'false'. Safe to trust here: this job does not check out the
-          # repo (empty workspace, no .gemini settings/GEMINI.md to load), has no
-          # GitHub token, and its tool allowlist is limited to `echo`. Keep it that
-          # way. Do NOT use an empty `tools.core`: Gemini CLI 0.66.0 then sends an
-          # empty tool declaration and Vertex rejects the request with HTTP 400.
+          # repo (no .gemini settings/GEMINI.md to load), has no GitHub token, and
+          # allows only `read_file` (zero shell execution, so bash expansion cannot
+          # leak the API-key env vars into the public log). Keep it that way. The
+          # workspace is not strictly empty (the auth step writes a randomly named
+          # gha-creds-*.json there), so never add shell, glob or list tools. Do NOT
+          # use an empty `tools.core`: Gemini CLI 0.66.0 then sends an empty tool
+          # declaration and Vertex rejects the request with HTTP 400.
           GEMINI_CLI_TRUST_WORKSPACE: 'true'
         with:
           gemini_cli_version: "${{ vars.GEMINI_CLI_VERSION || '0.66.0' }}"
@@ -141,7 +141,7 @@ jobs:
                 "target": "gcp"
               },
               "tools": {
-                "core": ["run_shell_command(echo)"]
+                "core": ["read_file"]
               }
             }
           prompt: |-

@@ -32,6 +32,7 @@ from common.veo_utils import start_async_veo_job
 from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.library.events import LibrarySelectionChangeEvent
+from components.omni_hint.omni_hint import omni_hint
 from components.page_scaffold import page_frame, page_scaffold
 from components.veo.generation_controls import generation_controls
 from components.veo.prompt_inputs import prompt_inputs
@@ -265,6 +266,7 @@ def veo_content(app_state: me.state):
 
     with page_frame():  # pylint: disable=E1129:not-context-manager
         header("Veo", "movie", show_info_button=True, on_info_click=open_info_dialog)
+        omni_hint()
 
         # Main container with a column direction
         with me.box(style=me.Style(display="flex", flex_direction="column", gap=20)):

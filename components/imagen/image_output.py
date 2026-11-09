@@ -91,8 +91,8 @@ def image_output():
                                     ),
                                 ):
                                     edit_button(gcs_uri=img_uri)
-                                    veo_button(gcs_uri=img_uri)
                                     omni_button(gcs_uri=img_uri)
+                                    veo_button(gcs_uri=img_uri)
                 if state.imagen_watermark:
                     with me.box(
                         style=me.Style(

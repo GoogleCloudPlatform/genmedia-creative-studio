@@ -10,18 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > For Model Context Protocol (MCP) server releases (`mcp-v3.x`), see [`experiments/mcp-genmedia/mcp-genmedia-go/CHANGELOG.md`](https://github.com/GoogleCloudPlatform/genmedia-creative-studio/blob/main/experiments/mcp-genmedia/mcp-genmedia-go/CHANGELOG.md).
 
+> Entries before 1.14.0 are consolidated: intermediate patch releases (for example 1.3.x, 1.5.x, 1.7.3–1.7.5, and 1.8.1–1.8.5) are folded into the nearest documented version, so an entry may include changes merged after its listed date.
+
+## [Unreleased]
+
 ## [1.24.0] - 2026-11-09
 
 ### Changed
 - **Storyboarder Narrative Writer Models:** Make the Storyboarder Narrative Writer selector config-driven (`GEMINI_STORYBOARDER_NARRATIVE_MODELS` and `GEMINI_STORYBOARDER_NARRATIVE_MODEL_ID`), defaulting to `gemini-3.8-flash` alongside `gemini-4-argon` and `gemini-3.5-flash-lite`, and remove the retired `gemini-3.0-pro` option (`gmcs-71i`, [#2168]).
 
+### Security
+- **GitHub Actions Gemini Workflows:** Remove shell execution tools (`run_shell_command`) from untrusted issue triage, invoke, and review workflows (`gemini-triage.yml`, `gemini-scheduled-triage.yml`, `gemini-invoke.yml`, `gemini-review.yml`) so prompt inputs are passed inline without shell expansion (`gmcs-vdg`, [#2163], [#2166]). These workflow-only changes did not bump the Core version and shipped between 1.23.0 and 1.24.0.
+
 ## [1.23.0] - 2026-11-09
 
 ### Changed
 - **Workflow Video Defaults:** Default `INTERIOR_DESIGN_VIDEO_MODEL` and `OBJECT_ROTATION_VIDEO_MODEL` to `gemini-omni-1.2-flash` via a unified `models/workflow_video.py` router that supports both `gemini-omni-*` (image-to-video and reference-to-video) and `veo-*` models (`gmcs-eyp`, [#2162]).
-
-### Security
-- **GitHub Actions Gemini Workflows:** Remove shell execution tools (`run_shell_command`) from untrusted issue triage, invoke, and review workflows (`gemini-triage.yml`, `gemini-scheduled-triage.yml`, `gemini-invoke.yml`, `gemini-review.yml`) so prompt inputs are passed inline without shell expansion (`gmcs-vdg`, [#2163], [#2166]).
 
 ## [1.22.1] - 2026-11-09
 
@@ -301,14 +305,8 @@ git rebase --onto origin/main <old-base-commit> <your-feature-branch>
 [#1920]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1920
 [#1908]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1908
 [#1905]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1905
-[#1904]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1904
-[#1903]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1903
 [#1902]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1902
 [#1900]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1900
-[#1899]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1899
-[#1898]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1898
-[#1897]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1897
-[#1896]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1896
 [#1895]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1895
 [#1884]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1884
 [#1883]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/1883

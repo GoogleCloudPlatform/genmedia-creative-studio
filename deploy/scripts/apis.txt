@@ -5,9 +5,16 @@
 # #2) so the script never hand-copies the API list.
 #
 # It is kept in sync with the Terraform-declared set in
-# modules/project-services/variables.tf (variable "activate_apis", the 13-API
-# default). deploy.sh enforces that coupling with a drift check (pre-check #2a):
+# modules/project-services/variables.tf (variable "activate_apis" default).
+# deploy.sh enforces that coupling with a drift check (pre-check #2a):
 # if this file and the Terraform default diverge, the script flags it.
+#
+# Why the less obvious entries are listed:
+#   texttospeech.googleapis.com   Gemini TTS and Chirp 3 HD (google-cloud-texttospeech)
+#   iamcredentials.googleapis.com V4 signed media URLs via IAM signBlob
+#   logging.googleapis.com        Cloud Logging client used by the app
+# Enabling an already-enabled API is a no-op, so adding these is safe on
+# existing projects.
 #
 # NOTE (coupling): wiring Terraform to read this file directly (so both consume a
 # single source) is intentionally deferred to a Terraform phase where a
@@ -32,3 +39,6 @@ firestore.googleapis.com
 cloudtasks.googleapis.com
 serviceusage.googleapis.com
 cloudresourcemanager.googleapis.com
+texttospeech.googleapis.com
+iamcredentials.googleapis.com
+logging.googleapis.com

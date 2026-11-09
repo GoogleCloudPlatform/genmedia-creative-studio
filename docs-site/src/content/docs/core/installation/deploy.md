@@ -376,6 +376,12 @@ machine-readable source), and pre-check `#2a` guards against drift by asserting
 file, is deferred to a Terraform phase where a zero-diff `terraform plan` gate can
 prove the change is behaviour-neutral.)
 
+The set includes `texttospeech.googleapis.com` (Gemini TTS and Chirp 3 HD),
+`iamcredentials.googleapis.com` (V4 signed media URLs via IAM `signBlob`) and
+`logging.googleapis.com`. Enabling an API that is already enabled is a no-op, so
+the additions are safe on existing projects; on a project where one is missing,
+the next `terraform apply` (or `gcloud services enable <api>`) turns it on.
+
 ### What `deploy.sh` does NOT do
 
 - It does **not** provision infrastructure — that is Terraform's job. Its only

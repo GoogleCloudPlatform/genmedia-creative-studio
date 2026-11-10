@@ -239,6 +239,7 @@ git rebase --onto origin/main <old-base-commit> <your-feature-branch>
 ### Added
 - **Veo 3.1 GA Discovery Matrix & C2PA Provenance:** Integrate Veo 3.1 GA capabilities, video extension actions, and server-side C2PA Content Credentials inspection ([#960]).
 
+[1.26.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/7b37b75c
 [1.25.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/a17a4caa
 [1.24.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/85dbcc79
 [1.23.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/cbe07a61

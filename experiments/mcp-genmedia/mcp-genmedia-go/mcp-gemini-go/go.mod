@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0
 	github.com/mark3labs/mcp-go v1.5.0
 	go.opentelemetry.io/otel v1.47.0
-	golang.org/x/oauth2 v0.37.0
+	golang.org/x/oauth2 v0.38.0
 	google.golang.org/genai v1.77.0
 )
 

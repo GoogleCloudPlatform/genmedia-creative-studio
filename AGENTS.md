@@ -22,6 +22,11 @@ This document provides guidelines for AI agents working on the GenMedia Creative
 - Application-level configuration values, such as model IDs, API keys (though avoid hardcoding keys directly), GCS bucket names, and feature flags, should be defined in `config/default.py`.
 - Access these configurations by importing `cfg = Default()` from `config.default`.
 
+## Deploy: Required APIs
+
+- The required Google Cloud APIs have two sources that must change together: `deploy/scripts/apis.txt` and `activate_apis` in `deploy/terraform/modules/project-services/variables.tf`. `deploy.sh` pre-check #2a enforces parity (use the same extraction as its `read_tf_apis` / `read_required_apis` helpers to check locally).
+- When the app adds a Google Cloud client library, add its API to both lists in the same PR.
+
 ## State Management
 
 - Global application state (e.g., theme, user information) is managed in `state/state.py`.
@@ -48,6 +53,12 @@ This document provides guidelines for AI agents working on the GenMedia Creative
 - When storing metadata for generated media, use the `MediaItem` dataclass from `common/metadata.py` and the `add_media_item_to_firestore` function.
 - Ensure all relevant fields in `MediaItem` are populated.
 
+## Security: Server-Side Authorization
+
+- `common/authz.authorize_read` is **owner-only by default**. `allow_shared` is opt-in, and only `common.metadata.get_media_item_by_id` passes it (`allow_shared=config.SHARED_LIBRARY`, default true).
+- Never pass `allow_shared` from write paths, or from the load-by-id reads in Interior Design (`pages/interior_design_v2.py`) and Object Rotation (`pages/object_rotation.py`). Those must stay owner-only.
+- Decisions on how admins expose the shared Library are tracked in `bd` (`gmcs-puc`); don't invent new switches ad hoc.
+
 ## Testing
 
 - Write unit tests for utility functions and model interaction logic.
@@ -56,6 +67,8 @@ This document provides guidelines for AI agents working on the GenMedia Creative
 - `Default` in `config/default.py` is a `@dataclass`: field defaults are captured at class creation, so patching `os.environ` later has no effect. Assert on `Default.__dataclass_fields__[name].default`, and patch `cfg` as a callable (e.g. `lambda: SimpleNamespace(...)`) where code calls `cfg()`.
 - `google-genai` timeouts differ by call: `genai.Client(http_options={"timeout": ...})` is in **milliseconds** (`600` is a 0.6s read timeout), while the Interactions `create(timeout=...)` is in seconds. Probe scripts that die with `ReadTimeout (read timeout=0.6)` hit this.
 - Verification scripts must fail fast. Run chained verify steps with `set -e` (or check each exit code) so a failing test stops the script before any push or PR; a `pytest ... | tail` pipeline hides the exit code. Never let a script push after a failed test.
+- Tests that import page handlers go stale after UI refactors (e.g. `open_library_dialog` was removed by #2159 and its test failed on `main`). When a PR touches a test file, run the **whole file** and delete or replace tests whose handlers no longer exist rather than leaving them red.
+- Tests asserting owner-only library behavior must explicitly `monkeypatch.setattr(md.config, "SHARED_LIBRARY", False)`, because `SHARED_LIBRARY` now defaults to true (see Security below).
 
 ## Code Quality
 
@@ -143,6 +156,7 @@ This system is powered by the [Gemini CLI](https://github.com/google-github-acti
 - **Explicit Secrets in Reusable Workflows (`zizmor`):** Never use `secrets: inherit` in `.github/workflows/gemini-dispatch.yml` or other reusable workflow callers (`zizmor` fails with `secrets-inherit`). Pass explicit secrets matching the callee's `on.workflow_call.secrets` block (`GEMINI_API_KEY`, `GOOGLE_API_KEY`, `APP_PRIVATE_KEY`).
 - **Fork vs. Upstream Topology & `gh` Flags:** Local `origin` is `ghchinoy/genmedia-creative-studio` and `upstream` is `GoogleCloudPlatform/genmedia-creative-studio`. Always pass `-R GoogleCloudPlatform/genmedia-creative-studio` to `gh` CLI commands, and sync `main` via `git fetch upstream --prune && git merge --ff-only upstream/main && git push origin main` (omit `--tags` when fetching `upstream` as legacy alpha tags differ). If a checkout's remotes do not match this topology (check `git remote -v`), branch from `git fetch https://github.com/GoogleCloudPlatform/genmedia-creative-studio.git main` (`FETCH_HEAD`) and push by URL (`git@github.com:ghchinoy/genmedia-creative-studio.git`) rather than guessing at remote names.
 - **Rebasing stacked or concurrent PRs:** a squash-merged base leaves its commits on the child branch, so use `git rebase --onto main <old-base-branch> <child>`. Concurrent core PRs all bump `pyproject.toml`, `config/default.py` (`VERSION`) and `uv.lock`, so the second to merge always conflicts: after the first merges, rebase and re-bump relative to the new `main`, then `uv lock && uv lock --check`. Resolve those conflicts by re-applying **only the version line**; never `git checkout --ours config/default.py` (or `--theirs`) wholesale, because `config/default.py` also carries real changes (model defaults) and a whole-file pick silently drops them. After any conflict resolution run `git diff main -- <file>` and confirm only the intended hunks remain, and re-run the tests before pushing.
+- **Core release PR mechanics:** predict the PR number with `gh api 'repos/GoogleCloudPlatform/genmedia-creative-studio/issues?state=all&per_page=1' --jq '.[0].number'` + 1 so the `[#N]` link ref in the changelog entry is right in the first commit (re-verify just before pushing). The `[X.Y.Z]` commit-link reference line in both changelogs can't be known until after the squash merge, so plan a tiny docs follow-up PR that fills it in (as #2172 did) in **both** `CHANGELOG.md` and `docs-site/src/content/docs/core/changelog.md`. Hand-editing the version line in `uv.lock` followed by `uv lock --check` works when `uv lock` can't run. Deploy-only, Terraform-only and docs-only changes do **not** bump the core version.
 - **Force-pushing a rebased branch by URL:** with no remote-tracking ref, a plain `--force-with-lease` fails with "stale info". Get the remote SHA (`git ls-remote git@github.com:ghchinoy/genmedia-creative-studio.git refs/heads/<branch>`) and push `git push --force-with-lease=refs/heads/<branch>:<sha> git@github.com:ghchinoy/genmedia-creative-studio.git +<branch>:refs/heads/<branch>`.
 - **Sandboxed sessions:** `git push`, `git fetch` over the network, `gh`, and all `bd` writes/`bd dolt push` need to run outside the sandbox. A `bd` error such as "The Dolt server may not be running" inside the sandbox means retry outside it, not `bd dolt start`. Live Vertex AI checks also need network access outside the sandbox.
 - **Never route untrusted-author text to privileged Gemini workflows:** `gemini-dispatch.yml` accepts `issues: opened/reopened` from any GitHub user so outside issues get triaged. Issue/PR text from authors who are not `OWNER`/`MEMBER`/`COLLABORATOR` must only ever reach `gemini-triage` (no GitHub write token, no cloud credentials) and must never select `review` or `invoke`, even via an `@gemini-cli` prefix. Keep the `AUTHOR_ASSOCIATION`/`trusted` check in `Extract command` and the `trusted == 'true'` gate on the `invoke` job. (An outside account exploited the old ordering in Sept 2026 via issues #1876/#1879/#1880.) Also remember a maintainer's `@gemini-cli` comment on an outsider's issue still feeds that outsider's text to the agent, so keep `invoke` credentials minimal.

@@ -38,7 +38,7 @@ variable "enable_container_api" {
 }
 
 variable "activate_apis" {
-  description = "List of GCP APIs to enable for the project. Defaults to the 13-API set required by Creative Studio."
+  description = "List of GCP APIs to enable for the project. Defaults to the API set required by Creative Studio (see deploy/scripts/apis.txt; keep the two in sync)."
   type        = list(string)
   default = [
     "iap.googleapis.com",
@@ -54,5 +54,8 @@ variable "activate_apis" {
     "cloudtasks.googleapis.com",
     "serviceusage.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "texttospeech.googleapis.com",
+    "iamcredentials.googleapis.com",
+    "logging.googleapis.com",
   ]
 }

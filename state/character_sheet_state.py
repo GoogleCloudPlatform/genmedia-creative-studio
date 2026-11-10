@@ -24,6 +24,9 @@ class PageState:
     scenario_prompt: str = ""
     
     # Asset Sheet Generation
+    sheet_preset_id: str = "turnaround"
+    character_description: str = ""
+    custom_prompt: str = ""
     is_generating_sheet: bool = False
     asset_sheet_gcs_uri: str = ""
     asset_sheet_display_url: str = ""

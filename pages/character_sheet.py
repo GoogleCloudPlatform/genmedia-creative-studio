@@ -17,6 +17,13 @@ import uuid
 import datetime
 import mesop as me
 
+from config.character_sheet_prompts import (
+    CHARACTER_SHEET_PRESETS,
+    CUSTOM_PRESET_ID,
+    build_prompt,
+    get_default_aspect_ratio,
+    get_preset,
+)
 from common.storage import store_to_gcs
 from common.utils import create_display_url
 from common.metadata import MediaItem, add_media_item_to_firestore
@@ -69,12 +76,61 @@ def character_sheet_content():
                 # Step 2: Generate Asset Sheet
                 me.text("2. Generate Asset Sheet", type="headline-6")
                 me.text("Create a multi-view character sheet to establish consistency.")
-                
+
+                preset_buttons = [
+                    me.ButtonToggleButton(label=p.label, value=p.id)
+                    for p in CHARACTER_SHEET_PRESETS
+                ]
+                preset_buttons.append(
+                    me.ButtonToggleButton(label="Custom", value=CUSTOM_PRESET_ID)
+                )
+                me.button_toggle(
+                    value=state.sheet_preset_id,
+                    buttons=preset_buttons,
+                    multiple=False,
+                    hide_selection_indicator=True,
+                    on_change=on_preset_change,
+                )
+
+                selected_preset = get_preset(state.sheet_preset_id)
+                if selected_preset:
+                    me.text(
+                        selected_preset.description,
+                        style=me.Style(color=me.theme_var("on-surface-variant")),
+                    )
+                    if selected_preset.uses_description:
+                        me.textarea(
+                            label="Character description (optional)",
+                            placeholder="e.g., ALEX VANCE (Studio Anchor): Sharp, professional, energetic.",
+                            value=state.character_description,
+                            on_blur=on_character_description_blur,
+                            rows=2,
+                            style=me.Style(width="100%"),
+                        )
+                else:
+                    me.text(
+                        "Write your own prompt. It starts from the preset you "
+                        "had selected; edit it freely.",
+                        style=me.Style(color=me.theme_var("on-surface-variant")),
+                    )
+                    me.textarea(
+                        label="Custom prompt",
+                        value=state.custom_prompt,
+                        on_blur=on_custom_prompt_blur,
+                        rows=8,
+                        style=me.Style(width="100%"),
+                    )
+
                 me.button(
                     "Generate Asset Sheet",
                     on_click=on_generate_sheet_click,
                     type="raised",
-                    disabled=state.is_generating_sheet or not state.original_image_gcs_uri
+                    disabled=state.is_generating_sheet
+                    or not state.original_image_gcs_uri
+                    or (
+                        state.sheet_preset_id == CUSTOM_PRESET_ID
+                        and not state.custom_prompt.strip()
+                    ),
                 )
                 
                 if state.is_generating_sheet:
@@ -138,6 +194,25 @@ def on_scenario_blur(e: me.InputEvent):
     state = me.state(PageState)
     state.scenario_prompt = e.value
 
+def on_preset_change(e: me.ButtonToggleChangeEvent):
+    state = me.state(PageState)
+    previous_id = state.sheet_preset_id
+    state.sheet_preset_id = e.value
+    # Seed the editable prompt from the preset the user was on, once.
+    if e.value == CUSTOM_PRESET_ID and not state.custom_prompt.strip():
+        state.custom_prompt = build_prompt(
+            previous_id, state.character_description, state.custom_prompt
+        )
+    yield
+
+def on_character_description_blur(e: me.InputBlurEvent):
+    state = me.state(PageState)
+    state.character_description = e.value
+
+def on_custom_prompt_blur(e: me.InputBlurEvent):
+    state = me.state(PageState)
+    state.custom_prompt = e.value
+
 def on_generate_sheet_click(e: me.ClickEvent):
     state = me.state(PageState)
     app_state = me.state(AppState)
@@ -146,12 +221,20 @@ def on_generate_sheet_click(e: me.ClickEvent):
     yield
     
     try:
-        prompt = "Character sheet of this character, white background, multiple views: front, back, side, three-quarter, close-up face. Consistent style. High quality, detailed. Retain realism of original image."
-        
+        prompt = build_prompt(
+            state.sheet_preset_id,
+            state.character_description,
+            state.custom_prompt,
+        )
+        if not prompt:
+            state.snackbar_message = "Enter a prompt for the custom sheet."
+            state.show_snackbar = True
+            return
+
         gcs_uris, _, _, _, _ = generate_image_from_prompt_and_images(
             prompt=prompt,
             images=[state.original_image_gcs_uri],
-            aspect_ratio="16:9", # Wide aspect ratio for a sheet
+            aspect_ratio=get_default_aspect_ratio(state.sheet_preset_id),
             gcs_folder="character_sheets"
         )
         
@@ -170,7 +253,7 @@ def on_generate_sheet_click(e: me.ClickEvent):
                 thumbnail_uri=state.asset_sheet_gcs_uri,
                 prompt=prompt,
                 source_images_gcs=[state.original_image_gcs_uri],
-                comment="Generated Character Asset Sheet"
+                comment=f"Generated Character Asset Sheet (preset: {state.sheet_preset_id})"
             )
             add_media_item_to_firestore(media_item)
             state.snackbar_message = "Asset sheet saved to library."

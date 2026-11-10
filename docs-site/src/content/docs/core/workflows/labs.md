@@ -37,10 +37,12 @@ Labs workflows are functional prototypes designed for rapid iteration and custom
   3. Scores each generated image with a multimodal **Brand Critic (`EvaluationResult`)** across color, typography, composition, and brand voice criteria (`0–10` rubric).
 
 ### Character Asset Sheet (`/character_sheet`)
-* **Source Files:** `pages/character_sheet.py`, `state/character_sheet_state.py`, `components/character_sheet/`
-* **Capabilities:** Converts a single character description or reference image into a comprehensive production **Turnaround & Expression Asset Sheet** using **Nano Banana**:
-  * **Multi-angle orthographic views:** *Front*, *Left Profile*, *Right Profile*, and *Back*.
-  * **Facial expression grid:** *Happy*, *Angry*, *Surprised*, and *Thoughtful* character portraits for downstream animation and 3D modeling.
+* **Source Files:** `pages/character_sheet.py`, `state/character_sheet_state.py`, `config/character_sheet_prompts.py`
+* **Capabilities:** Converts an uploaded reference image into a character **asset sheet** with **Nano Banana**, then generates scenario images that reuse the sheet for consistency. Pick the sheet type with the button toggle (presets are config-driven in `config/character_sheet_prompts.py`):
+  * **Turnaround:** Design reference sheet with *front*, *back*, *side*, *three-quarter* and a *face close-up* on a white background.
+  * **Camera Coverage:** Cinematography multipanel of the same character in seven shots: *Extreme Close-Up*, *Close-Up*, *Medium*, *Cowboy*, *Full*, *Long/Wide* and *Over-the-Shoulder*. An optional character description is added to the prompt.
+  * **Custom:** Edit the full prompt yourself; it starts from the preset you had selected.
+  * The chosen preset is recorded in the Library item comment.
 
 ### Guideline Analysis (`/guideline-analysis`)
 * **Source Files:** `pages/guideline_analysis.py`

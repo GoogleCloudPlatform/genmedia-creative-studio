@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-11-10
+
+### Added
+- **Character Sheet Prompt Presets:** Add a Turnaround / Camera Coverage / Custom button toggle to the Character Sheet page. Turnaround keeps the original multi-view prompt, Camera Coverage generates a seven-panel cinematography multipanel (ECU, CU, MS, CS, FS, LS, OTS) with an optional character description, and Custom lets you edit the full prompt (seeded from the preset you were on). Presets are config-driven in `config/character_sheet_prompts.py`, and the chosen preset is recorded in the Library item comment (`gmcs-a8r`, [#2174]).
+
 ## [1.25.0] - 2026-11-09
 
 ### Added
@@ -264,6 +269,7 @@ git rebase --onto origin/main <old-base-commit> <your-feature-branch>
 [1.7.6]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/e8f687ca
 [1.6.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/45f3d87e
 [1.4.0]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/commit/c58dd1e0
+[#2174]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2174
 [#2170]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2170
 [#2168]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2168
 [#2166]: https://github.com/GoogleCloudPlatform/genmedia-creative-studio/pull/2166

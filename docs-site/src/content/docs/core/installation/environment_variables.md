@@ -134,6 +134,7 @@ Defines where data and media assets are stored.
 | :--- | :--- | :--- |
 | **`LIBRARY_MEDIA_PER_PAGE`** | `15` | Controls how many items appear per page in the media library. |
 | **`USE_MEDIA_PROXY`** | `true` | If `true`, media URLs are proxied through the app's `/media` route. If `false` and `SERVICE_ACCOUNT_EMAIL` is set, media URLs are cached V4 signed `storage.googleapis.com` URLs (50 minute cache, 60 minute validity) signed by that service account, which needs `roles/iam.serviceAccountTokenCreator` on itself; this works for users who cannot be granted bucket access, such as cross-tenant IAP users. If `false` without a service account, plain `storage.cloud.google.com` links are used. |
+| **`SHARED_LIBRARY`** | `true` | If `true`, any authenticated user can open items from the Library's "All Users" view in the detail viewer (read-only). If `false`, Library reads are owner-only and the "All Users" toggle is hidden. Edit, overwrite and delete are always owner-only regardless of this setting. |
 
 ## 📦 Build Metadata
 The application can display detailed build information on the **Config** page. This is populated from an optional JSON file:
@@ -192,7 +193,7 @@ The following variables are **not** explicitly set in the `main.tf` configuratio
 *   **Veo:** `DEFAULT_VEO_MODEL_NAME`, `PREVIEW_LOCATION`, `VEO_PROJECT_ID`, `VEO_EXP_FAST_MODEL_ID`, `VEO_EXP_PROJECT_ID`
 *   **VTO (Virtual Try-On):** `VTO_LOCATION`, `VTO_MODEL_ID`, `GENMEDIA_VTO_*` collection names.
 *   **Imagen:** `MODEL_IMAGEN_PRODUCT_RECONTEXT`, `IMAGEN_GENERATED_SUBFOLDER`, `IMAGEN_EDITED_SUBFOLDER`
-*   **App Logic:** `APP_ENV`, `API_BASE_URL`, `GA_MEASUREMENT_ID`, `LIBRARY_MEDIA_PER_PAGE`, `USE_MEDIA_PROXY`
+*   **App Logic:** `APP_ENV`, `API_BASE_URL`, `GA_MEASUREMENT_ID`, `LIBRARY_MEDIA_PER_PAGE`, `USE_MEDIA_PROXY`, `SHARED_LIBRARY`
 *   **Auth:** `REQUIRE_AUTHENTICATED_USER`, `AUTH_EMAIL_HEADERS`
 *   **Collections:** `GENMEDIA_COLLECTION_NAME`, `SESSIONS_COLLECTION_NAME`
 

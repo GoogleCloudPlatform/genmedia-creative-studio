@@ -327,40 +327,9 @@ def test_chooser_without_identity_does_not_query(monkeypatch):
     mock_db.collection.assert_not_called()
 
 
-def test_object_rotation_library_returns_empty_without_identity(
-    monkeypatch, app_state_factory
-):
-    """Spot 2 fail-closed proof (L1 fix).
-
-    ``get_media_for_page`` fails OPEN on an empty filter, so the call site must
-    not invoke it without an identity. We spy on it and assert it is never
-    called and the listing is empty. FAILS if the call-site guard is removed
-    (the spy would be called and its rows would populate ``library_items``).
-    """
-    import common.metadata as md
-    import pages.object_rotation as page
-
-    calls = []
-
-    def spy_get_media_for_page(*args, **kwargs):
-        calls.append(kwargs)
-        return ["LEAKED_ROW"]  # would be exposed if the guard were removed
-
-    monkeypatch.setattr(md, "get_media_for_page", spy_get_media_for_page)
-
-    page_state = page.PageState()
-    app_state = app_state_factory(user_email="")  # no resolvable identity
-
-    def fake_state(cls):
-        return app_state if cls is page.AppState else page_state
-
-    monkeypatch.setattr(page.me, "state", fake_state)
-
-    # Drive the generator handler to completion.
-    list(page.open_library_dialog(None, view_name="front_view"))
-
-    assert calls == []  # get_media_for_page never invoked
-    assert page_state.library_items == []
+# NOTE: the Object Rotation library dialog (``open_library_dialog``) was replaced
+# by the shared ``library_chooser_button`` (PR #2159), whose listing path is
+# ``get_all_media_for_chooser`` and is covered by the chooser tests above.
 
 
 # --------------------------------------------------------------------------- #
@@ -407,12 +376,13 @@ def _seed_alice_media_item(fake_db):
 
 
 def test_get_media_item_by_id_denies_non_owner(monkeypatch, fake_db):
-    """Unauthorized (authenticated-but-not-owner) caller gets NO doc back —
-    fail-closed, no disclosure of another user's media item."""
+    """With SHARED_LIBRARY off, an authenticated-but-not-owner caller gets NO doc
+    back — fail-closed, no disclosure of another user's media item."""
     import common.metadata as md
 
     _seed_alice_media_item(fake_db)
     monkeypatch.setattr(md, "db", fake_db)
+    monkeypatch.setattr(md.config, "SHARED_LIBRARY", False)
     _set_server_identity(monkeypatch, "attacker@evil.com")
 
     assert md.get_media_item_by_id("m_alice_secret") is None
@@ -423,12 +393,15 @@ def test_get_media_item_by_id_denies_non_owner(monkeypatch, fake_db):
     )
 
 
-def test_get_media_item_by_id_denies_unauthenticated(monkeypatch, fake_db):
-    """No resolvable server-derived identity => denied (never returned)."""
+@pytest.mark.parametrize("shared", [True, False])
+def test_get_media_item_by_id_denies_unauthenticated(monkeypatch, fake_db, shared):
+    """No resolvable server-derived identity => denied (never returned), even
+    when the shared Library is enabled."""
     import common.metadata as md
 
     _seed_alice_media_item(fake_db)
     monkeypatch.setattr(md, "db", fake_db)
+    monkeypatch.setattr(md.config, "SHARED_LIBRARY", shared)
     _set_server_identity(monkeypatch, None)
 
     assert md.get_media_item_by_id("m_alice_secret") is None
@@ -464,6 +437,7 @@ def test_get_media_item_by_id_non_owner_and_missing_indistinguishable(
 
     _seed_alice_media_item(fake_db)
     monkeypatch.setattr(md, "db", fake_db)
+    monkeypatch.setattr(md.config, "SHARED_LIBRARY", False)
     _set_server_identity(monkeypatch, "attacker@evil.com")
 
     non_owner = md.get_media_item_by_id("m_alice_secret")
@@ -510,3 +484,95 @@ def test_get_media_item_by_id_system_is_unscoped(monkeypatch, fake_db):
     assert item.user_email == "alice@example.com"
     # Missing id still returns None.
     assert md.get_media_item_by_id_system("ghost") is None
+
+
+# --------------------------------------------------------------------------- #
+# E. SHARED_LIBRARY — opt-in shared READ for the Library (gmcs-gh6)
+# --------------------------------------------------------------------------- #
+# "All Users" Library items must open in the detail viewer for any authenticated
+# user (default), while SHARED_LIBRARY=false restores strict owner-only reads.
+# Shared read is read-only: the owner-scoped write/delete helpers are unchanged.
+def test_authorize_read_shared_allows_authenticated_non_owner(fake_db):
+    fake_db.seed(
+        "interior_design_storyboards",
+        "sb_alice",
+        {"user_email": "alice@example.com", "secret": "alice-plan"},
+    )
+    doc_ref = fake_db.collection("interior_design_storyboards").document("sb_alice")
+
+    result = authz.authorize_read(
+        doc_ref, "user_email", "bob@example.com", allow_shared=True
+    )
+
+    assert result is not None
+    assert result["secret"] == "alice-plan"
+
+
+def test_authorize_read_shared_still_fails_closed_without_identity(fake_db):
+    fake_db.seed(
+        "interior_design_storyboards", "sb_alice", {"user_email": "alice@example.com"}
+    )
+    doc_ref = fake_db.collection("interior_design_storyboards").document("sb_alice")
+
+    assert authz.authorize_read(doc_ref, "user_email", None, allow_shared=True) is None
+    assert authz.authorize_read(doc_ref, "user_email", "", allow_shared=True) is None
+
+
+def test_authorize_read_shared_missing_doc_returns_none(fake_db):
+    doc_ref = fake_db.collection("interior_design_storyboards").document("ghost")
+
+    assert (
+        authz.authorize_read(
+            doc_ref, "user_email", "bob@example.com", allow_shared=True
+        )
+        is None
+    )
+
+
+def test_authorize_read_default_stays_owner_only(fake_db):
+    """Callers that do not opt in (Interior Design / Object Rotation load-by-id)
+    keep strict owner-only reads even though the shared Library exists."""
+    fake_db.seed(
+        "object_rotation_projects", "proj_alice", {"user_email": "alice@example.com"}
+    )
+    doc_ref = fake_db.collection("object_rotation_projects").document("proj_alice")
+
+    assert authz.authorize_read(doc_ref, "user_email", "bob@example.com") is None
+
+
+def test_get_media_item_by_id_shared_allows_authenticated_non_owner(
+    monkeypatch, fake_db
+):
+    import common.metadata as md
+
+    _seed_alice_media_item(fake_db)
+    monkeypatch.setattr(md, "db", fake_db)
+    monkeypatch.setattr(md.config, "SHARED_LIBRARY", True)
+    _set_server_identity(monkeypatch, "bob@example.com")
+
+    item = md.get_media_item_by_id("m_alice_secret")
+    assert item is not None
+    assert item.id == "m_alice_secret"
+    assert item.user_email == "alice@example.com"
+
+    item2 = md.get_media_item_by_id("m_alice_secret", caller_email="bob@example.com")
+    assert item2 is not None
+
+
+def test_shared_library_does_not_widen_write_authorization(fake_db):
+    """Shared read must never grant mutation: the ownership gates stay strict."""
+    fake_db.seed(
+        "interior_design_storyboards", "sb_alice", {"user_email": "alice@example.com"}
+    )
+    doc_ref = fake_db.collection("interior_design_storyboards").document("sb_alice")
+
+    with pytest.raises(authz.OwnershipError):
+        authz.authorize_existing_document(doc_ref, "user_email", "bob@example.com")
+    with pytest.raises(authz.OwnershipError):
+        authz.authorize_attribution("alice@example.com", "bob@example.com")
+
+
+def test_shared_library_defaults_to_enabled():
+    from config.default import Default
+
+    assert Default.SHARED_LIBRARY is True

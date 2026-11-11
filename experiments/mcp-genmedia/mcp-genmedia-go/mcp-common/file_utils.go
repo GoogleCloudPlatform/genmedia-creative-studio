@@ -4,15 +4,20 @@ package common
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/teris-io/shortid"
 )
+
+// ShortID returns a 10-character lowercase alphanumeric identifier backed by
+// crypto/rand for collision-resistant default filenames.
+func ShortID() string {
+	return strings.ToLower(rand.Text()[:10])
+}
 
 // PrepareInputFile handles the logic for making a file available locally for processing.
 // It checks if the given file URI is a GCS path (gs://...) or a local path.
@@ -33,8 +38,7 @@ func PrepareInputFile(ctx context.Context, fileURI, purpose string, gcpProjectID
 
 		base := filepath.Base(fileURI)
 		if base == "." || base == "/" {
-			uid, _ := shortid.Generate()
-			base = fmt.Sprintf("gcs_download_%s_%s", purpose, uid)
+			base = fmt.Sprintf("gcs_download_%s_%s", purpose, ShortID())
 		}
 		localPath = filepath.Join(tempDir, base)
 
@@ -74,8 +78,7 @@ func HandleOutputPreparation(desiredOutputFilename, defaultExt string) (tempLoca
 
 	finalOutputFilename = desiredOutputFilename
 	if finalOutputFilename == "" {
-		uid, _ := shortid.Generate()
-		finalOutputFilename = fmt.Sprintf("ffmpeg_output_%s.%s", uid, defaultExt)
+		finalOutputFilename = fmt.Sprintf("ffmpeg_output_%s.%s", ShortID(), defaultExt)
 	} else {
 		currentExt := filepath.Ext(finalOutputFilename)
 		if currentExt == "" {

@@ -16,7 +16,6 @@ import (
 	"github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/teris-io/shortid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -319,8 +318,7 @@ func ffmpegVideoToGifHandler(ctx context.Context, request mcp.CallToolRequest, c
 
 	var finalGifFilename string
 	if strings.TrimSpace(outputFileName) == "" {
-		uid, _ := shortid.Generate()
-		finalGifFilename = fmt.Sprintf("ffmpeg_gif_%s.gif", uid)
+		finalGifFilename = fmt.Sprintf("ffmpeg_gif_%s.gif", common.ShortID())
 	} else {
 		finalGifFilename = outputFileName
 		if !strings.HasSuffix(strings.ToLower(finalGifFilename), ".gif") {

@@ -5,16 +5,18 @@ on:
     branches: [ "main" ]
     paths:
       - "experiments/mcp-genmedia/mcp-genmedia-go/**"
+      - ".github/workflows/mcp-genmedia-go.yml"
   pull_request:
     paths:
       - "experiments/mcp-genmedia/mcp-genmedia-go/**"
+      - ".github/workflows/mcp-genmedia-go.yml"
 
 permissions:
   contents: read
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: experiments/mcp-genmedia/mcp-genmedia-go
@@ -48,8 +50,12 @@ jobs:
     - name: Remove go.work for isolated module testing
       run: rm -f go.work go.work.sum
 
-    - name: Install FFmpeg
-      run: sudo apt-get update && sudo apt-get install -y ffmpeg
+    - name: Ensure FFmpeg is available
+      run: |
+        if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+        fi
+        ffmpeg -version | head -n 1
 
     - name: Test, Build, Lint and Verify
       env:

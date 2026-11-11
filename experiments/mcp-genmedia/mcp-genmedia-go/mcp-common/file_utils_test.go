@@ -92,3 +92,22 @@ func TestImageExtensionForMIMEType(t *testing.T) {
 		})
 	}
 }
+
+func TestShortID(t *testing.T) {
+	seen := make(map[string]struct{}, 100)
+	for range 100 {
+		id := ShortID()
+		if len(id) != 10 {
+			t.Fatalf("ShortID() length = %d, want 10 (%q)", len(id), id)
+		}
+		for _, r := range id {
+			if (r < 'a' || r > 'z') && (r < '2' || r > '7') {
+				t.Fatalf("ShortID() = %q contains unexpected rune %q", id, r)
+			}
+		}
+		if _, dup := seen[id]; dup {
+			t.Fatalf("ShortID() produced duplicate %q within 100 calls", id)
+		}
+		seen[id] = struct{}{}
+	}
+}

@@ -37,7 +37,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/rs/cors"
-	"github.com/teris-io/shortid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/api/option"
@@ -349,13 +348,7 @@ func lyriaGenerateMusicHandler(ctx context.Context, request mcp.CallToolRequest)
 	// extension is forced onto the shortid default here.
 	baseFilename := fileNameParam
 	if baseFilename == "" {
-		uid, errGen := shortid.Generate()
-		if errGen != nil {
-			log.Printf("Error generating shortid for filename: %v. Using default fallback.", errGen)
-			baseFilename = "lyria_output_default"
-		} else {
-			baseFilename = fmt.Sprintf("lyria_output_%s", uid)
-		}
+		baseFilename = fmt.Sprintf("lyria_output_%s", common.ShortID())
 		log.Printf("Generated Base Filename: %s", baseFilename)
 	}
 	baseFilename = strings.TrimPrefix(baseFilename, "/")

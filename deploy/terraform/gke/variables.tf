@@ -307,3 +307,10 @@ variable "iap_backend_service_name" {
   type        = string
   default     = null
 }
+
+variable "iap_backend_service_id" {
+  description = "NUMERIC id (not the name) of the GCLB backend service GKE auto-creates for the ingress, used to compose IAP_JWT_AUDIENCE (/projects/<PROJECT_NUMBER>/global/backendServices/<NUMERIC_ID>). The GKE Ingress/NEG controller creates the backend service asynchronously AFTER the first apply, so this id does not exist at initial plan/apply — supply it OUT-OF-BAND on a SECOND apply (mirroring iap_backend_service_name), discovered via e.g. `gcloud compute backend-services describe <name> --global --format='value(id)'`. This is the STAGE-2 switch: setting it (non-null) renders the full Vuln #4 identity contract together in one revision — APP_ENV (=var.environment, non-local), REQUIRE_AUTHENTICATED_USER=true, and IAP_JWT_AUDIENCE. Leave null (default) for Stage-1 infra bring-up, where NONE of those three is set and iap mode is unreachable (fail-safe DOWN). See gke/IAP_JWT_AUDIENCE.md. Typed string (not number) intentionally: the id is interpolated into the aud string and string form avoids any large-integer precision concerns."
+  type        = string
+  nullable    = true
+  default     = null
+}

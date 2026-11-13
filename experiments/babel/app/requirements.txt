@@ -114,7 +114,7 @@ numpy==2.5.2
     # via
     #   babel-web (pyproject.toml)
     #   pandas
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
     # via
     #   babel-web (pyproject.toml)
     #   google-api-core

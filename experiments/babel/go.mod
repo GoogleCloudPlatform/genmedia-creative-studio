@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/texttospeech v1.24.1
 	cloud.google.com/go/vertexai v0.19.0
 	github.com/schollz/progressbar/v3 v3.19.1
-	google.golang.org/api v0.312.0
+	google.golang.org/api v0.315.0
 	google.golang.org/genai v1.77.0
 )
 

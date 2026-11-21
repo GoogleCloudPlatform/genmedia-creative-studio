@@ -5,10 +5,10 @@ go 1.26.0
 require (
 	cloud.google.com/go/texttospeech v1.24.1
 	github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common v0.0.0
-	github.com/mark3labs/mcp-go v1.5.0
+	github.com/mark3labs/mcp-go v1.6.0
 	github.com/rs/cors v1.11.1
 	golang.org/x/text v0.44.0
-	google.golang.org/api v0.312.0
+	google.golang.org/api v0.316.0
 )
 
 require (

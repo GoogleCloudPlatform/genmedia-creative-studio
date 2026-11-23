@@ -241,16 +241,20 @@ app.add_middleware(
         config.Default.APP_ENV,
     ),
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origin_regex=os.environ.get(
-        "CORS_ORIGIN_REGEX",
-        r"https://.*|http://localhost:8080",
-    ),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+# No CORS by default: the Mesop UI and its web components only call this app
+# same-origin. Credentialed cross-origin access is granted only to origins an
+# operator lists explicitly (or matches with an opt-in regex).
+_cors_origins = [o for o in config.Default.CORS_ALLOWED_ORIGINS if o != "*"]
+if _cors_origins or config.Default.CORS_ORIGIN_REGEX:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_origin_regex=config.Default.CORS_ORIGIN_REGEX or None,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.get("/api/convert_to_gif")

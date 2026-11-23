@@ -20,6 +20,9 @@ These variables define the fundamental operating context of the application.
 | **`APP_ENV`** | `""` (Empty) | Defines the environment name (e.g., `dev`, `godemos`). This is used as a metadata tag on the Config page. |
 | **`GMCS_OVERRIDE_PATH`** | *None* | **(Development Only)** An absolute path to a directory containing configuration overrides. If a file exists in this path (e.g., `config/about_content.json`), the app will prioritize it over the local version. |
 | **`API_BASE_URL`** | `http://localhost:{PORT}` | The base URL for the application's backend APIs. |
+| **`ALLOWED_HOSTS`** | `API_BASE_URL` host in deployed envs; any host in local dev | Comma-separated hostnames the app may be served as. Requests for other hosts get a 400 (except `/healthz` and `/readyz`), and `X-Forwarded-Host` replaces `Host` only when it names one of these hosts, which keeps Mesop's CSRF check sound behind a load balancer. Terraform sets it to the deployed domain or `run.app` host. `*` is ignored. |
+| **`CORS_ALLOWED_ORIGINS`** | *None* (no CORS) | Comma-separated origins (for example `https://studio.example.com`) allowed credentialed cross-origin access to the API. The app itself never needs CORS; leave unset unless another site must call it. `*` is ignored. |
+| **`CORS_ORIGIN_REGEX`** | *None* | Optional full-match regex of extra origins allowed cross-origin access. Keep it anchored to domains you control. |
 | **`PORT`** | `8080` | The port the application server listens on. |
 | **`SERVICE_ACCOUNT_EMAIL`** | *None* | The email of the service account used for authentication, if applicable. |
 | **`GA_MEASUREMENT_ID`** | *None* | Google Analytics Measurement ID for tracking user interactions. |

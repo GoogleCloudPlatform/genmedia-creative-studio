@@ -26,6 +26,13 @@ PROJECT_ID=
 # Default: http://localhost:8080 (or based on PORT)
 # API_BASE_URL=http://localhost:8080
 
+# [OPTIONAL] Hostnames the app may be served as (comma-separated). Unset in
+# local dev accepts any host; deployed envs default to the API_BASE_URL host.
+# ALLOWED_HOSTS=studio.example.com
+
+# [OPTIONAL] Origins allowed credentialed cross-origin API access. Unset = none.
+# CORS_ALLOWED_ORIGINS=https://studio.example.com
+
 # [OPTIONAL] The port the application server listens on.
 # Default: 8080
 # PORT=8080

@@ -79,6 +79,16 @@ class Default:
         "API_BASE_URL",
         f"http://localhost:{os.environ.get('PORT', '8080')}",
     )
+    # Hostnames this app may be served as. Used by HostAllowlistMiddleware to
+    # reject other hosts and to decide which X-Forwarded-Host values may replace the Host header (Mesop's
+    # CSRF check compares Origin against Host). Never "*". When unset, defaults to
+    # the API_BASE_URL host plus localhost (see common.http_security).
+    ALLOWED_HOSTS: tuple[str, ...] = _csv_env("ALLOWED_HOSTS", ())
+    # Cross-origin access to the FastAPI routes. Empty (default) means no CORS:
+    # the Mesop UI only makes same-origin requests. CORS_ALLOWED_ORIGINS is an
+    # exact list; CORS_ORIGIN_REGEX is an opt-in full-match regex.
+    CORS_ALLOWED_ORIGINS: tuple[str, ...] = _csv_env("CORS_ALLOWED_ORIGINS", ())
+    CORS_ORIGIN_REGEX: str = os.environ.get("CORS_ORIGIN_REGEX", "")
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
     # Gemini

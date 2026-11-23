@@ -51,11 +51,11 @@ import google.auth
 import mesop as me
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.responses import (
     FileResponse,
     JSONResponse,
+    PlainTextResponse,
     RedirectResponse,
     StreamingResponse,
 )
@@ -83,7 +83,9 @@ from common.http_security import (
     HSTS_HEADER,
     HSTS_VALUE,
     correlation_id_var,
+    effective_host,
     public_error_body,
+    resolve_allowed_hosts,
     resolve_correlation_id,
     should_send_hsts,
 )
@@ -189,24 +191,56 @@ async def readyz():
 
 
 from starlette.concurrency import run_in_threadpool
-from starlette.middleware.base import BaseHTTPMiddleware
 
 
-class ForwardedHostMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        forwarded_host = request.headers.get("X-Forwarded-Host")
-        if forwarded_host:
-            # Overwrite the host so that Mesop's CSRF check matches the Origin header
-            request.scope["headers"] = [
-                (k, v) if k != b"host" else (k, forwarded_host.encode())
-                for k, v in request.scope["headers"]
+class HostAllowlistMiddleware:
+    """Pin the Host header the app (and Mesop's CSRF check) sees to an allowlist.
+
+    Mesop rejects a cross-site ``/__ui__`` POST by comparing the ``Origin``
+    hostname with the request ``Host``. Behind a load balancer the ``Host`` can
+    be internal, so the public host arrives in ``X-Forwarded-Host``. That header
+    is client-controllable, so it replaces ``Host`` only when its hostname is in
+    ``ALLOWED_HOSTS``; requests for any other host get a 400. Health probes are
+    exempt because platform probes do not send the public hostname.
+    """
+
+    def __init__(self, app, allowed_hosts: frozenset[str] | None) -> None:  # noqa: ANN001
+        self.app = app
+        self.allowed_hosts = allowed_hosts
+
+    async def __call__(self, scope, receive, send) -> None:  # noqa: ANN001
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+        headers = scope["headers"]
+        host = next((v.decode("latin-1") for k, v in headers if k == b"host"), None)
+        forwarded = [
+            v.decode("latin-1") for k, v in headers if k == b"x-forwarded-host"
+        ]
+        new_host = effective_host(host, forwarded, self.allowed_hosts)
+        if new_host is None:
+            if _is_public_path(scope.get("path", "")):
+                await self.app(scope, receive, send)
+                return
+            response = PlainTextResponse("Invalid host header", status_code=400)
+            await response(scope, receive, send)
+            return
+        if new_host != host:
+            scope = dict(scope)
+            scope["headers"] = [(k, v) for k, v in headers if k != b"host"] + [
+                (b"host", new_host.encode("latin-1")),
             ]
-        return await call_next(request)
+        await self.app(scope, receive, send)
 
 
-app.add_middleware(ForwardedHostMiddleware)
-
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(
+    HostAllowlistMiddleware,
+    allowed_hosts=resolve_allowed_hosts(
+        config.Default.ALLOWED_HOSTS,
+        config.Default.API_BASE_URL,
+        config.Default.APP_ENV,
+    ),
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=os.environ.get(

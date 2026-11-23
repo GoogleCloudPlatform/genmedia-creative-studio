@@ -181,7 +181,15 @@ locals {
     EDIT_IMAGES_ENABLED                   = var.edit_images_enabled
     THUMBNAIL_QUEUE_ID                    = module.data.tasks_queue_name
     API_BASE_URL                          = var.api_base_url != "" ? var.api_base_url : (var.use_lb ? "https://${var.domain}" : "")
+    # Hostnames the app may be served as (Host / X-Forwarded-Host allowlist that
+    # backs Mesop's CSRF check) and the exact origins allowed cross-origin
+    # access. The native Cloud Run host is built from the project NUMBER and
+    # region like the cloud-run-app-url output, which avoids a self-reference
+    # cycle on the service's own urls attribute.
+    ALLOWED_HOSTS        = local.app_host
+    CORS_ALLOWED_ORIGINS = "https://${local.app_host}"
   }
+  app_host = var.use_lb ? var.domain : "creative-studio-${data.google_project.project.number}.${var.region}.run.app"
 
   # Vuln #4 S1 (audience) + S3 (gate-on) identity contract — NONPROD NATIVE
   # CLOUD RUN ONLY (use_lb = false). These three env vars establish verified-

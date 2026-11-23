@@ -31,7 +31,7 @@ Every direct foundation model workspace in the core application (`main.py`) shar
 
 ### 1. Identity & Ingress (`main.py`)
 * **Cloud IAP JWT Verification:** Incoming requests pass through `verify_iap_jwt()`, which validates the `X-Goog-IAP-JWT-Assertion` header against Google's public keys (`https://www.gstatic.com/iap/verify/public_key`) and binds the verified user identity (`user_email`) into `app.state` and Mesop `AppState`.
-* **Forwarded Host & CSRF Middleware:** `TrustForwardedHostMiddleware` rewrites the internal `Host` header from `X-Forwarded-Host` so Mesop's WebSocket and `/__ui__` POST endpoints operate behind Cloud Run and Google Cloud Load Balancers without CSRF origin mismatches.
+* **Host Allowlist & CSRF Middleware:** `HostAllowlistMiddleware` rewrites the internal `Host` header from `X-Forwarded-Host` only when that hostname is in `ALLOWED_HOSTS`, so Mesop's WebSocket and `/__ui__` POST endpoints work behind Cloud Run and Google Cloud Load Balancers without letting a client choose the host Mesop's CSRF check compares against.
 
 ### 2. Mesop State & Model Adapters (`pages/*.py` → `models/*.py`)
 * Each workspace maintains a page-scoped `@me.stateclass` (stored in `state/` or the page module) that binds UI controls—model selectors, aspect ratios, reference media uploaders, and advanced parameter drawers—directly to Python event generators.

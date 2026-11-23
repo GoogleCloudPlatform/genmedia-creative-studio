@@ -21,12 +21,15 @@ booting the whole Mesop app:
 - Correlation IDs: one identifier per HTTP request for log traceability.
 - Public error bodies: generic in deployed environments, detailed only in
   local development.
+- Host allowlist: which hostnames the app may be served as, and whether a
+  proxy-supplied X-Forwarded-Host may replace the Host header.
 """
 
 import re
 import traceback
 import uuid
 from contextvars import ContextVar
+from urllib.parse import urlparse
 
 from common.identity import LOCAL_APP_ENVS
 
@@ -83,3 +86,64 @@ def public_error_body(
             traceback.format_exception(type(exc), exc, exc.__traceback__),
         )
     return body
+
+
+# A Host / X-Forwarded-Host value: one DNS name or bracketed IPv6 literal with an
+# optional numeric port. Comma lists, userinfo, paths and whitespace never match.
+_HOST_VALUE_RE = re.compile(
+    r"(?P<name>[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?|\[[0-9A-Fa-f:.]+\])"
+    r"(?::[0-9]{1,5})?",
+)
+
+
+def hostname_of(host_value: str | None) -> str | None:
+    """Return the lowercased hostname of a Host header value, or None if malformed."""
+    match = _HOST_VALUE_RE.fullmatch(host_value or "")
+    return match.group("name").lower() if match else None
+
+
+def resolve_allowed_hosts(
+    configured: tuple[str, ...] | list[str],
+    api_base_url: str | None,
+    app_env: str | None,
+) -> frozenset[str] | None:
+    """Return the hostnames the app may be served as, or None for "any host".
+
+    ``configured`` (``ALLOWED_HOSTS``) wins when set. Otherwise deployed
+    environments fall back to the ``API_BASE_URL`` host. ``None`` is returned only
+    when nothing is configured and nothing can be derived (always the case in
+    local development, where TestClient, Cloud Shell and other dev hosts must
+    keep working). ``None`` accepts any Host but never honors X-Forwarded-Host,
+    so a client can still not choose the Host that Mesop's CSRF check sees.
+    Wildcard entries are ignored: the allowlist only matches literal hostnames.
+    """
+    hosts = {h.strip().lower() for h in configured if h.strip() and "*" not in h}
+    if not hosts and (app_env or "") not in LOCAL_APP_ENVS:
+        api_host = urlparse(api_base_url or "").hostname
+        if api_host and api_host not in _LOCAL_HOSTNAMES:
+            hosts.add(api_host.lower())
+    if not hosts:
+        return None
+    # Loopback stays reachable for in-container probes and local tooling; a
+    # browser cannot be made to send these to a remote deployment.
+    return frozenset(hosts | {"localhost", "127.0.0.1", "[::1]"})
+
+
+def effective_host(
+    host: str | None,
+    forwarded_hosts: list[str],
+    allowed: frozenset[str] | None,
+) -> str | None:
+    """Return the Host value the app should see, or None to reject the request.
+
+    X-Forwarded-Host replaces Host only when exactly one value is present and its
+    hostname is in ``allowed``; any other forwarded value is ignored. With an
+    allowlist, the resulting host must itself be allowed.
+    """
+    if allowed is not None and len(forwarded_hosts) == 1:
+        forwarded = forwarded_hosts[0].strip()
+        if hostname_of(forwarded) in allowed:
+            return forwarded
+    if allowed is None:
+        return host or ""
+    return host if hostname_of(host) in allowed else None

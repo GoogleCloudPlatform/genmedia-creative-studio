@@ -271,9 +271,11 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
-    # Shared Library: when true (default) any authenticated user can open items
-    # from the "All Users" Library view in the detail viewer (read-only). When
-    # false, reads are owner-only and the Library hides the "All Users" toggle.
+    # Shared Library: when true (default) the Library "All Users" view and the
+    # library chooser can list every user's media on explicit request (listings
+    # default to the caller's own items), and any authenticated user can open
+    # those items in the detail viewer (read-only). When false, listings and
+    # reads are owner-only and the cross-user toggles are hidden.
     # Writes/deletes are always owner-scoped regardless of this setting.
     SHARED_LIBRARY: bool = os.environ.get("SHARED_LIBRARY", "true").lower() in (
         "true",

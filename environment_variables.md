@@ -137,7 +137,7 @@ Defines where data and media assets are stored.
 | :--- | :--- | :--- |
 | **`LIBRARY_MEDIA_PER_PAGE`** | `15` | Controls how many items appear per page in the media library. |
 | **`USE_MEDIA_PROXY`** | `true` | If `true`, media URLs are proxied through the app's `/media` route. If `false` and `SERVICE_ACCOUNT_EMAIL` is set, media URLs are cached V4 signed `storage.googleapis.com` URLs (50 minute cache, 60 minute validity) signed by that service account, which needs `roles/iam.serviceAccountTokenCreator` on itself; this works for users who cannot be granted bucket access, such as cross-tenant IAP users. If `false` without a service account, plain `storage.cloud.google.com` links are used. |
-| **`SHARED_LIBRARY`** | `true` | If `true`, any authenticated user can open items from the Library's "All Users" view in the detail viewer (read-only). If `false`, Library reads are owner-only and the "All Users" toggle is hidden. Edit, overwrite and delete are always owner-only regardless of this setting. |
+| **`SHARED_LIBRARY`** | `true` | If `true`, the Library's "All Users" view and the library chooser's "Show only my items" toggle can list every user's media, and any authenticated user can open those items in the detail viewer (read-only). Listings still default to the caller's own items. If `false`, Library listings and reads are owner-only and the cross-user toggles are hidden. Edit, overwrite and delete are always owner-only regardless of this setting. |
 
 ## 📦 Build Metadata
 The application can display detailed build information on the **Config** page. This is populated from an optional JSON file:

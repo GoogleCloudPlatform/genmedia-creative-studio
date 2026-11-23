@@ -510,11 +510,36 @@ def add_media_item(user_email: str, **kwargs):
     logger.info(f"Media data stored in Firestore with document ID: {doc_ref.id}")
 
 
-def get_latest_videos(limit: int = 10):
-    """Retrieve the last 10 videos"""
+def _listing_owner_filter(
+    filter_by_user_email: str | None,
+    all_users: bool,
+) -> tuple[bool, str | None]:
+    """Decide whose media a Library listing may return.
+
+    Returns ``(allowed, owner)``. Listings are owner-scoped to the server-derived
+    caller. Cross-user ("All Users") listing happens only when the caller asks
+    for it explicitly (``all_users``) and ``SHARED_LIBRARY`` is enabled; then
+    ``owner`` is ``None``. Without a resolvable caller the listing is denied, so
+    it can never fall back to every user's media. ``filter_by_user_email`` is
+    used only as the server-derived fallback identity outside a live request.
+    """
+    caller = authz.resolve_caller_email(fallback=filter_by_user_email)
+    if not caller:
+        return False, None
+    if all_users and config.SHARED_LIBRARY:
+        return True, None
+    return True, caller
+
+
+def get_latest_videos(limit: int = 10, *, caller_email: str | None = None):
+    """Retrieve the caller's most recent media documents (owner-scoped)."""
+    caller = authz.resolve_caller_email(caller_email)
+    if not caller:
+        return []
     try:
         media_ref = (
             db.collection(config.GENMEDIA_COLLECTION_NAME)
+            .where("user_email", "==", caller)
             .order_by("timestamp", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
@@ -574,6 +599,8 @@ def get_media_for_page(
     error_filter: str = "all",  # "all", "no_errors", "only_errors"
     sort_by_timestamp: bool = False,
     filter_by_user_email: str | None = None,  # New parameter
+    *,
+    all_users: bool = False,
 ) -> list[MediaItem]:
     """Fetches a paginated and filtered list of media items from Firestore.
 
@@ -589,15 +616,26 @@ def get_media_for_page(
         media_per_page: The number of media items to fetch per page.
         type_filters: A list of media types to filter by.
         error_filter: The error filter to apply.
+        sort_by_timestamp: Whether to sort newest first.
+        filter_by_user_email: Fallback caller identity when there is no live
+            request; the listing is always owner-scoped to the caller.
+        all_users: Request the cross-user "All Users" view. Honored only when
+            ``SHARED_LIBRARY`` is enabled.
 
     Returns:
-        A list of MediaItem objects.
+        A list of MediaItem objects. Empty when no caller identity resolves.
 
     """
     fetch_limit = 1000  # Max items to fetch for client-side filtering/pagination
 
+    allowed, owner = _listing_owner_filter(filter_by_user_email, all_users)
+    if not allowed:
+        return []
+
     try:
         query = db.collection(config.GENMEDIA_COLLECTION_NAME)
+        if owner:
+            query = query.where("user_email", "==", owner)
 
         if sort_by_timestamp:
             query = query.order_by("timestamp", direction=firestore.Query.DESCENDING)
@@ -635,11 +673,8 @@ def get_media_for_page(
             if not passes_error_filter:
                 continue
 
-            # Apply user email filter
-            if (
-                filter_by_user_email
-                and raw_item_data.get("user_email") != filter_by_user_email
-            ):
+            # Apply user email filter (defense in depth; the query is scoped)
+            if owner and raw_item_data.get("user_email") != owner:
                 continue
 
             # If all filters pass, create the object using the helper
@@ -667,16 +702,26 @@ def get_media_for_page_optimized(
     type_filters: list[str],
     start_after=None,
     filter_by_user_email: str | None = None,
+    *,
+    all_users: bool = False,
 ):
     """Fetches a paginated and filtered list of media items from Firestore
     using server-side pagination and filtering.
+
+    Owner-scoped to the server-derived caller (``filter_by_user_email`` is only
+    the fallback identity outside a live request). ``all_users`` requests the
+    cross-user view and is honored only when ``SHARED_LIBRARY`` is enabled.
+    Returns ``([], None)`` without querying when no caller identity resolves.
     """
+    allowed, owner = _listing_owner_filter(filter_by_user_email, all_users)
+    if not allowed:
+        return [], None
+
     try:
         query = db.collection(config.GENMEDIA_COLLECTION_NAME)
 
-        # Apply user email filter if provided
-        if filter_by_user_email:
-            query = query.where("user_email", "==", filter_by_user_email)
+        if owner:
+            query = query.where("user_email", "==", owner)
 
         # Apply type filters using WHERE clauses
         # Note: This requires Firestore indexes. For a single 'mime_type' startsWith,

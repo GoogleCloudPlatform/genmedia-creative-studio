@@ -90,9 +90,6 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
         # Shared Library disabled: the Library is strictly owner-scoped, so never
         # honor a stale/forged "all" filter from client state.
         pagestate.user_filter = "mine"
-    user_email_to_filter = (
-        app_state.user_email if pagestate.user_filter == "mine" else None
-    )
 
     if is_filter_change:
         pagestate.current_page = 1
@@ -107,7 +104,8 @@ def _load_media(pagestate: PageState, is_filter_change: bool = False):
         media_per_page=cfg().LIBRARY_MEDIA_PER_PAGE,
         sort_by_timestamp=True,
         type_filters=pagestate.type_filters,
-        filter_by_user_email=user_email_to_filter,
+        filter_by_user_email=app_state.user_email,
+        all_users=pagestate.user_filter == "all",
         error_filter=pagestate.error_filter,
     )
 

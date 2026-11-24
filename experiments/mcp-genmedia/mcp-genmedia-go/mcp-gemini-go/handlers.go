@@ -114,7 +114,7 @@ func geminiGenerateContentHandler(client *genai.Client, ctx context.Context, req
 		for _, imgArg := range imageArgs {
 			if imgPath, ok := imgArg.(string); ok {
 				if strings.HasPrefix(imgPath, "gs://") {
-					parts = append(parts, genai.NewPartFromURI(imgPath, ""))
+					parts = append(parts, genai.NewPartFromURI(imgPath, inferMimeType(imgPath)))
 				} else {
 					imgData, err := os.ReadFile(imgPath)
 					if err != nil {

@@ -16,13 +16,89 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	"github.com/mark3labs/mcp-go/mcp"
 	"google.golang.org/genai"
+
+	common "github.com/GoogleCloudPlatform/genmedia-creative-studio/experiments/mcp-genmedia/mcp-genmedia-go/mcp-common"
 )
+
+func TestGeminiGenerateContentGCSInputs(t *testing.T) {
+	original := appConfig
+	appConfig = &common.Config{}
+	t.Cleanup(func() { appConfig = original })
+
+	requests := make(chan []genai.Content, 1)
+	vertex := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var got struct{ Contents []genai.Content }
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Errorf("decode generateContent request: %v", err)
+		}
+		requests <- got.Contents
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"ok"}]}}]}`))
+	}))
+	defer vertex.Close()
+
+	client, err := genai.NewClient(t.Context(), &genai.ClientConfig{
+		Backend:    genai.BackendVertexAI,
+		Project:    "test",
+		Location:   "global",
+		HTTPClient: vertex.Client(),
+		HTTPOptions: genai.HTTPOptions{
+			BaseURL: vertex.URL,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	inputs := []any{
+		"gs://test-bucket/a.jpg",
+		"gs://test-bucket/b.png",
+		"gs://test-bucket/c.webp",
+		"gs://test-bucket/d.mp4",
+		"gs://test-bucket/e.pdf",
+	}
+	wantMimes := []string{
+		"image/jpeg",
+		"image/png",
+		"image/webp",
+		"video/mp4",
+		"application/pdf",
+	}
+
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Arguments: map[string]any{
+				"prompt": "describe",
+				"images": inputs,
+			},
+		},
+	}
+	res, err := geminiGenerateContentHandler(client, t.Context(), req)
+	if err != nil || res == nil || res.IsError {
+		t.Fatalf("geminiGenerateContentHandler: result=%v err=%v", res, err)
+	}
+
+	contents := <-requests
+	if len(contents) != 1 || len(contents[0].Parts) != 1+len(inputs) {
+		t.Fatalf("unexpected request contents: %+v", contents)
+	}
+	for i, wantMime := range wantMimes {
+		file := contents[0].Parts[i+1].FileData
+		if file == nil || file.FileURI != inputs[i] || file.MIMEType != wantMime {
+			t.Errorf("fileData for %s = %+v, want URI %s and MIME %s", inputs[i], file, inputs[i], wantMime)
+		}
+	}
+}
 
 func imageResponse(parts ...*genai.Part) *genai.GenerateContentResponse {
 	return &genai.GenerateContentResponse{

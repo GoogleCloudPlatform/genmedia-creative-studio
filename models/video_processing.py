@@ -36,7 +36,12 @@ from moviepy.audio.io.AudioFileClip import AudioFileClip
 from scipy.ndimage import gaussian_filter
 
 from common.metadata import MediaItem, add_media_item_to_firestore
-from common.storage import download_from_gcs, store_to_gcs
+from common.storage import (
+    _is_proxy_bucket_allowed,
+    download_from_gcs,
+    get_storage_client,
+    store_to_gcs,
+)
 from config.default import Default
 
 config = Default()
@@ -443,7 +448,37 @@ def get_video_duration(gcs_uri: str) -> float:
 # --- GIF Conversion --- #
 
 
+class GifSourceRejectedError(ValueError):
+    """The GIF source is outside the app's buckets or over the size/duration limits."""
+
+
+def _check_gif_source(source_video_gcs_uri: str) -> None:
+    """Reject a GIF source before it is downloaded.
+
+    The source must be an object in one of the app's own buckets (the URI can
+    come from client state) and no larger than ``GIF_MAX_SOURCE_MB``.
+    """
+    bucket_name, _, blob_name = (
+        (source_video_gcs_uri or "").removeprefix("gs://").partition("/")
+    )
+    if (
+        not source_video_gcs_uri.startswith("gs://")
+        or not blob_name
+        or not _is_proxy_bucket_allowed(bucket_name)
+    ):
+        raise GifSourceRejectedError("Video not found")
+    blob = get_storage_client().bucket(bucket_name).get_blob(blob_name)
+    if blob is None:
+        raise GifSourceRejectedError("Video not found")
+    max_bytes = config.GIF_MAX_SOURCE_MB * 1024 * 1024
+    if blob.size is None or blob.size > max_bytes:
+        raise GifSourceRejectedError(
+            f"Video is larger than the {config.GIF_MAX_SOURCE_MB} MB GIF limit",
+        )
+
+
 def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, target_mb: int = 8) -> str:
+    _check_gif_source(source_video_gcs_uri)
     with tempfile.TemporaryDirectory() as tmpdir:
         local_path = _download_videos_to_temp([source_video_gcs_uri], tmpdir)[0]
 
@@ -451,6 +486,11 @@ def convert_mp4_to_gif(source_video_gcs_uri: str, user_email: str, target_mb: in
         output_path = os.path.join(tmpdir, output_filename)
 
         clip = VideoFileClip(local_path)
+        if not clip.duration or clip.duration > config.GIF_MAX_DURATION_S:
+            clip.close()
+            raise GifSourceRejectedError(
+                f"Video is longer than the {config.GIF_MAX_DURATION_S} second GIF limit",
+            )
 
         # --- Intelligent Resizing Logic ---
         motion_score = _calculate_motion_score(clip)

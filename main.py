@@ -78,6 +78,7 @@ from common.identity import (
     LOCAL_APP_ENVS,
     set_internal_scope_headers,
 )
+from common.storage import _allowed_proxy_buckets, _is_proxy_bucket_allowed
 from common.http_security import (
     CORRELATION_ID_HEADER,
     HSTS_HEADER,
@@ -96,7 +97,7 @@ from common.verified_identity import (
     validate_serving_environment,
 )
 from config import default as config
-from models.video_processing import convert_mp4_to_gif
+from models.video_processing import GifSourceRejectedError, convert_mp4_to_gif
 from pages import about as about_page
 from pages import banana_studio as banana_studio_page
 from pages import character_consistency as character_consistency_page
@@ -259,11 +260,32 @@ if _cors_origins or config.Default.CORS_ORIGIN_REGEX:
 
 @app.get("/api/convert_to_gif")
 def convert_to_gif(gcs_uri: str, request: Request):
-    """Converts an MP4 video to a GIF and saves it to GCS."""
+    """Converts an MP4 video in one of the app's buckets to a GIF in GCS.
+
+    Same guards as ``/api/get_signed_url``: authentication outside local dev and
+    the fail-closed bucket allowlist, so a caller cannot make the service
+    account download objects from any bucket it can read. Size and duration
+    limits are enforced in ``convert_mp4_to_gif``.
+    """
+    user_email = request.scope.get("MESOP_USER_EMAIL")
+    if config.Default.APP_ENV not in LOCAL_APP_ENVS and (
+        not user_email or user_email == ANONYMOUS_USER_EMAIL
+    ):
+        return JSONResponse({"error": "Forbidden"}, status_code=403)
+
+    normalized_uri = https_url_to_gcs_uri(gcs_uri)
+    bucket_name, _, blob_name = normalized_uri.removeprefix("gs://").partition("/")
+    if not normalized_uri.startswith("gs://") or not blob_name:
+        return JSONResponse({"error": "Invalid gcs_uri"}, status_code=400)
+    if not _is_proxy_bucket_allowed(bucket_name):
+        return JSONResponse({"error": "Object not found"}, status_code=404)
+
     try:
-        uri = convert_mp4_to_gif(gcs_uri, request.scope["MESOP_USER_EMAIL"])
+        uri = convert_mp4_to_gif(normalized_uri, user_email)
 
         return {"url": create_display_url(uri)}
+    except GifSourceRejectedError as e:
+        return JSONResponse({"error": str(e)}, status_code=413)
     except Exception as e:
         # Log the detail server-side; never echo internal error text to the client.
         print(f"Error generating GIF [{correlation_id_var.get()}]: {e}")
@@ -479,47 +501,6 @@ def get_proxy_storage_client():
     if _proxy_storage_client is None:
         _proxy_storage_client = storage.Client()
     return _proxy_storage_client
-
-
-def _allowed_proxy_buckets() -> set[str]:
-    """Return the set of GCS bucket NAMES the media proxy is permitted to serve.
-
-    The allowlist is sourced exclusively from the application's own storage
-    configuration (the buckets this app writes its generated media to). Several
-    of those config values embed a path prefix (e.g. ``"my-bucket/videos"``) or
-    a ``gs://`` scheme; only the leading bucket component is used for the
-    allowlist comparison.
-
-    An empty result means "allow nothing": callers MUST fail closed so that a
-    missing/unconfigured allowlist can never degrade into "allow all".
-    """
-    candidates = (
-        config.Default.GENMEDIA_BUCKET,
-        config.Default.VIDEO_BUCKET,
-        config.Default.IMAGE_BUCKET,
-        config.Default.GCS_ASSETS_BUCKET,
-        getattr(config.Default, "MEDIA_BUCKET", None),
-    )
-    allowed: set[str] = set()
-    for candidate in candidates:
-        if not candidate:
-            continue
-        # Normalize: drop any gs:// scheme, then keep only the bucket component
-        # preceding the first path separator.
-        name = candidate.replace("gs://", "", 1).split("/", 1)[0].strip()
-        if name:
-            allowed.add(name)
-    return allowed
-
-
-def _is_proxy_bucket_allowed(bucket_name: str) -> bool:
-    """Return True only if ``bucket_name`` is one of the app's own buckets.
-
-    Fails closed: any empty/unknown bucket, or an empty allowlist, returns False.
-    """
-    if not bucket_name:
-        return False
-    return bucket_name in _allowed_proxy_buckets()
 
 
 # Add a new endpoint to proxy GCS media for better caching.

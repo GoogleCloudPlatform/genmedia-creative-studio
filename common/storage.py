@@ -174,6 +174,49 @@ def store_to_gcs(
     )
 
 
+def _allowed_proxy_buckets() -> set[str]:
+    """Return the set of GCS bucket NAMES the app may read objects from by URI.
+
+    Shared by the ``/media`` proxy, ``/api/get_signed_url`` and GIF conversion.
+
+    The allowlist is sourced exclusively from the application's own storage
+    configuration (the buckets this app writes its generated media to). Several
+    of those config values embed a path prefix (e.g. ``"my-bucket/videos"``) or
+    a ``gs://`` scheme; only the leading bucket component is used for the
+    allowlist comparison.
+
+    An empty result means "allow nothing": callers MUST fail closed so that a
+    missing/unconfigured allowlist can never degrade into "allow all".
+    """
+    candidates = (
+        Default.GENMEDIA_BUCKET,
+        Default.VIDEO_BUCKET,
+        Default.IMAGE_BUCKET,
+        Default.GCS_ASSETS_BUCKET,
+        getattr(Default, "MEDIA_BUCKET", None),
+    )
+    allowed: set[str] = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        # Normalize: drop any gs:// scheme, then keep only the bucket component
+        # preceding the first path separator.
+        name = candidate.replace("gs://", "", 1).split("/", 1)[0].strip()
+        if name:
+            allowed.add(name)
+    return allowed
+
+
+def _is_proxy_bucket_allowed(bucket_name: str) -> bool:
+    """Return True only if ``bucket_name`` is one of the app's own buckets.
+
+    Fails closed: any empty/unknown bucket, or an empty allowlist, returns False.
+    """
+    if not bucket_name:
+        return False
+    return bucket_name in _allowed_proxy_buckets()
+
+
 def download_from_gcs(gcs_uri: str) -> bytes:
     """Downloads a file from a GCS URI and returns its content as bytes."""
     client = get_storage_client()

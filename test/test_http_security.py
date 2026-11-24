@@ -214,6 +214,8 @@ def test_convert_to_gif_does_not_leak_errors(client, monkeypatch):
         raise RuntimeError("ffmpeg at /srv/internal/path failed")
 
     monkeypatch.setattr(main, "convert_mp4_to_gif", boom)
+    # The endpoint only converts objects in the app's own buckets.
+    monkeypatch.setattr(main.config.Default, "GENMEDIA_BUCKET", "b")
 
     resp = client.get("/api/convert_to_gif", params={"gcs_uri": "gs://b/o.mp4"})
 

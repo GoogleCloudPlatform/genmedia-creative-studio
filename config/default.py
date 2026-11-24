@@ -271,6 +271,11 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
+    # GIF conversion limits: sources over either limit are rejected before they
+    # are downloaded (size) or decoded (duration).
+    GIF_MAX_SOURCE_MB: int = int(os.environ.get("GIF_MAX_SOURCE_MB", 200))
+    GIF_MAX_DURATION_S: int = int(os.environ.get("GIF_MAX_DURATION_S", 60))
+
     # Shared Library: when true (default) the Library "All Users" view and the
     # library chooser can list every user's media on explicit request (listings
     # default to the caller's own items), and any authenticated user can open

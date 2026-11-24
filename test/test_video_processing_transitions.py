@@ -31,6 +31,8 @@ def video_processing(monkeypatch):
     storage = types.ModuleType("common.storage")
     storage.download_from_gcs = lambda *args, **kwargs: b""
     storage.store_to_gcs = lambda *args, **kwargs: "gs://test-bucket/output.mp4"
+    storage.get_storage_client = lambda: None
+    storage._is_proxy_bucket_allowed = lambda bucket_name: True
     monkeypatch.setitem(sys.modules, "common.storage", storage)
 
     config_default = types.ModuleType("config.default")

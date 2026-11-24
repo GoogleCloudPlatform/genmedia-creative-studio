@@ -79,6 +79,16 @@ class Default:
         "API_BASE_URL",
         f"http://localhost:{os.environ.get('PORT', '8080')}",
     )
+    # Hostnames this app may be served as. Used by HostAllowlistMiddleware to
+    # reject other hosts and to decide which X-Forwarded-Host values may replace the Host header (Mesop's
+    # CSRF check compares Origin against Host). Never "*". When unset, defaults to
+    # the API_BASE_URL host plus localhost (see common.http_security).
+    ALLOWED_HOSTS: tuple[str, ...] = _csv_env("ALLOWED_HOSTS", ())
+    # Cross-origin access to the FastAPI routes. Empty (default) means no CORS:
+    # the Mesop UI only makes same-origin requests. CORS_ALLOWED_ORIGINS is an
+    # exact list; CORS_ORIGIN_REGEX is an opt-in full-match regex.
+    CORS_ALLOWED_ORIGINS: tuple[str, ...] = _csv_env("CORS_ALLOWED_ORIGINS", ())
+    CORS_ORIGIN_REGEX: str = os.environ.get("CORS_ORIGIN_REGEX", "")
 
     SERVICE_ACCOUNT_EMAIL: str = os.environ.get("SERVICE_ACCOUNT_EMAIL")
     # Gemini
@@ -261,9 +271,16 @@ class Default:
 
     USE_MEDIA_PROXY: bool = os.environ.get("USE_MEDIA_PROXY", "true").lower() == "true"
 
-    # Shared Library: when true (default) any authenticated user can open items
-    # from the "All Users" Library view in the detail viewer (read-only). When
-    # false, reads are owner-only and the Library hides the "All Users" toggle.
+    # GIF conversion limits: sources over either limit are rejected before they
+    # are downloaded (size) or decoded (duration).
+    GIF_MAX_SOURCE_MB: int = int(os.environ.get("GIF_MAX_SOURCE_MB", 200))
+    GIF_MAX_DURATION_S: int = int(os.environ.get("GIF_MAX_DURATION_S", 60))
+
+    # Shared Library: when true (default) the Library "All Users" view and the
+    # library chooser can list every user's media on explicit request (listings
+    # default to the caller's own items), and any authenticated user can open
+    # those items in the detail viewer (read-only). When false, listings and
+    # reads are owner-only and the cross-user toggles are hidden.
     # Writes/deletes are always owner-scoped regardless of this setting.
     SHARED_LIBRARY: bool = os.environ.get("SHARED_LIBRARY", "true").lower() in (
         "true",

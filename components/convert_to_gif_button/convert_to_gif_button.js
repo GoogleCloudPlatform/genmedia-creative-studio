@@ -53,7 +53,7 @@ class ConvertToGifButton extends LitElement {
     let gifUrl = null;
 
     try {
-      const covertResponse = await fetch(`/api/convert_to_gif?gcs_uri=${this.url}`);
+      const covertResponse = await fetch(`/api/convert_to_gif?gcs_uri=${encodeURIComponent(this.url)}`);
 
       if (!covertResponse.ok || covertResponse.error)
         throw new Error(covertResponse.error || `API error! status: ${covertResponse.status}`);

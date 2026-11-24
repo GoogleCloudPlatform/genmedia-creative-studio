@@ -18,6 +18,9 @@ These variables define the fundamental operating context of the application.
 | **`APP_ENV`** | `""` (Empty) | Defines the environment name (e.g., `dev`, `godemos`). This is used as a metadata tag on the Config page. |
 | **`GMCS_OVERRIDE_PATH`** | *None* | **(Development Only)** An absolute path to a directory containing configuration overrides. If a file exists in this path (e.g., `config/about_content.json`), the app will prioritize it over the local version. |
 | **`API_BASE_URL`** | `http://localhost:{PORT}` | The base URL for the application's backend APIs. |
+| **`ALLOWED_HOSTS`** | `API_BASE_URL` host in deployed envs; any host in local dev | Comma-separated hostnames the app may be served as. Requests for other hosts get a 400 (except `/healthz` and `/readyz`), and `X-Forwarded-Host` replaces `Host` only when it names one of these hosts, which keeps Mesop's CSRF check sound behind a load balancer. Terraform sets it to the deployed domain or `run.app` host. `*` is ignored. |
+| **`CORS_ALLOWED_ORIGINS`** | *None* (no CORS) | Comma-separated origins (for example `https://studio.example.com`) allowed credentialed cross-origin access to the API. The app itself never needs CORS; leave unset unless another site must call it. `*` is ignored. |
+| **`CORS_ORIGIN_REGEX`** | *None* | Optional full-match regex of extra origins allowed cross-origin access. Keep it anchored to domains you control. |
 | **`PORT`** | `8080` | The port the application server listens on. |
 | **`SERVICE_ACCOUNT_EMAIL`** | *None* | The email of the service account used for authentication, if applicable. |
 | **`GA_MEASUREMENT_ID`** | *None* | Google Analytics Measurement ID for tracking user interactions. |
@@ -134,7 +137,9 @@ Defines where data and media assets are stored.
 | :--- | :--- | :--- |
 | **`LIBRARY_MEDIA_PER_PAGE`** | `15` | Controls how many items appear per page in the media library. |
 | **`USE_MEDIA_PROXY`** | `true` | If `true`, media URLs are proxied through the app's `/media` route. If `false` and `SERVICE_ACCOUNT_EMAIL` is set, media URLs are cached V4 signed `storage.googleapis.com` URLs (50 minute cache, 60 minute validity) signed by that service account, which needs `roles/iam.serviceAccountTokenCreator` on itself; this works for users who cannot be granted bucket access, such as cross-tenant IAP users. If `false` without a service account, plain `storage.cloud.google.com` links are used. |
-| **`SHARED_LIBRARY`** | `true` | If `true`, any authenticated user can open items from the Library's "All Users" view in the detail viewer (read-only). If `false`, Library reads are owner-only and the "All Users" toggle is hidden. Edit, overwrite and delete are always owner-only regardless of this setting. |
+| **`GIF_MAX_SOURCE_MB`** | `200` | Largest source video (in MB) that GIF conversion accepts. Larger objects are rejected before they are downloaded. |
+| **`GIF_MAX_DURATION_S`** | `60` | Longest source video (in seconds) that GIF conversion accepts. Longer videos are rejected before frames are decoded. |
+| **`SHARED_LIBRARY`** | `true` | If `true`, the Library's "All Users" view and the library chooser's "Show only my items" toggle can list every user's media, and any authenticated user can open those items in the detail viewer (read-only). Listings still default to the caller's own items. If `false`, Library listings and reads are owner-only and the cross-user toggles are hidden. Edit, overwrite and delete are always owner-only regardless of this setting. |
 
 ## 📦 Build Metadata
 The application can display detailed build information on the **Config** page. This is populated from an optional JSON file:

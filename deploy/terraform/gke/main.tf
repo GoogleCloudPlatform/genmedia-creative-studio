@@ -172,6 +172,10 @@ locals {
     # GKE is always LB/ingress-fronted (managed cert on var.domain), so the base
     # URL follows the ingress domain — parity with the Cloud Run use_lb path.
     API_BASE_URL = var.api_base_url != "" ? var.api_base_url : (var.domain != "" ? "https://${var.domain}" : "")
+    # Host / X-Forwarded-Host allowlist backing Mesop's CSRF check (empty falls
+    # back to the API_BASE_URL host in the app) and the exact CORS origins.
+    ALLOWED_HOSTS        = var.domain
+    CORS_ALLOWED_ORIGINS = var.domain != "" ? "https://${var.domain}" : ""
   }
 }
 

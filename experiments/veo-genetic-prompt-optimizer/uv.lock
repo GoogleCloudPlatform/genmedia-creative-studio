@@ -798,7 +798,7 @@ requests = [
 
 [[package]]
 name = "google-cloud-aiplatform"
-version = "2.8.0"
+version = "2.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -815,9 +815,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/59/ad53d558da9460ad35b9795c1026aaa84e2472823fcd65bc6660133c6818/google_cloud_aiplatform-2.8.0.tar.gz", hash = "sha256:3f589660f54e0b4030630440d24733b0ec5c7a4e9ce799cc4f38c13736a60f6f", size = 11241713, upload-time = "2026-11-10T21:50:43.29Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/6a/d0f2c797c5b07115d74caeb04bb7083de77152d90a81f29e0287df155d49/google_cloud_aiplatform-2.10.0.tar.gz", hash = "sha256:9787cfa3a08b46331a85b867d55d7fb299f56ea50c73af4bfce56f6e37a5ffc7", size = 11256445, upload-time = "2026-11-18T00:14:44.305Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/71/3b4cbc43d33ebc405e7ff441d811c86f1e8bd79c44879aaf4dbe66eb0199/google_cloud_aiplatform-2.8.0-py2.py3-none-any.whl", hash = "sha256:db2e29fffbe725719b47b286f142cc75c6c7e7b3535202732422aefab7f3554f", size = 9397450, upload-time = "2026-11-10T21:50:40.064Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/cc/6b5ff0d2a44d0befd0d3481fbef20d878704ceb07c432ea6642ab70a65c2/google_cloud_aiplatform-2.10.0-py2.py3-none-any.whl", hash = "sha256:ccb996749788e0d94d7af1686911dae2c2b927fa14fc9a2e51b7c4703db32761", size = 9405684, upload-time = "2026-11-18T00:14:40.208Z" },
 ]
 
 [package.optional-dependencies]
@@ -2939,7 +2939,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.14.4" },
     { name = "black", specifier = ">=26.10.1,<27.0.0" },
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "google-cloud-aiplatform", extras = ["evaluation"], specifier = ">=2.8.0,<2.9.0" },
+    { name = "google-cloud-aiplatform", extras = ["evaluation"], specifier = ">=2.10.0,<2.11.0" },
     { name = "google-genai", specifier = ">=2.34.0,<2.35.0" },
     { name = "litellm", specifier = ">=1.88.6" },
     { name = "pandas", specifier = ">=3.1.0,<3.2.0" },

@@ -39,6 +39,14 @@
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true
+    },
+    {
+      "description": "Isolate run-veo-run frontend from group:allNonMajor so npm 12+ EALLOWREMOTE failures on @tailwindcss/oxide-wasm32-wasi (npm/cli#9800) do not poison unrelated Go/Python/Node dependency rollups (see #2184).",
+      "matchFileNames": ["experiments/run-veo-run/frontend/**"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "run-veo-run frontend non-major dependencies",
+      "groupSlug": "run-veo-run-frontend-non-major",
+      "automerge": false
     }
   ]
 }

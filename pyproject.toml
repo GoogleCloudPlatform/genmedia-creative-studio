@@ -42,7 +42,7 @@ dependencies = [
     "PyJWT>=2.15.1",
     "urllib3>=2.8.0",
     "certifi>=2026.10.19",
-    "opentelemetry-api>=1.45.1",
+    "opentelemetry-api>=1.45.2",
 ]
 
 [tool.uv]

@@ -154,7 +154,7 @@ def page_content():
     if state.info_dialog_open:
         with dialog(is_open=state.info_dialog_open):  # pylint: disable=not-context-manager
             if INTERIOR_DESIGN_INFO:
-                me.text(f"About {INTERIOR_DESIGN_INFO[title]}", type="headline-6")
+                me.text(f"About {INTERIOR_DESIGN_INFO['title']}", type="headline-6")
                 me.markdown(INTERIOR_DESIGN_INFO["description"])
             else:
                 me.text("About Interior Design", type="headline-6")

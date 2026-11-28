@@ -23,7 +23,10 @@ from components.page_scaffold import (
 from components.shop_the_look.config_panel import config_panel
 from components.shop_the_look.look_selection import look_selection
 from components.shop_the_look.model_selection import model_selection
-from components.shop_the_look.results_display import results_display
+from components.shop_the_look.results_display import (
+    on_click_clear_reference_image,
+    results_display,
+)
 from components.tab_nav import Tab, tab_group
 from models.shop_the_look_handlers import on_click_vto_look
 from state.shop_the_look_state import PageState

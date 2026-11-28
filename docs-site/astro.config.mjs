@@ -100,6 +100,7 @@ export default defineConfig({
 						{ label: 'Introduction', slug: 'core' },
 						{ label: 'Using the Studio', slug: 'core/usage' },
 						{ label: 'Architecture', slug: 'core/architecture' },
+						{ label: 'Responsible AI & Safety', slug: 'core/responsible-ai' },
 						{
 							label: 'Foundation Models',
 							items: [

@@ -26,7 +26,7 @@
     "vite": "npm:rolldown-vite@7.3.1",
     "@grpc/grpc-js": "~1.14.0",
     "protobufjs": "~7.6.5",
-    "websocket-driver": "~0.7.5",
+    "websocket-driver": "~0.8.0",
     "picomatch": "~4.0.4"
   }
 }

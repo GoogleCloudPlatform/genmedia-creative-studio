@@ -22,7 +22,7 @@ def worsfold_encoder(
     *,
     # --- Properties ---
     video_url: str = "",
-    config: dict = {},
+    config: dict | None = None,
     start_encode: bool = False,
 
     # --- Events ---
@@ -34,6 +34,8 @@ def worsfold_encoder(
     key: str | None = None,
 ):
     """Defines the API for the Worsfold Encoder web component."""
+    if config is None:
+        config = {}
     return me.insert_web_component(
         key=key,
         name="worsfold-encoder",

@@ -328,7 +328,7 @@ def send_request_to_google_api(api_endpoint, data=None):
         "Content-Type": "application/json",
     }
 
-    response = requests.post(api_endpoint, headers=headers, json=data)
+    response = requests.post(api_endpoint, headers=headers, json=data, timeout=60)
     response.raise_for_status()
     return response.json()
 

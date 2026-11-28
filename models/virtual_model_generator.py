@@ -17,7 +17,7 @@ import random
 from pathlib import Path
 
 # The default prompt, used as a fallback if the user's prompt is invalid.
-DEFAULT_PROMPT = "A full-length studio shot of {gender} model with {silhouette}, posed for a virtual try-on application. The model has an {MST} skin tone. Lighting is bright and even, highlighting the model's form without harsh shadows. The model is {variant}. The focus is sharp and clear, capturing the details of clothing textures and fit, suitable for e-commerce apparel display."
+DEFAULT_PROMPT = "A full-length studio shot of {gender} model with {silhouette}, posed for a virtual try-on application. The model has {MST}. Lighting is bright and even, highlighting the model's form without harsh shadows. The model is {variant}. The focus is sharp and clear, capturing the details of clothing textures and fit, suitable for e-commerce apparel display."
 
 class VirtualModelGenerator:
     """
@@ -50,7 +50,8 @@ class VirtualModelGenerator:
         """Sets a random value for all major placeholders."""
         self.set_value("gender", random.choice(self.options["genders"])["prompt_fragment"])
         self.set_value("silhouette", random.choice(self.options["silhouette_presets"])["prompt_fragment"])
-        self.set_value("MST", random.choice(self.options["MST"]))
+        self.set_value("MST", random.choice(self.options["MST"])["prompt_fragment"])
+        self.set_value("variant", random.choice(self.options["variants"])["prompt_fragment"])
         return self
 
     def _validate_prompt(self, prompt_str: str) -> bool:

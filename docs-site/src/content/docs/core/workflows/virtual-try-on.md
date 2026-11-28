@@ -13,14 +13,14 @@ The **Virtual Try-On (VTO)** workflow (`/vto`) provides a dedicated studio for V
 | :--- | :--- | :--- |
 | **Mesop Page & State** | `pages/vto.py` (`PageState`) | Person & garment uploaders, synthetic model generator trigger, sample count & seed controls, result gallery, and inline Veo animation. |
 | **VTO Model Adapter** | `models/vto.py` (`generate_vto_image`, `call_virtual_try_on`) | Wraps `client.models.recontext_image()` (`virtual-try-on-001`) and the GAPIC `PredictionServiceClient` helper for fitting product images onto a person image. |
-| **Synthetic Model Generator** | `models/virtual_model_generator.py` (`VirtualModelGenerator`, `DEFAULT_PROMPT`) | Generates diverse, studio-lit full-body fashion model portraits (`imagen-3.0-generate-002` / Nano Banana) using randomized gender, silhouette, and pose attributes from `config/virtual_model_options.json`. |
+| **Synthetic Model Generator** | `models/virtual_model_generator.py` (`VirtualModelGenerator`, `DEFAULT_PROMPT`) | Generates diverse, studio-lit full-body fashion model portraits via Gemini Image (Nano Banana) using randomized gender presentation, Monk Skin Tone (`MST-1`–`MST-10`), body silhouette, and pose attributes from `config/virtual_model_options.json`. |
 
 ## Step-by-Step Pipeline
 
 ### Step 1: Person Image Selection or Synthetic Model Generation
 Users can provide the target person portrait (`person_image_gcs`) in three ways:
 1. **Upload / Library Selection:** Upload a full-body or half-body portrait or pick an existing model from the Studio Library.
-2. **Generate Virtual Model (`on_generate_person_image`):** Click **Generate Virtual Model** to invoke `VirtualModelGenerator`, which samples a randomized combination of gender presentation, body silhouette, and camera framing from `config/virtual_model_options.json` and synthesizes a clean studio portrait ready for apparel fitting.
+2. **Generate Virtual Model (`on_click_generate_person`):** Click **Generate Virtual Model** to invoke `VirtualModelGenerator`, which samples a randomized combination of gender presentation, Monk Skin Tone (`MST-1`–`MST-10`), neutral body silhouette, and pose from `config/virtual_model_options.json` and synthesizes a clean studio portrait ready for apparel fitting. See [Responsible AI & Safety Alignment](/genmedia-creative-studio/core/responsible-ai/) for the full Monk Skin Tone scale taxonomy and safety filter policies.
 
 ### Step 2: Product Garment Selection
 * Upload or select a product garment image (`product_image_gcs`)—such as a top, dress, jacket, or bottom—on a flat lay, mannequin, or model.

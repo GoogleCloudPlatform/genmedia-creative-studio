@@ -22,7 +22,7 @@ def pixie_compositor(
     *,
     # --- Properties ---
     video_url: str = "",
-    config: dict = {},
+    config: dict | None = None,
     start_encode: bool = False,
 
     # --- Events ---
@@ -34,6 +34,8 @@ def pixie_compositor(
     key: str | None = None,
 ):
     """Defines the API for the Pixie Compositor web component."""
+    if config is None:
+        config = {}
     return me.insert_web_component(
         key=key,
         name="pixie-compositor",

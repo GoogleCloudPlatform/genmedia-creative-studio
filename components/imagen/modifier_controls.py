@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import mesop as me
-from components.styles import _BOX_STYLE
 
 from state.imagen_state import PageState
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from typing import ClassVar, Optional
 from dotenv import load_dotenv
 from google import genai
 from google.cloud import aiplatform
@@ -108,7 +108,7 @@ class VeoModelSetup:
 
 class GeminiModelSetup:
     """Gemini model setup"""
-    _clients = {}
+    _clients: ClassVar[dict] = {}
 
     @staticmethod
     def init(

@@ -172,7 +172,7 @@ class Default:
     GCS_ASSETS_BUCKET: str = os.environ.get("GCS_ASSETS_BUCKET")
 
     # Library
-    LIBRARY_MEDIA_PER_PAGE: int = int(os.environ.get("LIBRARY_MEDIA_PER_PAGE", 15))
+    LIBRARY_MEDIA_PER_PAGE: int = int(os.environ.get("LIBRARY_MEDIA_PER_PAGE", "15"))
 
     # Veo
     DEFAULT_VEO_MODEL_NAME: str = os.environ.get(
@@ -273,8 +273,8 @@ class Default:
 
     # GIF conversion limits: sources over either limit are rejected before they
     # are downloaded (size) or decoded (duration).
-    GIF_MAX_SOURCE_MB: int = int(os.environ.get("GIF_MAX_SOURCE_MB", 200))
-    GIF_MAX_DURATION_S: int = int(os.environ.get("GIF_MAX_DURATION_S", 60))
+    GIF_MAX_SOURCE_MB: int = int(os.environ.get("GIF_MAX_SOURCE_MB", "200"))
+    GIF_MAX_DURATION_S: int = int(os.environ.get("GIF_MAX_DURATION_S", "60"))
 
     # Shared Library: when true (default) the Library "All Users" view and the
     # library chooser can list every user's media on explicit request (listings
@@ -298,7 +298,7 @@ class Default:
         "gemini-nano-banana-2.1",
     )
     INTERIOR_DESIGN_VIDEO_DURATION: int = int(
-        os.environ.get("INTERIOR_DESIGN_VIDEO_DURATION", 6),
+        os.environ.get("INTERIOR_DESIGN_VIDEO_DURATION", "6"),
     )
 
     # Object Rotation

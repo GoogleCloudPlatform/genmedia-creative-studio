@@ -969,33 +969,6 @@ def on_remove_image(e: me.ClickEvent):
     yield
 
 
-def on_prompt_blur(e: me.InputEvent):
-    """Updates the prompt in the page state when the input field loses focus."""
-    me.state(PageState).prompt = e.value
-
-
-def on_aspect_ratio_change(e: me.SelectSelectionChangeEvent):
-    """Changes the aspect ratio on page state."""
-    me.state(PageState).aspect_ratio = e.value
-
-
-def on_image_size_change(e: me.SelectSelectionChangeEvent):
-    """Changes the image size on page state."""
-    me.state(PageState).image_size = e.value
-
-
-def on_num_images_change(e: me.SelectSelectionChangeEvent):
-    """Updates the number of images to generate in the page state."""
-    me.state(PageState).num_images_to_generate = int(e.value)
-
-
-def on_thumbnail_click(e: me.ClickEvent):
-    """Sets the clicked thumbnail as the main selected image."""
-    state = me.state(PageState)
-    state.selected_image_url = e.key
-    yield
-
-
 def on_clear_click(e: me.ClickEvent):
     """Resets the entire page state to its initial values, clearing all inputs and outputs."""
     state = me.state(PageState)

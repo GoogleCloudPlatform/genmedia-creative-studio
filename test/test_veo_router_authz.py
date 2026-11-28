@@ -128,6 +128,7 @@ def client(monkeypatch):
     # at call time, so patching it here routes the owner-scoped read through the
     # fake while the router glue stays real.
     monkeypatch.setattr(md, "db", fake_db)
+    monkeypatch.setattr(md.config, "SHARED_LIBRARY", False)
 
     app = FastAPI()
 

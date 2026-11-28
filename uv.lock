@@ -531,7 +531,7 @@ requires-dist = [
     { name = "moviepy", specifier = ">=2.0.0" },
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "opencv-python" },
-    { name = "opentelemetry-api", specifier = ">=1.45.1" },
+    { name = "opentelemetry-api", specifier = ">=1.45.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pillow", specifier = ">=13.0.0" },
     { name = "praat-parselmouth", specifier = ">=0.4.6" },

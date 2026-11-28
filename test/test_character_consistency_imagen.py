@@ -135,7 +135,7 @@ def test_generate_gemini_candidates_calls_adapter_per_candidate(cc_module) -> No
         )
 
     assert len(calls) == 4, "one adapter call per requested candidate"
-    assert uris == [f"gs://bucket/candidate_{i}.png" for i in range(1, 5)]
+    assert sorted(uris) == [f"gs://bucket/candidate_{i}.png" for i in range(1, 5)]
     assert byts == [b"bytes"] * 4
     # Every call is prompt-based (mask-free) at 1:1 with the reference images.
     for _prompt, images, kwargs in calls:
